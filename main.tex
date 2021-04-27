@@ -1,0 +1,135 @@
+\documentclass[review,nonacm,screen,sigplan,anonymous=true]{acmart}
+\settopmatter{printfolios=false,printccs=false,printacmref=false}
+
+\bibliographystyle{ACM-Reference-Format}
+\citestyle{acmauthoryear}   %% For author/year citations
+\usepackage{listings,multirow,wrapfig,xspace,paralist}
+\usepackage{xcolor,tikz,graphicx, pifont}
+%\usetikzlibrary{positioning}
+
+%% \newcommand{\authorcomment}[3]{\xspace\textcolor{#1}{{\bf #2} #3}\xspace}
+\newcommand{\authorcomment}[3]{}
+% For author notes:
+\newcommand{\AG}[1]{\authorcomment{orange}{AG}{#1}}
+\newcommand{\JV}[1]{\authorcomment{red}{JV}{#1}}
+
+% For meta comments:
+\newcommand{\isit}[1]{\authorcomment{cyan}{Check}{#1}}
+\newcommand{\todo}[1]{\authorcomment{red}{TODO}{#1}}
+\newcommand{\xmark}{\textcolor{red}{\ding{55}}}
+\newcommand{\cmark}{\textcolor{green}{\ding{51}}}
+
+\definecolor{LightGray}{RGB}{247, 247, 247}
+\definecolor{Gray}{rgb}{.3,.3,.3}
+\definecolor{DarkGray}{rgb}{.5,.5,.5}
+
+%% https://www.davehofmann.de/defining-custom-language-templates-for-latex-listings/
+% Define Language
+\lstdefinelanguage{smalleR} {
+  % list of keywords
+  morekeywords={
+    for,
+    if,
+    else,
+    function
+  },
+  sensitive=true, % keywords are not case-sensitive
+  morecomment=[l]{\#}, % l is for line comment
+  morestring=[b]{"} % defines that strings are enclosed in double quotes
+}
+
+\lstset{
+  language={smalleR},
+  columns=flexible,
+  captionpos=b,
+  frame=single,
+  framerule=0pt,
+  framexleftmargin=1mm,
+  framexrightmargin=1mm,
+  tabsize=2,
+  belowskip=0pt,
+  basicstyle=\small\ttfamily,
+  backgroundcolor=\color{LightGray},
+  emphstyle=\sffamily,
+  keywordstyle=\bfseries,
+  commentstyle=\color{Gray}\em,
+  stringstyle=\color{Gray},
+  alsoletter={., _, $},
+  breaklines=true
+}
+
+\newcommand{\code}[1]{\lstinline |#1|\xspace}
+\renewcommand{\c}[1]{\lstinline |#1|\xspace}
+\newcommand{\eg}{\emph{e.g.},\xspace}
+\newcommand{\ie}{\emph{i.e.},\xspace}
+
+%%% \setcopyright{rightsretained}
+%%% \acmPrice{}
+%%% \acmDOI{10.1145/3360579}
+%%% \acmYear{2019}
+%%% \copyrightyear{2019}
+%%% \acmJournal{PACMPL}
+%%% \acmVolume{3}
+%%% \acmNumber{OOPSLA}
+%% \acmArticle{153}
+%%% \acmMonth{10}
+\begin{document}
+\title{First-Class Environments in R}
+\subtitle{Large-Scale Evaluation of first-class environments in R}
+
+\author{Aviral Goel}\affiliation{\institution{Northeastern University}\country{USA}}
+\author{Jan Vitek}\affiliation{\institution{Czech Technical University and Northeastern University}\country{USA}}
+\authorsaddresses{}
+\renewcommand{\shortauthors}{Goel, et al.}
+
+\begin{abstract}
+\end{abstract}
+
+\begin{CCSXML}
+<ccs2012>
+<concept>
+<concept_id>10002944.10011123.10010912</concept_id>
+<concept_desc>General and reference~Empirical studies</concept_desc>
+<concept_significance>500</concept_significance>
+</concept>
+<concept>
+<concept_id>10011007.10011006.10011008</concept_id>
+<concept_desc>Software and its engineering~General programming languages</concept_desc>
+<concept_significance>500</concept_significance>
+</concept>
+<concept>
+<concept_id>10011007.10011006.10011050.10010517</concept_id>
+<concept_desc>Software and its engineering~Scripting languages</concept_desc>
+<concept_significance>500</concept_significance>
+</concept>
+<concept>
+<concept_id>10011007.10011006.10011039.10011311</concept_id>
+<concept_desc>Software and its engineering~Semantics</concept_desc>
+<concept_significance>300</concept_significance>
+</concept>
+</ccs2012>
+\end{CCSXML}
+
+\ccsdesc[500]{General and reference~Empirical studies}
+\ccsdesc[500]{Software and its engineering~General programming languages}
+\ccsdesc[500]{Software and its engineering~Scripting languages}
+\ccsdesc[300]{Software and its engineering~Semantics}
+
+%\keywords{R language, delayed or lazy evaluation}
+
+\maketitle
+\section{Introduction}
+
+{\small \medskip\noindent\emph{Availability.} Our work is in open source, experiments are
+repeatable and will be submitted to the AEC.}
+
+\newpage
+\section{Background}\label{sec:background}
+
+\subsection{Related Work}
+
+\subsection{Laziness and the R Language}
+
+\section{StrictR: R with Strictness Signatures}\label{sec:strictr}
+
+\end{document}
