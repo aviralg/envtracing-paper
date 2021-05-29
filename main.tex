@@ -1,4 +1,4 @@
-\documentclass[review,nonacm,screen,sigplan,anonymous=true]{acmart}
+\documentclass[10pt,review,sigplan,anonymous=true]{acmart}
 \settopmatter{printfolios=false,printccs=false,printacmref=false}
 
 \bibliographystyle{ACM-Reference-Format}
@@ -63,6 +63,37 @@
 \newcommand{\eg}{\emph{e.g.},\xspace}
 \newcommand{\ie}{\emph{i.e.},\xspace}
 
+\newcommand{\environmentFun}{\code{environment}}
+
+\newcommand{\emptyenv}{\code{empyenv}}
+\newcommand{\globalenv}{\code{globalenv}}
+
+\newcommand{\newEnv}{\code{new.env}}
+
+\newcommand{\asList}{\code{as.list}}
+\newcommand{\listToEnv}{\code{list2env}}
+
+\newcommand{\ls}{\code{ls}}
+\newcommand{\objects}{\code{objects}}
+
+\newcommand{\subDollar}{\code{$}}
+\newcommand{\subBracket}{\code{[[}}
+
+\newcommand{\exist}{\code{exist}}
+
+\newcommand{\get}{\code{get}}
+\newcommand{\getZero}{\code{get0}}
+\newcommand{\mget}{\code{mget}}
+\newcommand{\dynGet}{\code{dynGet}}
+
+\newcommand{\assign}{\code{assign}}
+
+\newcommand{\remove}{\code{remove}}
+\renewcommand{\rm}{\code{rm}}
+
+\newcommand{\parentEnv}{\code{parent.env}}
+\newcommand{\parentEnvAssign}{\code{parent.env<-}}
+
 %%% \setcopyright{rightsretained}
 %%% \acmPrice{}
 %%% \acmDOI{10.1145/3360579}
@@ -74,15 +105,23 @@
 %% \acmArticle{153}
 %%% \acmMonth{10}
 \begin{document}
-\title{First-Class Environments in R}
-\subtitle{Large-Scale Evaluation of first-class environments in R}
+\title{On the Use of First-Class Environments in R}
 
 \author{Aviral Goel}\affiliation{\institution{Northeastern University}\country{USA}}
 \author{Jan Vitek}\affiliation{\institution{Czech Technical University and Northeastern University}\country{USA}}
 \authorsaddresses{}
 \renewcommand{\shortauthors}{Goel, et al.}
 
+
 \begin{abstract}
+  The R programming language is widely used for statistical computations. R
+  encourages a very dynamic programming style, to enable interactive data
+  exploration and rapid prototyping. A key enabler of this dynamism is its
+  support for first-class environments. To our knowledge, R is the only
+  mainstream programming language with explicit environments. This paper
+  presents the design of environments in R, and an empirical evaluation of how
+  they are used. For this, we analyze \AG{XXXX} programs from 100 most popular CRAN
+  packages. We find that first-class environments are used for \AG{XYZ}.
 \end{abstract}
 
 \begin{CCSXML}
@@ -123,13 +162,192 @@
 {\small \medskip\noindent\emph{Availability.} Our work is in open source, experiments are
 repeatable and will be submitted to the AEC.}
 
-\newpage
 \section{Background}\label{sec:background}
 
 \subsection{Related Work}
+%- \code{https://picolisp.com/wiki/?firstclassenvironments}
+%- \code{http://metamodular.com/SICL/environments.pdf}
+%- \code{Free variables and first-class environments}
+%% https://link.springer.com/article/10.1007%2FBF01813016
+%-
+%\code{https://groups.csail.mit.edu/mac/ftpdir/scheme-7.4/doc-html/scheme_14.html}
+%- \code{Environments as First Class Objects}
+%- \code{Explicit Environments}
+%% https://link.springer.com/chapter/10.1007%2F3-540-48959-2_24
+%- \code{Simply Typed Lambda Calculus with First-Class Environments}
+%% https://www.ems-ph.org/journals/show_abstract.php?issn=0034-5318&vol=30&iss=6&rank=4
+%- \code{ML with first-class environments and its type inference algorithm}
+%% https://link.springer.com/chapter/10.1007%2FBFb0032396
+%- \code{https://adv-r.hadley.nz/environments.html}
+%- \code{Sharing Code through First-class Environments}
+%% https://pages.lip6.fr/Christian.Queinnec/PDF/modenv.pdf
+%- \code{Environments as first class objects}
+%% https://dl.acm.org/doi/10.1145/41625.41634
+%Python locals vs globals
+%%(https://realpython.com/python-namespaces-scope/#the-local-and-enclosing-namespaces)
+%- Scheme R5RS standard talks about environment for two argument eval.
 
-\subsection{Laziness and the R Language}
 
-\section{StrictR: R with Strictness Signatures}\label{sec:strictr}
+\subsection{The R Language}
+
+R is a vectorized, dynamic, lazy, functional and object-oriented programming
+language, designed by Ihaka and Gentleman in 1993 as a successor to S. In this
+section, we provide a brief primer on R, with a focus on environments.
+
+R has first-class, anonymous, lexically scoped functions. They are the most
+important linguistic construct; all expressions (bracketing, operators, etc.)
+desugar to function calls.
+
+Vectors in R are homogeneous fixed-size arrays of integer, double, character
+(string), logical (boolean), complex, or raw (byte) values. Lists are
+heterogeneous vectors with optionally named elements. They can be indexed by
+position or name. R objects can be tagged with user-defined data called
+attributes. They are an optional name value map typically used to add a
+domain-specific type structure. For example, \code{attr(x, dim) <- c(2, 2))}
+attaches the attribute \code{dim} to vector \code{x <- c(1,2,3,4)} and R
+subsequently treats it as a 2$\times$2 matrix. Of special interest is the
+\code{class} attribute. \code{class(x) <- c("cat", "animal")} sets the class of
+\code{x} to \code{"cat"} and \code{"animal"}. This is used for object-oriented
+programming by S3 and S4, two OOP frameworks of R. S3 uses the \code{class}
+attribute to dispatch on the first argument, and S4 allows multiple dispatch.
+Formula is a compact symbolic representation of models used by model fitting
+functions. For example, the linear model \code{y ~ x - 1} specifies a line
+through the origin. Formula contains a reference to the environment in which it
+is defined to refer to the variables, if they are not otherwise provided during
+model fitting.
+
+Environments bind (unique) names to values. They are backed either by an
+association list (default) or a hash table, chosen on initialization. Unlike
+other R objects, they are modified by reference. Environments form a chain; each
+environment points to a parent environment. The chain terminates at the
+\code{empty} environment; which is always empty. The call, \code{emptyenv()},
+returns the \code{empty} environment.
+
+\subsubsection{Environments as Packages}
+
+Packages loaded by calling \code{library} are represented as environments; their
+names are added to a global search path (returned by \code{search()}) for
+lookup. The \code{n}th package environment can be retrieved using
+\code{pos.to.env(n)}. Each package has a corresponding namespace environment
+which also contains its private bindings and implementation specific metadata.
+The namespace environment for a package named \code{ns} can be obtained by
+\code{asNamespace(ns)}. An R session starts with the \code{base} package
+preloaded, which contains the default R APIs. \code{baseenv()} returns the
+\code{base} package environment and \code{.BaseNamespaceEnv} is bound to the
+\code{base} package namespace.
+
+\subsubsection{Environments as Scopes}
+The top-level scope is the \code{global} environment, referred by the variable
+\code{.GlobalEnv}, or returned by \code{globalenv()}. The \code{environment()}
+call returns the current evaluation environment. At the top level, it returns
+the \code{global} environment, and inside a function, it returns the function's
+environment. When supplied with a function argument, it returns the function's
+definition environment. \code{environment(fun) <- env} sets \code{env} as the
+environment of \code{fun}.
+
+\begin{lstlisting}
+> f <- function() { print(environment()) }
+> environment(); environment(f); f()
+<env: Global> <env: Global> <env: 0x7ff>
+> e <- new.env(); print(e)
+<env: 0x7f1>
+> environment(f) <- e; environment(f)
+<env: 0x7f1>
+\end{lstlisting}
+
+R provides a rich call stack reflection interface, which can be divided into two
+categories. The first category provides the frame numbers. Frame number starts
+from 0, for \code{global} environment (top level), and increases by 1 for each
+nested call. \code{sys.nframe()} returns the current frame number.
+\code{sys.parent(n)} returns the frame number of the \code{n}th parent (caller
+if \code{n} is 1). The second set yields a frame's environment.
+\code{sys.frame(which)} returns the environment of the frame at position
+\code{which} (counting backwards if \code{which} is negative).
+\code{parent.frame(n)} is an optimized implementation of
+\code{sys.frame(sys.parent(n))}. Lastly, \code{sys.frames()} returns a list of
+all active frames' environments.
+
+\begin{lstlisting}
+> f <- function() { print(environment())
+>     g <- function() { parent.frame(1) }; g() }
+> f()
+<env: 0x7f2> <env: 0x7f2>
+\end{lstlisting}
+
+\subsubsection{Environments as Data Structures}
+Environments can be created using the \newEnv function. This function takes
+three arguments: \code{hash}, a boolean for selecting a hash table
+representation over the default association list representation, \code{size}, a
+number specifying the size for preallocation, and, \code{parent}, the enclosing
+environment. R does not provide any function to query the representation used
+for an environment.The \code{length} function of an environment (number of
+bindings) can be obtained using the. \parentEnv yields the enclosing environment
+of an environment and \code{parent.env(envir) <- parent} sets the enclosing
+environment of \code{envir} to \code{parent}.
+
+\begin{lstlisting}
+> e <- new.env(parent=emptyenv()); length(e)
+0
+> parent.env(e)
+<environment: R_EmptyEnv>
+> parent.env(e) <- globalenv(); parent.env(e)
+<environment: R_GlobalEnv>
+\end{lstlisting}
+
+\asList converts environments to lists, heterogeneous vectors with optionally
+named elements. \listToEnv copies the elements of a list to an environment. If
+the environment is not supplied, it creates one using \newEnv. The variables of
+an environment can be retrieved as a vector using the \ls and \objects
+functions.
+
+\begin{lstlisting}
+> l <- list(x=1, y=2); e <- list2env(l); length(e)
+2
+> as.list(e)
+list(y = 2, x = 1)
+> ls(e)
+[1] "x" "y"
+\end{lstlisting}
+
+A variable's existence in an environment can be queried using \exist. Its value
+can be retrieved using \subDollar and \subBracket operators. \get, \getZero,
+\mget, and \dynGet functions are generalizations of these operators with options
+to perform lookup recursively in parent environments (\code{inherits = TRUE})
+and validate the type of value bound to the variable being read (\code{mode =
+  "integer"}). \getZero is \get with an extra argument, \code{ifnotfound}, which
+is returned if the variable is not present in the environment. \mget is a
+vectorized version of \get; it reads multiples variables supplied as a vector
+and returns a vector of values. \dynGet performs recursive lookups in caller
+frames, i.e., dynamic scopes, unlike the other functions which perform lookup in
+lexical scopes.
+
+\textit{Writes.} Writes can be performed using the \assign function. Variables
+can be removed using the \rm and \remove function.
+
+\paragraph{Discussion.}
+
+% designed for rapid implementation of
+% statistical methods and a shallow learning curve for non-programmers interested
+% in numerical computation. 
+% \newEnv
+% \assign \rm
+% \remove
+% 
+% as.environment
+% pos.to.env
+% 
+% list2env
+% env2list
+% 
+% sys.frame(which = 0)
+% sys.nframe()
+% sys.parent(n = 1)
+% 
+% sys.frames()
+% sys.parents()
+% sys.status()
+% parent.frame(n = 1)
+
+
 
 \end{document}

@@ -18,7 +18,7 @@ all: main.pdf open
 open: main.pdf
 	open main.pdf
 
-main.pdf:
+main.pdf: main.tex
 	$(PDFLATEX) main && $(BIBTEX) main
 
 clean:
