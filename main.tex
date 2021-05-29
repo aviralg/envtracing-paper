@@ -324,7 +324,14 @@ lexical scopes.
 \textit{Writes.} Writes can be performed using the \assign function. Variables
 can be removed using the \rm and \remove function.
 
-\paragraph{Discussion.}
+TODO - eval and environment.
+
+\paragraph{Discussion.} R provides a very rich API for interacting with
+environment. This makes them very versatile objects. They primarily serve as
+scopes, but can also be used as hash tables, and for sandboxing expression
+evaluation. While R is lexically scoped, ad-hoc lookup strategies can be
+implemented by accessing caller environments. The lexical scope of a function
+can be changed, a technique used for designing custom object-oriented systems.
 
 % designed for rapid implementation of
 % statistical methods and a shallow learning curve for non-programmers interested
