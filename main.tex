@@ -94,6 +94,9 @@
 \newcommand{\parentEnv}{\code{parent.env}}
 \newcommand{\parentEnvAssign}{\code{parent.env<-}}
 
+\newcommand{\envtracer}{\texttt{envtracer}\xspace}
+\newcommand{\experimentr}{\texttt{experimentr}\xspace}
+
 %%% \setcopyright{rightsretained}
 %%% \acmPrice{}
 %%% \acmDOI{10.1145/3360579}
@@ -334,28 +337,17 @@ strategies can be implemented by accessing arbitrary caller environments. The
 lexical scope of a function can be changed, a technique often used for designing
 custom object-oriented systems.
 
-% designed for rapid implementation of
-% statistical methods and a shallow learning curve for non-programmers interested
-% in numerical computation. 
-% \newEnv
-% \assign \rm
-% \remove
-% 
-% as.environment
-% pos.to.env
-% 
-% list2env
-% env2list
-% 
-% sys.frame(which = 0)
-% sys.nframe()
-% sys.parent(n = 1)
-% 
-% sys.frames()
-% sys.parents()
-% sys.status()
-% parent.frame(n = 1)
 
+\section{Corpus of R Programs}
+
+For this study, we assembled a corpus of 500 most widely used packages from
+CRAN, based on the number of client packages. The 500 packages have XX lines of
+R code and YY lines of native code. CRAN packages come equipped with runnable
+code in the form of tests, examples, and long-form examples called vignettes.
+These programs are extracted as independently executable scripts for Table
+% \~ref{table:corpus}
+presents the number and size of these scripts. Overall,
+\experimentr extracts XXX programs with XXX lines of code.
 
 
 \end{document}
