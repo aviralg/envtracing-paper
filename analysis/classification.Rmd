@@ -1,0 +1,77 @@
+---
+title: "Corpus"
+output:
+    html_document:
+        toc: true
+        toc_depth: 3
+        toc_float: true
+        number_sections: true
+        theme: cerulean
+        highlight: pygments
+        code_folding: hide
+        fig_width: 9
+        fig_height: 3
+        css: style.css
+params:
+    datadir: "./data"
+    graphdir: "./graphs"
+    macrodir: "./macros"
+    tabledir: "./tables"
+---
+
+```{r echo = FALSE, warning=FALSE, message=FALSE}
+## https://bookdown.org/yihui/rmarkdown-cookbook/source-script.html
+source("analysis.R", local = knitr::knit_global())
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+allocation <-
+    allocation %>%
+    select(type, count = allocated) %>%
+    filter(!(type %in% c("missing", "null", "unbound", "bytecode", "miscellaneous", "special", "builtin", "dot", "char", "weakref", "pairlist")))
+
+
+datatable(allocation)
+
+OTHER_ALLOCATION_CUTOFF <- 50000000
+
+other_allocation <-
+    allocation %>% 
+    filter(count <= OTHER_ALLOCATION_CUTOFF) %>%
+    print() %>%
+    summarize(type = "other", count = sum(count))
+
+allocation <-
+    allocation %>%
+    filter(count > OTHER_ALLOCATION_CUTOFF) %>%
+    bind_rows(other_allocation)
+
+allocation_table <-
+    allocation %>%
+    mutate(type = str_to_title(type)) %>%
+    arrange(desc(count)) %>%
+    mutate(count = label_number_si(accuracy = 0.1)(count))
+    
+datatable(allocation_table)
+
+allocation_table %>%
+pmap_chr(function(type, count) {
+    sprintf("%s&%s", type, count)
+}) %>%
+as_tex_table("object_count_dist.tex", params$tabledir)
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=FALSE}
+env_class %>%
+    count(call_env, dispatch, class, package, cons_category, eval_category, wt = count, name = "count") %>%
+    arrange(desc(count))
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=FALSE}
+env_class %>% 
+    mutate(class = !is.na(class), package = !is.na(package)) %>%
+    filter(!call_env, !dispatch, !class, !package, is.na(cons_category), is.na(eval_category)) %>% 
+    count(source_fun_name_1, wt = count, name = "count") %>% 
+    arrange(desc(count)) %>% 
+    mutate(cum_perc = round(100 * cumsum(count) / sum(count), 2))
+```

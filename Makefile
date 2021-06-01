@@ -5,6 +5,7 @@ ANALYSIS := corpus
 DATADIR := $(PROJECTDIR)data
 GRAPHDIR := $(PROJECTDIR)graphs
 MACRODIR := $(PROJECTDIR)macros
+TABLEDIR := $(PROJECTDIR)tables
 
 # Tools
 PDFLATEX = pdflatex
@@ -15,19 +16,22 @@ R = R
 # Targets
 all: main.pdf open
 
-open: main.pdf
+open:
 	open main.pdf
 
-main.pdf: main.tex
+main.pdf:
 	$(PDFLATEX) main && $(BIBTEX) main
 
 clean:
 	rm *~ *.log *.aux *.bbl *.out *.blg
 
 analysis:
-	$(R) --slave -e "rmarkdown::render('$(ANALYSIS).Rmd', 'html_document', params = list(datadir = '$(DATADIR)', graphdir = '$(GRAPHDIR)', macrodir = '$(MACRODIR)'))"
+	$(R) --slave -e "rmarkdown::render('analysis/$(ANALYSIS).Rmd', 'html_document', params = list(datadir = '$(DATADIR)', graphdir = '$(GRAPHDIR)', macrodir = '$(MACRODIR)', tabledir = '$(TABLEDIR)'))"
 
-.PHONY: all open clean analysis
+classification:
+	make analysis ANALYSIS=classification
+
+.PHONY: all open main.pdf clean analysis
 
 # Include auto-generated dependencies
 -include *.d

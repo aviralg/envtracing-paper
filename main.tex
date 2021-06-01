@@ -349,5 +349,56 @@ These programs are extracted as independently executable scripts for Table
 presents the number and size of these scripts. Overall,
 \experimentr extracts XXX programs with XXX lines of code.
 
+\section{Analyzing Environment Usage Patterns}
+
+\subsection{Life Cycle of Environments}
+In our corpus, we observe the creation of 1.2 B environments, which makes them
+the second most widely allocated objects. Table~\ref{table:object_count_dist}
+shows the distribution of R objects for comparison. Promises are the most widely
+allocated objects, studied extensively by \citet{oopsla19b}. Vectors of logicals
+and characters (string) are more frequently allocated compared to that of
+integers, reals, and raw (bytes). Language objects, i.e, first-class
+expressions, are used for metaprogramming. Lists are heterogeneous vectors.
+Other objects such as S4, externalptr, etc. are rare.
+
+\begin{table}
+  \vspace{-3mm}
+  \small
+  \caption{Object Counts} \label{table:object_count_dist}
+  \centering
+  \begin{tabular}{lr}
+    \toprule
+    \textbf{Type}&\textbf{Count}\\
+    \midrule
+    Promise&3.0B\\
+    Environment&1.2B\\
+    Logical&1.1B\\
+    Character&976.9M\\
+    Language&506.6M\\
+    Integer&482.0M\\
+    \bottomrule
+  \end{tabular}
+  \begin{tabular}{lr}
+    \toprule
+    \textbf{Type}&\textbf{Count}\\
+    \midrule
+    List&168.2M\\
+    Real&127.2M\\
+    Closure&118.5M\\
+    Symbol&74.3M\\
+    Raw&50.1M\\
+    Other&15.9M\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Where do environments come from?} Environments are implicitly created
+for scoping during function calls. This accounts for XX\% of the environments.
+Environments are also created for package namespaces. This accounts for XX\% of
+the environments. The remaining proportion, .., are explicit.
+
+
+
+\bibliography{bib/jv,bib/aviral}
 
 \end{document}
