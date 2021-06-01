@@ -81,10 +81,21 @@ pmap_chr(function(category, count, perc) {
     sprintf("%s&%s&%s", str_to_title(category), count, perc)
 }) %>%
 as_tex_table()
+```
 
-#count(call_env, dispatch, class, package, wt = count, name = "count") %>%
-    
-    
+# Other Environments
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+env_class %>%
+    mutate(class = !is.na(class), package = !is.na(package), cons_category = !is.na(cons_category)) %>%
+    filter(!call_env, !dispatch, !package, !cons_category) %>%
+    count(source_fun_name_1, wt = count, name = "count") %>%
+    arrange(desc(count)) %>%
+    mutate(perc = compute_proportion(count, 6)) %>%
+    mutate(cumperc = round(100 * cumsum(count)/sum(count), 2)) %>%
+    mutate(count = label_number_si(accuracy = 0.1)(count),
+           perc = label_percent(accuracy = 0.1)(perc)) %>%
+    datatable()
 ```
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, eval=FALSE}
