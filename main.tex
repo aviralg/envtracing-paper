@@ -392,12 +392,30 @@ Other objects such as S4, externalptr, etc. are rare.
   \end{tabular}
 \end{table}
 
-\paragraph{Where do environments come from?} Environments are implicitly created
-for scoping during function calls. This accounts for XX\% of the environments.
-Environments are also created for package namespaces. This accounts for XX\% of
-the environments. The remaining proportion, .., are explicit.
+\paragraph{Where do environments come from?} The distribution of environments by
+source is presented in Table~\ref{table:env_source_dist}. Environments are
+implicitly created for scoping during function calls. This accounts for 99.4\%
+of the environments observed in our corpus. Environments are also created by the
+implementation for namespaces during package loading. This accounts for a meager
+0.1\% of all the environments since these environments are bounded by the number
+of packages loaded during program execution. 0.6\% of the environments are
+created by miscellaneous sources.
 
-
+\begin{table}
+  \vspace{-3mm}
+  \small
+  \caption{Environment Source} \label{table:env_source_dist}
+  \centering
+  \begin{tabular}{l|rr}
+    \toprule
+    \textbf{Source}&\textbf{Count}&\textbf{Percentage}\\
+    \midrule
+    Call&1.2B&99.4\%\\
+    Other&7.2M&0.6\%\\
+    Package&672.5K&0.1\%\\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 \bibliography{bib/jv,bib/aviral}
 

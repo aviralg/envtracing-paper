@@ -58,13 +58,33 @@ allocation_table %>%
 pmap_chr(function(type, count) {
     sprintf("%s&%s", type, count)
 }) %>%
-as_tex_table("object_count_dist.tex", params$tabledir)
+as_tex_table()
 ```
 
-```{r echo=FALSE, warning=FALSE, message=FALSE, eval=FALSE}
-env_class %>%
-    count(call_env, dispatch, class, package, cons_category, eval_category, wt = count, name = "count") %>%
-    arrange(desc(count))
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+env_category <-
+    env_class %>%
+    mutate(class = !is.na(class), package = !is.na(package)) %>%
+    mutate(category = case_when(call_env | dispatch ~ "Call",
+                      package ~ "Package",
+                      TRUE ~ "Other")) %>%
+    count(category, wt = count, name = "count") %>%
+    arrange(desc(count)) %>%
+    mutate(perc = compute_proportion(count, 6)) %>%
+    mutate(count = label_number_si(accuracy = 0.1)(count),
+           perc = label_percent(accuracy = 0.1)(perc))
+    
+datatable(env_category)
+
+env_category %>%
+pmap_chr(function(category, count, perc) {
+    sprintf("%s&%s&%s", str_to_title(category), count, perc)
+}) %>%
+as_tex_table()
+
+#count(call_env, dispatch, class, package, wt = count, name = "count") %>%
+    
+    
 ```
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, eval=FALSE}

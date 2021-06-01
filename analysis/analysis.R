@@ -43,6 +43,10 @@ compute_percentage <- function(n, precision) {
     round( (n * 100) / sum(n) , precision)
 }
 
+compute_proportion <- function(n, precision) {
+    round(n / sum(n), precision)
+}
+
 show_table <- function(df) {
     datatable(df)
 }
@@ -60,7 +64,7 @@ as_perc <- function(col) {
     paste(col, "\\%", sep = "")
 }
 
-as_tex_table <- function(rows, filename, dir) {
+as_tex_table <- function(rows) {
     str <- paste(paste0(rows, "\\\\"), collapse = "\n")
     cat(str)
     str
