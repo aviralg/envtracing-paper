@@ -9,9 +9,12 @@ library(tikzDevice)
 library(viridis)
 library(RColorBrewer)
 
+
 new_theme <-
     theme_minimal(base_size = 8) +
     theme(plot.margin = margin(0.1,0.25,0.1,0.2, "cm"))
+          #axis.text.x = element_text(family = "LinuxLibertineT-TLF"),
+          #axis.text.y = element_text(family = "LinuxLibertineT-TLF"))
           #plot.background = element_rect(colour = "black", fill=NA, size=1))
 
 old_theme <- theme_set(new_theme)
@@ -51,7 +54,7 @@ show_table <- function(df) {
     datatable(df)
 }
 
-save_graph <- function(plot, filename, width = 5.4, height = 1.8, ...) {
+save_graph <- function(plot, filename, width = 3.3, height = 1.5, ...) {
     dir_create(params$graphdir)
     filepath <- path_ext_set(path_join(c(params$graphdir, filename)), "tex")
     tikz(file = filepath, sanitize=TRUE, width=width, height=height, ...)
@@ -70,10 +73,22 @@ as_tex_table <- function(rows) {
     str
 }
 
+split_qual_name <- function(qual_name) {
+    split <- str_split(qual_name, fixed(NAME_SEPARATOR))
+
+    joiner <- function(names) {
+        paste(names[2:length(names)], sep = "", collapse = "::")
+    }
+
+    tibble(pack_name = unlist(map(split, ~.[1])),
+           fun_name = unlist(map(split, joiner(.))))
+}
+
 read_lazy(extract_index, "extract-index.fst")
 read_lazy(package_info, "package-info.fst")
-read_lazy(sloc_script, "sloc-corpus.fst")
-read_lazy(sloc_package, "sloc-package.fst")
+read_lazy(sloc_script, "corpus-sloc.fst")
+read_lazy(sloc_package, "package-sloc.fst")
+read_lazy(package_table, "package-table.fst")
 read_lazy(corpus, "corpus")
 read_lazy(client, "client")
 read_lazy(functions, "functions.fst")
@@ -81,6 +96,11 @@ read_lazy(allocation, "allocation.fst")
 read_lazy(execution, "execution.fst")
 read_lazy(env_class, "env_class.fst")
 read_lazy(env_cons, "env_cons.fst")
+
+sloc_script %<>%
+    mutate(package2 = type) %>%
+    mutate(type = package) %>%
+    mutate(package = package2)
 
 # read_lazy <-
 #     arg_ref %>%

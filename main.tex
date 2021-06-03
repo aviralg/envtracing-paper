@@ -97,6 +97,9 @@
 \newcommand{\envtracer}{\texttt{envtracer}\xspace}
 \newcommand{\experimentr}{\texttt{experimentr}\xspace}
 
+\newcommand{\ggplot}{\textit{ggplot2}\xspace}
+\newcommand{\vctrs}{\textit{vctrs}\xspace}
+
 %%% \setcopyright{rightsretained}
 %%% \acmPrice{}
 %%% \acmDOI{10.1145/3360579}
@@ -356,34 +359,105 @@ extract executable programs from them. Second, we
 \section{Corpus of R Programs}
 
 For this study, we assembled a corpus of 100 most widely used packages from
-CRAN, based on the number of client packages. These packages have a total of XXX
-client packages. XXX has the highest number of clients, XXX , and XXXX has the
-fewest, XXXX. These 100 packages in turn depend on XXX extra packages, so we
-also end up including those in our study. These XXX packages have XX lines of R
-code and YY lines of native code. CRAN packages come equipped with runnable code
-in the form of tests, examples, and long-form examples called vignettes. These
-programs are extracted as independently executable scripts for evaluation by the
-\experimentr library. Experiments demonstrate the use of a package's functions,
-and vignettes illustrate a package's functionality with a larger example,
-typically using data supplied with the package. Table
-% \~ref{table:corpus}
-presents the number and size of these scripts. Overall, \experimentr extracts
-XXX programs with XXX lines of code.
-
-The packages of our corpus have XXXX top-level functions. Table %~\ref{table:}
-presents the distribution of functions across these packages. We observe taht
-XXX packages have XY functions or less. As expected, there are few large
-packages; only X packages have more than XXXX functions. We observed XXX calls
-to these functions. Figure 2 shows the distribution of calls to these functions
-called in the synthesis phase. XXXX\% functions are called more that ten times.
-XXXX\% functions are called only once, leading to low coverage.
-
-These functions have 185.9K parameter positions. 7.3\% functions have 0
-parameters, 19.6\% have 1, and 5.0\% have over 10. There are 15 functions with
-over 50 parameters that come from 10 packages. Of those, rpart.plot::
-check.if.dot.arg.supported.by.rpart.rules has the highest, 122 parameters.
+CRAN, based on the number of client packages. These packages together have
+11,786 clients. Package \ggplot has the highest number of clients, 2,320, and
+package \vctrs has the fewest, 108. These packages contribute 481.5K lines of R
+code and 1M lines of native code. During execution, these 100 packages call
+functions from 186 other packages, so our evaluation also includes them. These extra
+packages have 478.2K lines of R code and 1.1M lines of native code.
 
 
+\begin{table}[!h]
+  \vspace{-3mm}
+  \small
+  \centering
+  \caption{Corpus}\label{table:corpus}
+  \vspace{-3mm}
+  \begin{tabular}{lrrr}
+    \toprule
+    &\bf Tests&\bf Examples&\bf Vignettes\\
+    \midrule
+    {Scripts}&1.9K&5.0K&187.0\\
+    \midrule
+    {LOC}&136.7K&55.2K&13.9K\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+CRAN packages come equipped with runnable code in the form of tests, examples,
+and long-form examples called vignettes. These programs are extracted as
+independently executable scripts for evaluation by the \experimentr library.
+Experiments demonstrate the use of a package's functions, and vignettes
+illustrate a package's functionality with a larger example, typically using data
+supplied with the package. Table~\ref{table:corpus} presents the number and size
+of these scripts. Overall, there are 6.1K scripts with 205.8K lines of code.
+
+The 286 corpus packages have 44.3K top-level functions, of which, 18.7K
+functions are exercised by the extracted scripts. From the un-exercised 25.6K
+functions, the majority, 17.2K, belong to transitively included packages, and,
+8.4K belong to selected packages. Since the executable scripts are extracted
+from 100 packages, they don't provide good coverage for the transitively
+included 186 packages.
+
+Table~\ref{table:fundist} presents the distribution of exercised functions
+across these packages. We observe that 171 packages have 25 functions or less.
+There are few large packages; 8 packages have more than 500 functions.
+
+\begin{table}[!h]
+  \vspace{-2mm}
+  \small
+  \caption{Package Size} \label{table:packsize}
+  \centering
+  \begin{tabular}{lr}
+    \toprule
+    \bf Functions&\bf Packages\\
+    \midrule
+    1--25&169\\
+    26--50&40\\
+    51--100&17\\
+    101--150&14\\
+    151--200&11\\
+    201--250&15\\
+    \bottomrule
+  \end{tabular}
+  \quad
+  \begin{tabular}{lr}
+    \toprule
+    \bf Functions&\bf Packages\\
+    \midrule
+    251--300&4\\
+    301--400&6\\
+    401--500&2\\
+    501--600&3\\
+    601--700&0\\
+    701--800&3\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+We observed 42.1M calls to these functions. Figure~\ref{fig:calldist} shows the
+distribution of calls. 52.9\% functions are called more than ten times. 14.3\%
+functions are called only once, leading to low coverage. 
+
+\begin{figure}[!h]
+  \centering
+  \input{graphs/call_dist.tex}
+  \caption{Call Distribution}
+  \label{fig:calldist}
+\end{figure}
+
+These functions have 67,225 parameter positions. Figure~\ref{fig:paramdist}
+shows the distribution of parameters of these functions. 3.0\% functions have 0
+parameters, 22.4\% have 1, and 5.0\% have over 10. There are 4 functions with
+over 50 parameters that come from 3 packages. Of those, \texttt{ggplot2::theme}
+has the highest, 95 parameters.
+
+\begin{figure}[!h]
+  \centering
+  \input{graphs/param_dist.tex}
+  \caption{Parameter Distribution}
+  \label{fig:paramdist}
+\end{figure}
 
 \section{Analyzing Environment Usage Patterns}
 

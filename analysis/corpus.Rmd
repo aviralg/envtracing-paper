@@ -16,18 +16,72 @@ params:
     datadir: "./data"
     graphdir: "./graphs"
     macrodir: "./macros"
+    tabledir: "./tables"
 ---
 
 ```{r echo = FALSE, warning=FALSE, message=FALSE}
 ## https://bookdown.org/yihui/rmarkdown-cookbook/source-script.html
 source("analysis.R", local = knitr::knit_global())
+
+
+PACKAGE_INFO <-
+    package_info %>%
+    group_by(package, funname) %>%
+    summarize(param_count = n()) %>%
+    ungroup() %>%
+    mutate(funname = paste0("`", funname, "`"))
 ```
 
-```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
-cat("Corpus size: ", length(corpus))
-cat("Client size: ", length(client))
+## Corpus
 
-summarize_programs_sloc <- function(df, packages, types = c("test", "example", "testthat", "vignette")) {
+### Number of packages
+
+There are `r length(corpus)` packages selected for the corpus. They have `r length(client)` 
+dependents. These in-turn invoke functions from other packages.
+The table below shows the packages directly selected as part of the corpus and
+the packages invoked transitively.
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+corpus_extra <-
+    functions %>%
+    filter(pack_name != "<NA>") %>%
+    pull(pack_name) %>%
+    unique() %>%
+    setdiff(corpus) %>%
+    setdiff(c("base", "compiler", "datasets", "grDevices",
+              "graphics", "grid", "methods", "parallel",
+              "profile", "splines", "stats", "stats4",
+              "tcltk", "tools", "translations", "utils"))
+    
+corpus_table <-
+tibble(package = corpus, type = "direct") %>%
+bind_rows(tibble(package = corpus_extra, type = "indirect"))
+
+datatable(corpus_table)
+
+PACKAGE_NAMES <- corpus_table$package
+```
+
+There are `r length(corpus_extra)` transitively selected packages.
+
+
+## Number of dependencies
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+client_counts <-
+    package_table %>%
+    group_by(package) %>%
+    summarize(client_count = length(unique(client))) %>%
+    ungroup()
+    
+corpus_table %>%
+left_join(client_counts, by = "package") %>%
+datatable()
+```
+# Package Code
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+summarize_sloc <- function(df, packages, types = c("test", "example", "testthat", "vignette")) {
     df %>%
         filter(package %in% packages) %>%
         filter(type %in% types) %>%
@@ -39,35 +93,51 @@ summarize_programs_sloc <- function(df, packages, types = c("test", "example", "
 }
 ```
 
-# Runnable Code
+The table below shows the amount of code in the corpus packages.
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+direct_package_code <- summarize_sloc(sloc_package,
+                                      corpus_table$package[corpus_table$type == "direct"], c("R", "src"))
+
+indirect_package_code <- summarize_sloc(sloc_package, 
+                                        corpus_table$package[corpus_table$type == "indirect"], c("R", "src"))
+
+package_code <- 
+    add_column(direct_package_code, kind = "direct", .before = 1) %>%
+    bind_rows(add_column(indirect_package_code, kind = "indirect", .before = 1)) %>%
+    group_by(kind, language) %>%
+    summarize(count = sum(count), code = sum(code)) %>%
+    ungroup() %>%
+    mutate(count = label_number_si(accuracy = 0.1)(count),
+           code = label_number_si(accuracy = 0.1)(code))
+
+package_code %>% show_table()
+```
+
+# Script Code
+
+The table below shows the amount of code in the scripts used for evaluation.
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
 runnable_code <-
-   add_column(summarize_programs_sloc(sloc_script, corpus), kind = "corpus", .before = 1) %>%
-   bind_rows(add_column(summarize_programs_sloc(sloc_script, client), kind = "client", .before = 1))
-   
+    sloc_script %>%
+    mutate(type = case_when(type == "testthat" ~ "test",
+                            TRUE ~ type)) %>%
+    summarize_sloc(corpus) %>%
+    mutate(count = label_number_si(accuracy = 0.1)(count),
+           code = label_number_si(accuracy = 0.1)(code))
+
 runnable_code %>% show_table()
-```
-
-# Package Code
-
-```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
-package_code <-
-   add_column(summarize_programs_sloc(sloc_package, corpus, c("R", "src")), kind = "corpus", .before = 1) %>%
-   bind_rows(add_column(summarize_programs_sloc(sloc_package, client, c("R", "src")), kind = "client", .before = 1))
-
-package_code %>% show_table()
 ```
 
 # Package Functions
 ```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
 fun_dist <-
-    parameters %>% 
-    distinct(pack_name, fun_name) %>%
-    filter(pack_name %in% corpus)
+    functions %>% 
+    filter(outer, !anonymous, pack_name %in% PACKAGE_NAMES) %>%
+    count(pack_name, fun_name, wt = call_count, name = "call_count")
 
-cat("Total functions: ", nrow(fun_dist))
-
+cat("Total exercised functions: ", nrow(fun_dist))
 
 fun_dist %>%
     count(pack_name, name = "function_count") %>%
@@ -85,25 +155,40 @@ fun_dist <-
     arrange(min_range) %>%
     select(functions, packages)
 
-latex <- pmap_chr(fun_dist, function(functions, packages) {
-    paste0(functions, "&", packages, "\\")
-})
-
 fun_dist %>% datatable()
-
-cat(latex)
 ```
 # Calls
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
 
 call_dist <-
-    parameters %>%
-    filter(pack_name %in% corpus) %>%
+    functions %>% 
+    filter(outer, !anonymous, pack_name %in% PACKAGE_NAMES) %>%
     group_by(pack_name, fun_name) %>%
     summarize(call_count = first(call_count)) %>%
     ungroup()
+
+
+called_never_funs <-
+    PACKAGE_INFO %>%
+    filter(package %in% PACKAGE_NAMES) %>%
+    left_join(call_dist, by = c("package" = "pack_name", "funname" = "fun_name")) %>%
+    select(pack_name = package, fun_name = funname, call_count) %>%
+    mutate(call_count = if_else(is.na(call_count), 0L, call_count)) %>%
+    filter(call_count == 0)
     
+cat("Never called functions:", nrow(called_never_funs))
+cat("Never called packages:", length(unique(called_never_funs$pack_name)))
+
+called_never_packs <-
+    called_never_funs %>%
+    count(pack_name, name = "fun_count") %>%
+    left_join(corpus_table, by = c("pack_name" = "package")) %>%
+    group_by(type) %>%
+    summarize(pack_count = n(), fun_count = sum(fun_count))
+    
+datatable(called_never_packs)
+
 called_once_packs <-
     call_dist %>%
     filter(call_count == 1) %>%
@@ -116,24 +201,18 @@ cat("Packages whose functions are called only once:", called_once_packs)
     
 call_dist <-
     call_dist %>%
+    mutate(call_count = if_else(call_count <= 10, as.character(call_count), "> 10")) %>%
     count(call_count, name = "fun_count") %>%
+    mutate(relative_fun_count = fun_count/sum(fun_count)) %>%
     arrange(desc(fun_count)) %>%
     mutate(cumperc = round(100 * cumsum(fun_count) / sum(fun_count), 2))
-    
+            
 datatable(call_dist)
+
+total_function_count <- sum(call_dist$fun_count)
 
 call_dist_plot <-
     call_dist %>%
-    mutate(call_count = if_else(call_count <= 10, as.character(call_count), "> 10")) %>%
-    count(call_count, wt = fun_count, name = "fun_count") %>%
-    mutate(relative_fun_count = fun_count/sum(fun_count))
-    
-datatable(call_dist_plot)
-
-total_function_count <- sum(call_dist_plot$fun_count)
-
-call_dist_plot <-
-    call_dist_plot %>%
     ggplot(aes(call_count, relative_fun_count)) + 
     geom_col(fill = "black") +
     scale_y_continuous(sec.axis = sec_axis(~ . * total_function_count,
@@ -149,51 +228,22 @@ save_graph(call_dist_plot, "call_dist")
 # Parameters
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
-
-corpus_argument_type <-
-    argument_type %>%
-    filter(pack_name %in% corpus) %>%
-    count(vararg, missing, arg_type, wt = argument_count, name = "argument_count")
-
-datatable(corpus_argument_type)
-
-cat("Total arguments: ", sum(corpus_argument_type$argument_count), "\n")
-
-corpus_params <-
-    parameters %>%
-    filter(pack_name %in% corpus)
-
-package_info <- 
-    package_info %>%
-    group_by(package, funname) %>%
-    summarize(param_count = n()) %>%
-    mutate(funname = paste0("`", funname, "`")) %>%
-    ungroup()
-    
 param_dist <-
-    functions %>%
-    filter(pack_name %in% corpus) %>%
-    left_join(package_info, by = c("pack_name" = "package", "fun_name" = "funname")) %>%
-    select(pack_name, fun_name, param_count, fun_def)
-
-datatable(param_dist %>% select(!fun_def))
-
-## TODO: not all functions with NA param_count are 0 argument functions
-param_dist <-
-    param_dist %>%
+    functions %>% 
+    filter(outer, !anonymous, pack_name %in% PACKAGE_NAMES) %>%
+    distinct(pack_name, fun_name) %>%
+    left_join(PACKAGE_INFO, by = c("pack_name" = "package", "fun_name" = "funname")) %>%
+    select(pack_name, fun_name, param_count) %>%
     mutate(param_count = if_else(is.na(param_count), 0L, param_count))
+    
+datatable(param_dist)
 
+    
 param_dist %>%
 filter(param_count > 50) %>%
 select(pack_name, fun_name, param_count) %>%
 pmap_chr(function(pack_name, fun_name, param_count) paste0(pack_name, "::", fun_name, "->", param_count)) %>%
 print()
-
-param_dist %>%
-    group_by(param_count) %>%
-    summarize(package_count = length(unique(pack_name)), packages = paste(unique(pack_name), collapse = ",")) %>%
-    ungroup() %>%
-    datatable()
 
 param_dist <-
     param_dist %>%
@@ -205,6 +255,8 @@ datatable(param_dist)
 
 cat("Total parameter positions: ", sum(param_dist$param_count * param_dist$fun_count), "\n")
 
+total_function_count <- sum(param_dist$fun_count)
+
 param_dist <-
     param_dist %>%
     mutate(param_count = if_else(param_count <= 10, as.character(param_count), "> 10")) %>%
@@ -212,8 +264,6 @@ param_dist <-
     mutate(relative_fun_count = fun_count/sum(fun_count))
     
 datatable(param_dist)
-
-total_function_count <- sum(param_dist$fun_count)
 
 param_dist_plot <-
     ggplot(param_dist, aes(param_count, relative_fun_count)) + 
