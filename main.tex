@@ -395,9 +395,9 @@ of these scripts. Overall, there are 6.1K scripts with 205.8K lines of code.
 The 286 corpus packages have 44.3K top-level functions, of which, 18.7K
 functions are exercised by the extracted scripts. From the un-exercised 25.6K
 functions, the majority, 17.2K, belong to transitively included packages, and,
-8.4K belong to selected packages. Since the executable scripts are extracted
-from 100 packages, they don't provide good coverage for the transitively
-included 186 packages.
+8.4K belong to the initially selected 100 packages. Since the executable scripts
+are extracted from 100 packages, they don't provide good coverage for the
+transitively included 186 packages.
 
 Table~\ref{table:fundist} presents the distribution of exercised functions
 across these packages. We observe that 171 packages have 25 functions or less.
@@ -446,11 +446,11 @@ functions are called only once, leading to low coverage.
   \label{fig:calldist}
 \end{figure}
 
-These functions have 67,225 parameter positions. Figure~\ref{fig:paramdist}
-shows the distribution of parameters of these functions. 3.0\% functions have 0
-parameters, 22.4\% have 1, and 5.0\% have over 10. There are 4 functions with
-over 50 parameters that come from 3 packages. Of those, \texttt{ggplot2::theme}
-has the highest, 95 parameters.
+These functions have a total of 67,225 parameter positions.
+Figure~\ref{fig:paramdist} shows the distribution of parameter positions.
+3.0\% functions have 0 parameters, 22.4\% have 1, and 5.0\% have over
+10. There are 4 functions with over 50 parameters that come from 3 packages. Of
+those, \texttt{ggplot2::theme} has the highest, 95 parameters.
 
 \begin{figure}[!h]
   \centering
