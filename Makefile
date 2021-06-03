@@ -31,6 +31,9 @@ analysis:
 classification:
 	make analysis ANALYSIS=classification
 
+new_env:
+	make analysis ANALYSIS=new_env
+
 .PHONY: all open main.pdf clean analysis
 
 # Include auto-generated dependencies

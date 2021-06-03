@@ -1,5 +1,5 @@
 ---
-title: "Corpus"
+title: "Environment Classification"
 output:
     html_document:
         toc: true
@@ -86,9 +86,63 @@ as_tex_table()
 # Other Environments
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
-env_class %>%
-    mutate(class = !is.na(class), package = !is.na(package), cons_category = !is.na(cons_category)) %>%
-    filter(!call_env, !dispatch, !package, !cons_category) %>%
+other_env <-
+    env_class %>%
+    filter(!call_env, !dispatch) %>%
+    left_join(select(functions, qual_name, fun_def), by = c("source_fun_name_1" = "qual_name")) %>%
+    mutate(std_generic = str_detect(fun_def, "^new\\(\"standardGeneric\", "),
+           non_std_generic = str_detect(fun_def, "^new\\(\"nonstandardGenericFunction\", ")) %>%
+    mutate(source = case_when(!is.na(cons_category) ~ cons_category,
+                              std_generic | non_std_generic ~ "S4",
+                              TRUE ~ "TBD"))
+
+other_env %>%
+    count(source_fun_name_1, wt = count, name = "count") %>%
+    arrange(desc(count)) %>%
+    mutate(perc = compute_proportion(count, 6)) %>%
+    mutate(cumperc = round(100 * cumsum(count)/sum(count), 2)) %>%
+    mutate(count = label_number_si(accuracy = 0.1)(count),
+           perc = label_percent(accuracy = 0.1)(perc)) %>%
+    datatable()
+
+other_env_summary <-
+    other_env %>%
+    count(source, wt = count, name = "count") %>% 
+    arrange(desc(count)) %>%
+    mutate(perc = compute_proportion(count, 6)) %>%
+    mutate(cumperc = round(100 * cumsum(count)/sum(count), 2)) %>%
+    mutate(count = label_number_si(accuracy = 0.1)(count),
+           perc = label_percent(accuracy = 0.1)(perc))
+
+datatable(other_env_summary)
+```
+
+## Miscellaneous Other Environments
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+other_env %>%
+    filter(source == "TBD") %>%
+    mutate(source_fun_name_1 = case_when(str_starts(source_fun_name_1, fixed("vctrs*$#$*")) ~ "vctrs",
+                                         str_starts(source_fun_name_1, fixed("igraph*$#$*")) ~ "igraph",
+                                         str_starts(source_fun_name_1, fixed("Rcpp*$#$*")) ~ "Rcpp",
+                                         str_starts(source_fun_name_1, fixed("cli*$#$*")) ~ "cli",
+                                         str_starts(source_fun_name_1, fixed("magrittr*$#$*")) ~ "magrittr",
+                                         str_starts(source_fun_name_1, fixed("methods*$#$*")) ~ "methods",
+                                         str_starts(source_fun_name_1, fixed("lme4*$#$*")) ~ "lme4",
+                                         str_starts(source_fun_name_1, fixed("nlme*$#$*")) ~ "nlme",
+                                         str_starts(source_fun_name_1, fixed("base*$#$*")) ~ "base",
+                                         str_starts(source_fun_name_1, fixed("stats*$#$*")) ~ "stats",
+                                         str_starts(source_fun_name_1, fixed("grDevices*$#$*")) ~ "grDevices",
+                                         str_starts(source_fun_name_1, fixed("lattice*$#$*")) ~ "lattice",
+                                         str_starts(source_fun_name_1, fixed("tools*$#$*")) ~ "tools",
+                                         str_starts(source_fun_name_1, fixed("callr*$#$*")) ~ "callr",
+                                         str_starts(source_fun_name_1, fixed("plyr*$#$*")) ~ "plyr",
+                                         str_starts(source_fun_name_1, fixed("data.table*$#$*")) ~ "data.table",
+                                         str_starts(source_fun_name_1, fixed("ggplot2*$#$*")) ~ "ggplot2",
+                                         str_starts(source_fun_name_1, fixed("gtools*$#$*")) ~ "gtools",
+                                         str_starts(source_fun_name_1, fixed("cluster*$#$*")) ~ "cluster",
+                                         str_starts(source_fun_name_1, fixed("rlang*$#$*")) ~ "rlang",
+                                         TRUE ~ source_fun_name_1)) %>%
     count(source_fun_name_1, wt = count, name = "count") %>%
     arrange(desc(count)) %>%
     mutate(perc = compute_proportion(count, 6)) %>%
@@ -98,11 +152,3 @@ env_class %>%
     datatable()
 ```
 
-```{r echo=FALSE, warning=FALSE, message=FALSE, eval=FALSE}
-env_class %>% 
-    mutate(class = !is.na(class), package = !is.na(package)) %>%
-    filter(!call_env, !dispatch, !class, !package, is.na(cons_category), is.na(eval_category)) %>% 
-    count(source_fun_name_1, wt = count, name = "count") %>% 
-    arrange(desc(count)) %>% 
-    mutate(cum_perc = round(100 * cumsum(count) / sum(count), 2))
-```

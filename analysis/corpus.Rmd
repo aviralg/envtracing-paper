@@ -1,0 +1,229 @@
+---
+title: "Corpus"
+output:
+    html_document:
+        toc: true
+        toc_depth: 3
+        toc_float: true
+        number_sections: true
+        theme: cerulean
+        highlight: pygments
+        code_folding: hide
+        fig_width: 9
+        fig_height: 3
+        css: style.css
+params:
+    datadir: "./data"
+    graphdir: "./graphs"
+    macrodir: "./macros"
+---
+
+```{r echo = FALSE, warning=FALSE, message=FALSE}
+## https://bookdown.org/yihui/rmarkdown-cookbook/source-script.html
+source("analysis.R", local = knitr::knit_global())
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+cat("Corpus size: ", length(corpus))
+cat("Client size: ", length(client))
+
+summarize_programs_sloc <- function(df, packages, types = c("test", "example", "testthat", "vignette")) {
+    df %>%
+        filter(package %in% packages) %>%
+        filter(type %in% types) %>%
+        filter(language %in% c("R", "C/C++ Header", "C", "C++", "Fortran 77")) %>%
+        mutate(language = case_when(language == "R" ~ "R", TRUE ~ "Native")) %>%
+        group_by(language, type) %>%
+        summarize(count = n(), code = sum(code)) %>%
+        ungroup()
+}
+```
+
+# Runnable Code
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+runnable_code <-
+   add_column(summarize_programs_sloc(sloc_script, corpus), kind = "corpus", .before = 1) %>%
+   bind_rows(add_column(summarize_programs_sloc(sloc_script, client), kind = "client", .before = 1))
+   
+runnable_code %>% show_table()
+```
+
+# Package Code
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+package_code <-
+   add_column(summarize_programs_sloc(sloc_package, corpus, c("R", "src")), kind = "corpus", .before = 1) %>%
+   bind_rows(add_column(summarize_programs_sloc(sloc_package, client, c("R", "src")), kind = "client", .before = 1))
+
+package_code %>% show_table()
+```
+
+# Package Functions
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+fun_dist <-
+    parameters %>% 
+    distinct(pack_name, fun_name) %>%
+    filter(pack_name %in% corpus)
+
+cat("Total functions: ", nrow(fun_dist))
+
+
+fun_dist %>%
+    count(pack_name, name = "function_count") %>%
+    arrange(desc(function_count)) %>%
+    datatable()
+
+fun_dist <-
+    fun_dist %>%
+    count(pack_name, name = "count") %>%
+    mutate(min_range = floor(count/25),
+           max_range = ceiling(count/25)) %>%
+    mutate(min_range = if_else(min_range == max_range, min_range - 1, min_range)) %>%
+    mutate(functions = paste0(min_range * 25 + 1, " - ", max_range * 25)) %>% 
+    count(min_range, functions, name = "packages") %>%
+    arrange(min_range) %>%
+    select(functions, packages)
+
+latex <- pmap_chr(fun_dist, function(functions, packages) {
+    paste0(functions, "&", packages, "\\")
+})
+
+fun_dist %>% datatable()
+
+cat(latex)
+```
+# Calls
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+
+call_dist <-
+    parameters %>%
+    filter(pack_name %in% corpus) %>%
+    group_by(pack_name, fun_name) %>%
+    summarize(call_count = first(call_count)) %>%
+    ungroup()
+    
+called_once_packs <-
+    call_dist %>%
+    filter(call_count == 1) %>%
+    pull(pack_name) %>%
+    unique() %>%
+    length()
+    
+cat("Total number of calls:", sum(call_dist$call_count))
+cat("Packages whose functions are called only once:", called_once_packs)
+    
+call_dist <-
+    call_dist %>%
+    count(call_count, name = "fun_count") %>%
+    arrange(desc(fun_count)) %>%
+    mutate(cumperc = round(100 * cumsum(fun_count) / sum(fun_count), 2))
+    
+datatable(call_dist)
+
+call_dist_plot <-
+    call_dist %>%
+    mutate(call_count = if_else(call_count <= 10, as.character(call_count), "> 10")) %>%
+    count(call_count, wt = fun_count, name = "fun_count") %>%
+    mutate(relative_fun_count = fun_count/sum(fun_count))
+    
+datatable(call_dist_plot)
+
+total_function_count <- sum(call_dist_plot$fun_count)
+
+call_dist_plot <-
+    call_dist_plot %>%
+    ggplot(aes(call_count, relative_fun_count)) + 
+    geom_col(fill = "black") +
+    scale_y_continuous(sec.axis = sec_axis(~ . * total_function_count,
+                                           labels = label_number_si()),
+                       labels = label_percent()) +
+    scale_x_discrete(limits = c(1:10, "> 10")) +
+    coord_flip()+
+    labs(x = "Calls", y = "Functions")
+
+save_graph(call_dist_plot, "call_dist")
+```
+
+# Parameters
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+
+corpus_argument_type <-
+    argument_type %>%
+    filter(pack_name %in% corpus) %>%
+    count(vararg, missing, arg_type, wt = argument_count, name = "argument_count")
+
+datatable(corpus_argument_type)
+
+cat("Total arguments: ", sum(corpus_argument_type$argument_count), "\n")
+
+corpus_params <-
+    parameters %>%
+    filter(pack_name %in% corpus)
+
+package_info <- 
+    package_info %>%
+    group_by(package, funname) %>%
+    summarize(param_count = n()) %>%
+    mutate(funname = paste0("`", funname, "`")) %>%
+    ungroup()
+    
+param_dist <-
+    functions %>%
+    filter(pack_name %in% corpus) %>%
+    left_join(package_info, by = c("pack_name" = "package", "fun_name" = "funname")) %>%
+    select(pack_name, fun_name, param_count, fun_def)
+
+datatable(param_dist %>% select(!fun_def))
+
+## TODO: not all functions with NA param_count are 0 argument functions
+param_dist <-
+    param_dist %>%
+    mutate(param_count = if_else(is.na(param_count), 0L, param_count))
+
+param_dist %>%
+filter(param_count > 50) %>%
+select(pack_name, fun_name, param_count) %>%
+pmap_chr(function(pack_name, fun_name, param_count) paste0(pack_name, "::", fun_name, "->", param_count)) %>%
+print()
+
+param_dist %>%
+    group_by(param_count) %>%
+    summarize(package_count = length(unique(pack_name)), packages = paste(unique(pack_name), collapse = ",")) %>%
+    ungroup() %>%
+    datatable()
+
+param_dist <-
+    param_dist %>%
+    count(param_count, name = "fun_count") %>%
+    arrange(desc(fun_count)) %>%
+    mutate(cumperc = round(100 * cumsum(fun_count) / sum(fun_count), 2))
+    
+datatable(param_dist)
+
+cat("Total parameter positions: ", sum(param_dist$param_count * param_dist$fun_count), "\n")
+
+param_dist <-
+    param_dist %>%
+    mutate(param_count = if_else(param_count <= 10, as.character(param_count), "> 10")) %>%
+    count(param_count, wt = fun_count, name = "fun_count") %>%
+    mutate(relative_fun_count = fun_count/sum(fun_count))
+    
+datatable(param_dist)
+
+total_function_count <- sum(param_dist$fun_count)
+
+param_dist_plot <-
+    ggplot(param_dist, aes(param_count, relative_fun_count)) + 
+    geom_col(fill = "black") +
+    scale_y_continuous(sec.axis = sec_axis(~ . * total_function_count,
+                                           labels = label_number_si()),
+                       labels = label_percent()) +
+    scale_x_discrete(limits = c(0:10, "> 10")) +
+    coord_flip()+
+    labs(x = "Parameters", y = "Functions")
+
+save_graph(param_dist_plot, "param_dist")
+```

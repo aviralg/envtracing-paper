@@ -70,6 +70,13 @@ as_tex_table <- function(rows) {
     str
 }
 
+read_lazy(extract_index, "extract-index.fst")
+read_lazy(package_info, "package-info.fst")
+read_lazy(sloc_script, "sloc-corpus.fst")
+read_lazy(sloc_package, "sloc-package.fst")
+read_lazy(corpus, "corpus")
+read_lazy(client, "client")
+read_lazy(functions, "functions.fst")
 read_lazy(allocation, "allocation.fst")
 read_lazy(execution, "execution.fst")
 read_lazy(env_class, "env_class.fst")

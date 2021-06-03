@@ -1,0 +1,275 @@
+---
+title: "new.env"
+output:
+    html_document:
+        toc: true
+        toc_depth: 3
+        toc_float: true
+        number_sections: true
+        theme: cerulean
+        highlight: pygments
+        code_folding: hide
+        fig_width: 9
+        fig_height: 3
+        css: style.css
+params:
+    datadir: "./data"
+    graphdir: "./graphs"
+    macrodir: "./macros"
+    tabledir: "./tables"
+---
+
+```{r echo = FALSE, warning=FALSE, message=FALSE}
+## https://bookdown.org/yihui/rmarkdown-cookbook/source-script.html
+source("analysis.R", local = knitr::knit_global())
+```
+
+# new.env Caller Proportion
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+env_cons %>%
+    count(source_fun_name_1, source_fun_name_2, source_fun_name_3, source_fun_name_4, 
+    wt = count, name = "count") %>%
+    arrange(desc(count)) %>%
+    datatable()
+
+env_cons %>%
+    count(source_fun_name_1, wt = count, name = "count") %>%
+    arrange(desc(count)) %>%
+    datatable()
+    
+env_cons %>%
+    count(source_fun_name_2, wt = count, name = "count") %>%
+    arrange(desc(count)) %>%
+    datatable()
+    
+env_cons %>%
+    count(source_fun_name_3, wt = count, name = "count") %>%
+    arrange(desc(count)) %>%
+    datatable()
+    
+env_cons %>%
+    count(source_fun_name_4, wt = count, name = "count") %>%
+    arrange(desc(count)) %>%
+    datatable()
+```
+
+# new.env classification
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+env_cons <-
+    env_cons %>%
+    mutate(primary_source = case_when(str_starts(source_fun_name_1, fixed("base*$#$*lazyLoadDBexec")) ~ source_fun_name_1,
+                                      str_starts(source_fun_name_2, fixed("base*$#$*lazyLoadDBexec")) ~ source_fun_name_2,
+                                      str_starts(source_fun_name_2, fixed("base*$#$*loadNamespace")) ~ source_fun_name_2,
+                                      source_fun_name_1 == "base*$#$*new.env" & is.na(source_fun_name_2) ~ "base*$#$*package_load_file",
+                                      source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*5d8ec22f1fac51fafcb0a876cc9a1dad489c1b41bfc4427f6634a9857d6e45a22b0c5a8504ee92c76d994698a2b00900888d4df7fa22d64c4e0196443f11c9b2" ~ "dplyr*$#$*dplyr_lazy_vec_chop_impl",
+                                      source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*24a2bd9ef1d1d0bed806a984c395ea21bbe8f6c7e28034d5ab619490dfd2057496cb2893ea5f506ca61e31d3580e8e2ed220a9fc53ee5970cabc102f8fd241eb" ~ "R6*$#$*R6Class",
+                                      
+                                      source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*2ae04899b56d2a4922d9088b16dca9f5493c3ceb37dabbfb0d6625d23af95e73e9e212ac86b83f1445eacfdbd3fa81b3a661bb7f3c5da3fa04debfa085395681*$#$*make_first_new_slice" ~ "R6*$#$*make_first_new_slice",
+                                      source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*2ae04899b56d2a4922d9088b16dca9f5493c3ceb37dabbfb0d6625d23af95e73e9e212ac86b83f1445eacfdbd3fa81b3a661bb7f3c5da3fa04debfa085395681*$#$*make_new_slice" ~ "R6*$#$*make_new_slice",
+                                      source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*clone*$#$*make_new_slice" ~ "R6*$#$*make_new_slice",
+                                      source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*copy" ~ "lme4*$#$*merPredD*$#$*copy",
+                                      source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*829b877f5e7b68192afbd9af2c4c159e08a96ffb2169b846ab54cec6eab9b2122aee15552088cfbb79051662709544dd40cc1a037b3da266a43d372317870ab9" ~ "shiny*$#$*RestoreContext*$#$*reset",
+                                      source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*checkMatrix" ~ "Matrix*$#$*checkMatrix",
+                                      source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*new" ~ "R6*$#$*generator_funs*$#$*new",
+                                      source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*create_super_env" ~ "R6*$#$*create_super_env",
+                                      
+                                      
+                                      source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*clone*$#$*make_first_new_slice" ~ "R6*$#$*make_first_new_slice",
+                                      source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*initialize" ~ "R6*$#$*generator_funs*$#$*new",
+                                      source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*271ae2fa8d46b84c79a0b568c8ce6fb89fe66b0ad80a18be62ae15dcf13a1fd0701aaf43706e7c4bd694aa4f34c809f2551e010abff6210ed4fe8a8c3ac7980f" ~ "httpuv*$#$*AppWrapper*$#$*initialize",
+                                      source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*cad9f5e72cf80a892ad8cee6ac96c942739dbf25a9e519a0dbe833aaab59778cf815f838583bf8fb528a743bff410b0e1db9bfa2597a1d046c11111e2a1fcd70" ~ "methods*$#$*.InitMethodDefinitions*$#$*initialize",                                  
+                                      source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*53f26b2cc4bd7c82af8e9821b32aefa979dab81840aaac8996db5353037c0ddc5f41064696a9181d13d0362cc7c6d3deed1fcc3da364a0db446ab271b90e4f08" ~ "shiny*$#$*shinyAppDir_serveR",
+                                      source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*moreSessionInfo" ~ "CLA*$#$*moreSessionInfo",
+                                      source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*5ee24a437c49708a0c574d944232c19f979e7bc53cbdeac097f0155a96b32aa49322aad1e26a9df50e9e9f3230a5b20f95616d31116f1e010eec4d1b9594a97a" ~ "dplyr*$#$*tests*$#$*testthat*$#$*test-across.R",                     
+                                      source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*5ee24a437c49708a0c574d944232c19f979e7bc53cbdeac097f0155a96b32aa49322aad1e26a9df50e9e9f3230a5b20f95616d31116f1e010eec4d1b9594a97a" ~ "dplyr*$#$*tests*$#$*testthat*$#$*test-across.R",                        source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*c2fc402d1f015684f414ec363dfa3b4f339189c31f973af868049d096b5b1ac3d14ea80c1b6c7e00f1e90e533871e10dfefdf9f5c2c83303c17e6feb077bf8e5" ~ "R6*$#$*examples*$#$*CustomCloner",                                      source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*r_parse_eval" ~ "rlang*$#$*tests*$#$*testthat*$#$*helper-c-api.R",                    
+                                      TRUE ~ source_fun_name_2)) %>%
+    mutate(package = map_chr(str_split(primary_source, fixed("*$#$*")), ~.[1]))
+    
+    move nlme to base, it uses local function.
+
+datatable(env_cons)
+    
+env_cons_by_package <-
+    env_cons %>%
+    filter(!(package %in% c("base", "methods", "compiler", "stats"))) %>%
+    count(package, wt = count, name = "count") %>%
+    arrange(desc(count)) %>%
+    mutate(cumperc = round(100 * cumsum(count)/ sum(count), 2))
+    
+datatable(env_cons_by_package)
+
+print(env_cons_by_package)
+
+
+env_cons_by_package_and_function <-
+    env_cons %>%
+    filter(!(package %in% c("base", "methods", "compiler"))) %>%
+    count(package, primary_source, wt = count, name = "count") %>%
+    arrange(desc(count)) %>%
+    mutate(cumperc = round(100 * cumsum(count)/ sum(count), 2))
+
+datatable(env_cons_by_package_and_function)
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+env_cons %>% 
+    mutate(pack = case_when(str_starts(source_fun_name_1, "$<NA>*$#$*") ~ "NA",
+                            TRUE ~ str_extract(source_fun_name_1, "$.*[*][$][#][$][*].*"))) %>%
+    count(pack, wt = count, name = "count") %>%
+    arrange(desc(count)) %>%
+    mutate(cp = cumsum(count)/sum(count))
+``
+
+### codetools
+#### mkHash
+https://github.com/cran/codetools/blob/master/R/codetools.R#L17
+Creates an environment to use as a hash table, so the parent is empty.
+The package is geared towards analysis of R code for byte-code compilation.
+It uses uses hash tables to store intermediate static analysis information.
+
+#### collectUsageFun
+https://github.com/cran/codetools/blob/master/R/codetools.R#L457
+this uses new.env as part of the analysis state to extend the lexical scope of a
+function before analyzing it and seeds it with the all the parameter and local
+variables of the function. This gives it access
+
+### ggplot2
+#### ggproto
+https://github.com/tidyverse/ggplot2/blob/master/R/ggproto.r#L58
+Used by the venerable ggplot2 library to create a prototype based OO system. All its objects are represented using ggproto. the
+object is reprsented by an environment with empty parent.
+Copies provided members to environment using list2env, attaches a superclass if provided, sets class attributes and returns.
+```
+class(e) <- c(`_class`, class(super))
+or
+class(e) <- c(`_class`, "ggproto", "gg")
+```
+
+### grid
+#### pushedvp
+https://github.com/thomasp85/grid/blob/1cf78ea669c93e8b870c2df3156e8785547ebbc1/R/viewport.R#L115
+creates a new viewport and stores the children in a hash table with viewport names as keys.
+
+
+### testthat
+#### describe
+This function implements a simple BDD DSL for writing tests, inspired by
+     RSpec for Ruby or Mocha for JavaScript.
+describe("math library", {
+       describe("addition()", {
+         it("can add two numbers", {
+           expect_equal(1 + 1, addition(1, 1))
+         })
+       })
+The describe function creates a new environment and evaluates the testing code block in it to contain side effects.
+The new environment uses the caller's enviornment as its parent to look up the free variables of the code block.
+#### test_code
+test_code is an internal function used by testing wrappers. It takes a block of
+code for testing and evaluates it in a custom environment constructed with a
+parent enviroment passed as argument. In fact, describe function internally uses test_code.
+
+
+### forecast
+The R package forecast provides methods and tools for displaying and analysing univariate time series forecasts i
+Does Uses new.env in 2 places to store model/function options.
+
+### data.table
+#### frollapply
+This function computes rolling aggregate using a user-supplied function.
+For performance, the kernel is implemented in C. It repeatedly calls the function with the next window and arbitrary varargs.
+This evaluation is performed in a new environment which extens the frollapply call environment to enable the access of varaargs.
+
+
+#### [.data.table
+This function uses new.env three times. It implements subsetting semantics for data.table which is a DSL for data frame. The environments inherit from caller environment and are extended with custom variables for evalutaion to implement the DSL.
+
+#### test.data.table
+This function uses new.env for testing, extending it with globalenv. It adds fields to keep track of number of executed and failed tests and also evaluates the test code in this environment.
+
+
+### R.oo
+
+#### Object
+Creates a new environment, attaches it as an attribute to the object being constructed for storing its fields.
+
+#### clone.Object
+Clones the object, creates a new environment, to store the attributes of the cloned object
+
+#### .subset2Internal.Class
+
+Allows access to object fields via [[ and $ operators of R.
+When accessing static methods, it 
+      code <- sprintf("function(...) \"%s\"(static, ...)", name)
+      expr <- base::parse(text=code)
+      fcn <- eval(expr)
+
+      # Set the environment of the static function to inherit from the
+      # environment of the static instance/object, which in turn is the
+      # same as the environment of the Class/constructor.
+      envT <- environment(static)
+
+      # BACKWARD COMPATIBILTY/ROBUSTNESS: In case an old static object
+      # has been loaded, make sure to not crash, i.e. behave as before.
+      if (!is.null(envT)) {
+        env <- new.env(parent=envT)
+        env$static <- static
+        environment(fcn) <- env
+      }
+
+### foreach
+
+#### foreach and xforeach
+They create an environment each with empty env as parent for storing the dynamic state of the iterator.
+
+#### doSEQ and %do%
+Create environment to evaluate the expression.
+Another one creates an extra environment in the chain to attach a value to signal the function where it is called from.
+
+
+### iterators
+#### iter.default and iter.matrix and iter.data.frame and iter.function
+Create environment to store iterator state (object and index) updated during traversal.
+
+### later
+#### create_loop + .globals + .loops
+Uses new environment to represent event_loop objects to schedule and execute functions.
+Creates a .globals new environment that stores a reference to global event loop objects and a .loops environment to store private event loops
+
+### xts
+#### merge.xts
+Creates a new environment which inherits the caller's environment, passed to native code to evaluate expressions which reference pakcage functions.
+#### new.replot_xts and new.replot_xts*$#$*3f5de24fbfe2cab73d76b0c5e766203348ba70cd0af2bb2041ff6d2001f5abac588582dad3c611024aaa3323826ec4e0bea0c63093f51fe0d6dd4f3aba30e0ef
+Creates environments to represent plotting objects containing axes limits and padding information.
+Also attaches methods to the environment that update this information.
+Attaches new_environment function which inherits from the parent environment to create a new plotting environment.
+#### as.environment.xts
+Overloads as.environment to xts objects to copy their data to a new environment. xts objects are extensible 
+time-series objects.
+
+### Rcpp
+Creates .classes_map environment at pakcag level as a hash table mapping typeid to Class objects.
+Creates a new.env as a hash map to key objects against their demangled names.
+
+
+#### 
+
+
+
+Classification by source
+- implementation (R + C) [ new.env + allocSExp + NewEnvironment HashedEnvironment ]
+- packages (R + C) [ new.env + allocSExp ]
+
+Classification by use?
+- call
+- package
+- S4
+- native code
+- eval
+- metaprogramming
+- formulas
+- package state
+- object-oriented system
+- env to list and list to env
+
