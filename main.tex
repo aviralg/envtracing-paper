@@ -94,8 +94,9 @@
 \newcommand{\parentEnv}{\code{parent.env}}
 \newcommand{\parentEnvAssign}{\code{parent.env<-}}
 
-\newcommand{\envtracer}{\texttt{envtracer}\xspace}
-\newcommand{\experimentr}{\texttt{experimentr}\xspace}
+\newcommand{\envtracer}{{\sf envtracer}\xspace}
+\newcommand{\experimentr}{{\sf experimentr}\xspace}
+\newcommand{\rdyntrace}{{\sf R-dyntrace}\xspace}
 
 \newcommand{\ggplot}{\textit{ggplot2}\xspace}
 \newcommand{\vctrs}{\textit{vctrs}\xspace}
@@ -341,30 +342,74 @@ lexical scope of a function can be changed, a technique often used for designing
 custom object-oriented systems.
 
 \section{Analysis Infrastructure}
-In this section, we describe the tracing infrastructure and the data analysis
-pipeline used for this study. The tracing infrastructure mainly consists of a
-modified R VM, which raises events during a program's execution. These events
-are processed to collect execution traces which are analyzed offline.
-The analysis pipeline assembles the corpus, runs the tracer, and ...
+In this section, we describe the analysis infrastructure. It performs three
+high-level tasks: assembling executable programs from R packages, generating
+execution traces using a tracer, and post-processing the traces to generate
+graphs and statistics. The entire pipeline is managed by a Makefile that invokes
+R scripts for each step. Trace collection and analysis steps are parallelized
+using GNU Parallel~\cite{gnuparallel}. The evaluation has been performed on a
+dedicated analysis machine featuring an Intel Skylake CPU with 72 processors and
+256 GB of RAM, and running Ubuntu 18.04 on a 5.4.0-73-generic Linux kernel. For
+reproducibility, the infrastructure is installed in a container, based on Debian
+10.9, and executed on the Docker runtime 20.10.5, build 55c4c88.
 
-The analysis pipeline has three main steps. First, the scripts assemble
-the corpus. In this step, we download and install R packages from CRAN, and
-extract executable programs from them. Second, we
+\subsection{Assembling Corpus}
+The corpus of executable programs is assembled from R packages hosted on CRAN,
+the official R package repository. Our scripts mirror CRAN on the analysis
+server and install its packages. Another script invokes the R APIs that
+locate and extract examples, tests, and vignettes from these packages. These
+programs are then prepared for tracing by wrapping them in a call to the tracer.
+Another set of scripts computes metadata such as lines of code from the
+installed packages and extracted corpus.
 
-- corpus
-- run
-- data nalysis
-- manaaged by a makefile
+\subsection{Generating Execution Traces}
+Execution traces are generated using \envtracer, a dynamic analyzer built on top
+of \rdyntrace. \rdyntrace is a modified GNU R virtual machine version
+4.0.2~\cite{oopsla19b} that raises events during program execution. Callbacks
+attached to these events receive relevant R objects at that point of execution.
+\envtracer uses these callbacks to collect execution information associated with
+environments. The events used by \envtracer include function entry and exit,
+eval entry and exit, object allocation and deallocation, package loading and
+attaching, variable lookup, assignment, and removal, subassignment, subsetting,
+and attribute setting. On tracing entry, \envtracer initializes the tracing
+state. When the program is about to exit \envtracer stores the traces in a
+tabular format for post-processing. While the setup is conceptually simple, the
+details are complex, and, affect scalability if not handled correctly. To handle
+the subtleties of R, \envtracer maintains models of concrete R objects, such as
+environments, functions, calls, and frames on the call stack. Model objects have
+unique identities, whereas R objects are identified by their memory address, and
+the garbage collector can reuse these. \envtracer takes care memory management
+for model objects and provides efficient indexing. \envtracer heuristically
+constructs names of model functions. The model stack updates itself
+appropriately in response to longjump used by R for non-local returns.
+Furthermore, \envtracer extends these models with custom fields which are
+updated in response to \rdyntrace events for collecting data related to this
+paper.
+
+\subsection{Post-processing}
+In the post-processing step, the execution traces are analyzed to gather
+insights about the use of environments. \envtracer gathers 681GB of data from
+the corpus. Scale is the major challenge. We use a custom map-reduce style
+analysis to process this data. First, in the \textit{reduce} phase, the
+individual execution traces are partially summarized in parallel to generate
+smaller data tables per program, per analysis. This is the most expensive step
+and it reduces the data size to XXX GB. Second, in the \textit{combine} phase,
+these tables are concatenated into a single table per analysis. Third, in the
+\textit{summarize} phase, final summaries are computed from the concatenated
+tables. At this point, the data occupies only XXXKB. Finally, in the
+\textit{report} phase, graphs and tables are generated from these summaries
+using R Markdown notebooks\cite{rmdpkg, rmdguide, rmdcookbook}.
 
 \section{Corpus of R Programs}
 
 For this study, we assembled a corpus of 100 most widely used packages from
-CRAN, based on the number of client packages. These packages together have
-11,786 clients. Package \ggplot has the highest number of clients, 2,320, and
-package \vctrs has the fewest, 108. These packages contribute 481.5K lines of R
-code and 1M lines of native code. During execution, these 100 packages call
-functions from 186 other packages, so our evaluation also includes them. These extra
-packages have 478.2K lines of R code and 1.1M lines of native code.
+CRAN~\cite{ligges2017}, based on the number of client packages. These packages
+together have 11,786 clients. Package \ggplot has the highest number of clients,
+2,320, and package \vctrs has the fewest, 108. These packages contribute 481.5K
+lines of R code and 1M lines of native code. During execution, these 100
+packages call functions from 186 other packages, so our evaluation also includes
+them. These extra packages have 478.2K lines of R code and 1.1M lines of native
+code.
 
 
 \begin{table}[!h]
