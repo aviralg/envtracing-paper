@@ -172,28 +172,56 @@ repeatable and will be submitted to the AEC.}
 \section{Background}\label{sec:background}
 
 \subsection{Related Work}
-%- \code{https://picolisp.com/wiki/?firstclassenvironments}
-%- \code{http://metamodular.com/SICL/environments.pdf}
-%- \code{Free variables and first-class environments}
-%% https://link.springer.com/article/10.1007%2FBF01813016
-%-
-%\code{https://groups.csail.mit.edu/mac/ftpdir/scheme-7.4/doc-html/scheme_14.html}
-%- \code{Environments as First Class Objects}
-%- \code{Explicit Environments}
-%% https://link.springer.com/chapter/10.1007%2F3-540-48959-2_24
-%- \code{Simply Typed Lambda Calculus with First-Class Environments}
-%% https://www.ems-ph.org/journals/show_abstract.php?issn=0034-5318&vol=30&iss=6&rank=4
-%- \code{ML with first-class environments and its type inference algorithm}
-%% https://link.springer.com/chapter/10.1007%2FBFb0032396
-%- \code{https://adv-r.hadley.nz/environments.html}
-%- \code{Sharing Code through First-class Environments}
-%% https://pages.lip6.fr/Christian.Queinnec/PDF/modenv.pdf
-%- \code{Environments as first class objects}
-%% https://dl.acm.org/doi/10.1145/41625.41634
-%Python locals vs globals
-%%(https://realpython.com/python-namespaces-scope/#the-local-and-enclosing-namespaces)
-%- Scheme R5RS standard talks about environment for two argument eval.
 
+There are three strands of related work: research on the R language, research on
+supporting first-class environments, and first-class environments in contemporary
+languages.
+
+\paragraph{The R language} \citet{ecoop12} evaluated the design of R, providing
+a comprehensive explanation of R's scoping and evaluation mechanism. They
+present many aspects of environments in the context of laziness,
+metaprogramming, dynamic evaluation, explicit environment manipulation, and call
+stack inspection, but they don't discuss explicit environment creation using
+\code{new.env}. In comparison to their work, our work focuses only on
+environments and provides a much more detailed qualitative and quantitative
+account. Furthermore, our study shows a significantly larger and richer use of
+explicit environments in the R ecosystem compared to theirs. \citet{oopsla19b}
+studied the design and use of laziness in R. They provide a detailed account of
+the language’s evaluation strategy with a small-step operational semantics and
+an empirical evaluation of laziness in 16,707 packages. Their semantics shows
+that promises are stored in environments and can outlive the frame that created
+them if returned as part of that environment. \cite{oopsla20b} inferred type
+signatures for R functions by observing the type of argument and return values.
+Their type language includes a designated \textbf{\texttt{env}} type for
+first-class environments.
+
+
+\paragraph{Supporting First-Class Environments} \citet{NishizakiSTLC94}
+introduced a simply typed lambda calculus with first-class environments, proved
+that it is strongly normalizing, and proposed a type inference algorithm.
+~\citet{NishizakiML94} proposed a sound type inference algorithm for a type
+system with ML-polymorphism in a $\lambda$-calculus with first-class
+environments.
+
+
+\paragraph{Contemporary Languages} The Scheme Standard~\cite{SchemeR5RS}
+requires implementations to support \code{eval} whose second argument is an
+\emph{environment-specifier}, not required to be a first-class environment. The
+effect of assignment to bound variables in this environment is unspecified,
+leaving open the possibility of it being immutable. MIT/GNU Scheme supports
+first-class environments, and as a consequence, its \code{eval} takes an
+explicit environment as its second argument. This Scheme provides functions to
+create new environments, read and write bindings, examine parent environments,
+and obtain the current environment as a reified value. Python provides the
+\code{locals} function that returns the local bindings as a dictionary, attached
+to the current frame as the \code{f_locals} attribute. Updates to this
+dictionary are not reflected in the function's scope, unlike R. Caller's
+bindings can be accessed by looking up \code{f_locals} from their frames,
+obtained from \code{inspect.stack}. Calling \code{locals} outside of a function
+returns the namespace as a dictionary at the point and changes to this
+dictionary are reflected in the namespace. Similar to R's \code{globalenv},
+Python's \code{globals} returns a dictionary of the global namespace whose
+updates are also reflected in the namespace.
 
 \subsection{The R Language}
 
@@ -235,10 +263,10 @@ returns the \code{empty} environment.
 Packages loaded by calling \code{library} are represented as environments; their
 names are added to a global search path (returned by \code{search()}) for
 lookup. The \code{n}th package environment can be retrieved using
-\code{pos.to.env(n)}. Each package has a corresponding namespace environment
+\code{pos.to.env(n)}. Every package has a corresponding namespace environment
 which also contains its private bindings and implementation specific metadata.
 The namespace environment for a package named \code{ns} can be obtained by
-\code{asNamespace(ns)}. An R session starts with the \code{base} package
+calling \code{asNamespace(ns)}. An R session starts with the \code{base} package
 preloaded, which contains the default R APIs. \code{baseenv()} returns the
 \code{base} package environment and \code{.BaseNamespaceEnv} is bound to the
 \code{base} package namespace.
