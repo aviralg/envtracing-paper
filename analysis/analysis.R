@@ -96,6 +96,7 @@ read_lazy(allocation, "allocation.fst")
 read_lazy(execution, "execution.fst")
 read_lazy(env_class, "env_class.fst")
 read_lazy(env_cons, "env_cons.fst")
+read_lazy(call_event_seq, "call_event_seq.fst")
 
 sloc_script %<>%
     mutate(package2 = type) %>%

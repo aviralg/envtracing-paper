@@ -37,6 +37,9 @@ new_env:
 corpus:
 	make analysis ANALYSIS=corpus
 
+event_seq:
+	make analysis ANALYSIS=event_seq
+
 .PHONY: all open main.pdf clean analysis
 
 # Include auto-generated dependencies

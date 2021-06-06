@@ -1,0 +1,119 @@
+---
+title: "Event Sequence"
+output:
+    html_document:
+        toc: true
+        toc_depth: 3
+        toc_float: true
+        number_sections: true
+        theme: cerulean
+        highlight: pygments
+        code_folding: hide
+        fig_width: 9
+        fig_height: 3
+        css: style.css
+params:
+    datadir: "./data"
+    graphdir: "./graphs"
+    macrodir: "./macros"
+    tabledir: "./tables"
+---
+
+```{r echo = FALSE, warning=FALSE, message=FALSE}
+## https://bookdown.org/yihui/rmarkdown-cookbook/source-script.html
+source("analysis.R", local = knitr::knit_global())
+```
+
+## Call Event Sequence
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+call_event_seq %>%
+    count(event_seq, wt = count, name = "count") %>%
+    arrange(desc(count)) %>%
+    mutate(cum_perc = round( 100 * cumsum(count) / sum(count), 3 )) %>%
+    slice(1:100) %>%
+    datatable()
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+process_event_seq <- function(df) {
+    df %>%
+    mutate(event_seq = str_replace_all(event_seq, "(\\|sys.frame_0)+", "|sys.frame_0+")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "(\\|get0)+", "|get0+")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "(\\|get)+", "|get+")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "(\\|parent.frame_0)+", "|parent.frame_0+")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "(\\|substitute)+", "|substitute+")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "(\\|assign)+", "|assign+")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "(\\|as.environment_0)+", "|as.environment_0+")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "(\\|environment_0)+", "|environment_0+")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "CallEntry", "(")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "CallExit", ")")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "EvalEntryDirect", "[")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "EvalExitDirect", "]")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "EvalEntryIndirect", "{")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "EvalExitIndirect", "}")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "\\|", " ")) %>%
+    mutate(event_seq = str_trim(event_seq))
+}
+
+call_event_seq <- 
+    call_event_seq %>%
+    process_event_seq()
+
+summarized_call_event_seq <-
+    call_event_seq %>%
+    filter(event_seq != "( )") %>%
+    group_by(event_seq) %>%
+    summarize(count = sum(count), fun_count = length(unique(qual_name))) %>%
+    ungroup() %>%
+    arrange(desc(count)) %>%
+    mutate(cum_perc = round( 100 * cumsum(count) / sum(count), 3 ))
+```
+
+### Summarized Event Sequence
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+top_summarized_call_event_seq <-
+    summarized_call_event_seq %>%
+    slice(1:100) %>%
+    datatable()
+
+top_summarized_call_event_seq <-
+    summarized_call_event_seq %>%
+    slice(1:100) %>%
+    datatable()
+```
+
+### Tilde
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+summarized_call_event_seq %>% 
+    filter(str_detect(event_seq, "~")) %>%
+    arrange(desc(count)) %>%
+    mutate(rel_perc = round(100 * cumsum(count) / sum(count), 2)) %>%
+    slice(1:100) %>%
+    datatable()
+```
+
+### Eval
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+summarized_call_event_seq %>% 
+    filter(str_detect(event_seq, "\\[")) %>%
+    arrange(desc(count)) %>%
+    mutate(rel_perc = round(100 * cumsum(count) / sum(count), 2)) %>%
+    slice(1:100) %>%
+    datatable()
+```
+
+### Escaped Environment
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+summarized_call_event_seq %>% 
+    filter(!str_detect(event_seq, "\\)$")) %>%
+    arrange(desc(count)) %>%
+    mutate(rel_perc = round(100 * cumsum(count) / sum(count), 2)) %>%
+    slice(1:100) %>%
+    datatable()
+```
+
