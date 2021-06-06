@@ -64,6 +64,7 @@
 \newcommand{\ie}{\emph{i.e.},\xspace}
 
 \newcommand{\environmentFun}{\code{environment}}
+\newcommand{\asEnvironment}{\code{as.environment}}
 
 \newcommand{\emptyenv}{\code{empyenv}}
 \newcommand{\globalenv}{\code{globalenv}}
@@ -90,6 +91,13 @@
 
 \newcommand{\remove}{\code{remove}}
 \renewcommand{\rm}{\code{rm}}
+
+\newcommand{\lockEnvironment}{\code{lockEnvironment}}
+\newcommand{\lockBinding}{\code{lockBinding}}
+\newcommand{\unlockBinding}{\code{unlockBinding}}
+
+\newcommand{\eval}{\code{eval}}
+\newcommand{\substitute}{\code{substitute}}
 
 \newcommand{\parentEnv}{\code{parent.env}}
 \newcommand{\parentEnvAssign}{\code{parent.env<-}}
@@ -263,13 +271,14 @@ returns the \code{empty} environment.
 Packages loaded by calling \code{library} are represented as environments; their
 names are added to a global search path (returned by \code{search()}) for
 lookup. The \code{n}th package environment can be retrieved using
-\code{pos.to.env(n)}. Every package has a corresponding namespace environment
-which also contains its private bindings and implementation specific metadata.
-The namespace environment for a package named \code{ns} can be obtained by
-calling \code{asNamespace(ns)}. An R session starts with the \code{base} package
-preloaded, which contains the default R APIs. \code{baseenv()} returns the
-\code{base} package environment and \code{.BaseNamespaceEnv} is bound to the
-\code{base} package namespace.
+\code{pos.to.env(n)}, or \code{as.environment(n)}. \asEnvironment also accepts
+the package name as its argument. Every package has a corresponding namespace
+environment which also contains its private bindings and implementation specific
+metadata. The namespace environment for a package named \code{ns} can be
+obtained by calling \code{getNamespace(ns)}. An R session starts with the
+\code{base} package preloaded, which contains the default R APIs.
+\code{baseenv()} returns the \code{base} package environment and
+\code{.BaseNamespaceEnv} is bound to the \code{base} package namespace.
 
 \subsubsection{Environments as Scopes}
 The top-level scope is the \code{global} environment, referred by the variable
@@ -356,18 +365,30 @@ and returns a vector of values. \dynGet performs recursive lookups in caller
 frames, i.e., dynamic scopes, unlike the other functions which perform lookup in
 lexical scopes.
 
-\textit{Writes.} Writes can be performed using the \assign function. Variables
-can be removed using the \rm and \remove function.
+Writes can be performed in an environment using the \assign function. Operator
+forms, \code{env$var <- val}, and \code{env[["var"]] <- val}, can also be used
+for mutating variable \code{var} in environment \code{env}. Bindings
+can be removed from an environment using the \rm and \remove function.
 
-TODO - eval and environment.
+An environment can be protected from addition or removal of bindings by locking
+it with \lockEnvironment. This does not protect existing bindings from
+modification, which can be explicitly locked using \lockBinding. A locked
+binding can be removed if the environment is not locked. Bindings can be
+unlocked using \unlockBinding.
 
-\paragraph{Discussion.} R provides a vast API for accessing scopes as reified
-environments and interacting with them. This makes them very versatile objects.
-While they primarily serve as scopes, they can also be used as hash tables, and
-sandboxing expression evaluation. While R is lexically scoped, ad-hoc lookup
-strategies can be implemented by accessing arbitrary caller environments. The
-lexical scope of a function can be changed, a technique often used for designing
-custom object-oriented systems.
+Expressions can be evaluated explicitly in an environment using the \eval
+function. To support metaprogramming, R provides the \substitute function. This
+function extracts the unevaluated argument text from the promise bound to the
+argument in the supplied environment.
+
+
+\paragraph{Discussion.} R provides a large API for interactive with environments
+and accessing scopes as explicit environments. Environments in R are very
+versatile objects. While they primarily serve as scopes, they can also be used
+as hash tables, and sandboxing expression evaluation. Though R is lexically
+scoped, ad-hoc lookup strategies can be implemented by accessing arbitrary
+caller environments. The lexical scope of a function can be changed, a technique
+often used for designing custom object-oriented systems.
 
 \section{Analysis Infrastructure}
 In this section, we describe the analysis infrastructure. It performs three
