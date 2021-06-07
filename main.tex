@@ -69,6 +69,10 @@
 \newcommand{\emptyenv}{\code{empyenv}}
 \newcommand{\globalenv}{\code{globalenv}}
 
+\newcommand{\base}{\code{base}}
+\newcommand{\methods}{\code{methods}}
+\newcommand{\lazyLoadDBexec}{\code{lazyLoadDBexec}}
+
 \newcommand{\newEnv}{\code{new.env}}
 
 \newcommand{\asList}{\code{as.list}}
@@ -625,14 +629,80 @@ created by miscellaneous sources.
 \paragraph{What are environment life-cycles?} To characterize the life-cycle of
 environments, we summarize the sequence of events that affect it. The events of
 interest are \underline{S}ubstitute, \underline{P}arent.frame,
-s\underline{Y}s.frame, \underline{G}et, \underline{E}nvironment, and
-\underline{A}ssign. Events happening to an environment passed to \eval are
-enclosed by $[$ and $]$. The event sequence occurring on a call environment
-after the call has ended is preceded by a $*$.
+s\underline{Y}s.frame, \underline{G}et, \underline{E}nvironment,
+\underline{A}rgument for environments passed as arguments to other functions and
+\underline{R}eturn for environments returned from functions. Events occurring to
+an environment passed to \eval are enclosed by $[$ and $]$. The event sequence
+of a call environment after the call has ended is preceded by a $\#$.
 
+
+\section{Explicit Environment Creation}
+In this section, we discuss explicit environment creation using the \newEnv R
+function. We observe 3.3M environments created using this function. The GNU R
+implementation (\base package) accounts for 87\% (2.9M) of these and packages
+contribute remaining 13\% (420.6K).
+
+The implementation environments all come from a single \base package function,
+\lazyLoadDBexec, used only internally. This function is responsible for loading
+a package's code from a binary file and also for loading processed help file
+data. Since this is an implementation detail, we ignore this for the rest of the
+discussion.
+
+There are 59 packages responsible for all the remaining calls to \newEnv.
+Table~\ref{table:pack_env} shows the distribution of \newEnv calls for the top
+14 packages.
+
+\begin{table}[!h]
+  \vspace{-3mm}
+  \small
+  \caption{Package Explicit Environments} \label{table:pack_env}
+  \centering
+  \begin{tabular}{lrr}
+    \toprule
+    \textbf{Package}&\textbf{\#}&\textbf{Cum. \%}\\
+    \midrule
+    methods&161.6K&38.4\%\\
+    rlang&75.0K&56.3\%\\
+    R6&73.8K&73.8\%\\
+    codetools&38.9K&83.1\%\\
+    ggplot2&24.3K&88.8\%\\
+    grid&15.7K&92.6\%\\
+    testthat&9.0K&94.7\%\\
+    \bottomrule
+  \end{tabular}
+  \begin{tabular}{lrr}
+    \toprule
+    \textbf{Package}&\textbf{\#}&\textbf{Cum. \%}\\
+    \midrule
+    dplyr&8.2K&96.7\%\\
+    stats&2.7K&97.3\%\\
+    forecast&1.5K&97.7\%\\
+    data.table&1.5K&98.0\%\\
+    plyr&1.2K&98.3\%\\
+    ps&1.1K&98.5\%\\
+    cli&846.0&98.7\%\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The \methods package alone is responsible for 38.4\% of these calls. This
+package ships with GNU R and implements the S4 object-oriented system, a
+multi-argument dynamic dispatch system. The top 6 packages account for 92.6\% of
+the calls.
+
+We further look at 
 
 \bibliography{bib/jv,bib/aviral}
 
 
 
 \end{document}
+
+% TODO
+% - environment source
+%            C   new.env
+% - base
+% - library
+%
+% environment class
+% - 

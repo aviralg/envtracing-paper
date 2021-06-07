@@ -95,7 +95,7 @@ read_lazy(functions, "functions.fst")
 read_lazy(allocation, "allocation.fst")
 read_lazy(execution, "execution.fst")
 read_lazy(env_class, "env_class.fst")
-read_lazy(env_cons, "env_cons.fst")
+read_lazy(new_env, "new_env.fst")
 read_lazy(call_event_seq, "call_event_seq.fst")
 
 sloc_script %<>%

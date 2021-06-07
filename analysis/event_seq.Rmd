@@ -38,22 +38,32 @@ call_event_seq %>%
 ```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
 process_event_seq <- function(df) {
     df %>%
-    mutate(event_seq = str_replace_all(event_seq, "(\\|sys.frame_0)+", "|sys.frame_0+")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "\\^\\d\\|", "|")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "Argument\\|EvalEntryDirect", "EvalEntryDirect")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "(\\|Argument)+", "|Argument+")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "(\\|sys.frame_0\\|Return\\|)+", "|sys.frame_0+|")) %>%
     mutate(event_seq = str_replace_all(event_seq, "(\\|get0)+", "|get0+")) %>%
     mutate(event_seq = str_replace_all(event_seq, "(\\|get)+", "|get+")) %>%
-    mutate(event_seq = str_replace_all(event_seq, "(\\|parent.frame_0)+", "|parent.frame_0+")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "(\\|parent.frame_0\\|Return\\|)+", "|parent.frame_0+|")) %>%
     mutate(event_seq = str_replace_all(event_seq, "(\\|substitute)+", "|substitute+")) %>%
     mutate(event_seq = str_replace_all(event_seq, "(\\|assign)+", "|assign+")) %>%
     mutate(event_seq = str_replace_all(event_seq, "(\\|as.environment_0)+", "|as.environment_0+")) %>%
-    mutate(event_seq = str_replace_all(event_seq, "(\\|environment_0)+", "|environment_0+")) %>%
-    mutate(event_seq = str_replace_all(event_seq, "CallEntry", "(")) %>%
-    mutate(event_seq = str_replace_all(event_seq, "CallExit", ")")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "(\\|environment_0\\|Return\\|)+", "|environment_0+|")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "CallEntry", "")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "CallExit", "#")) %>%
     mutate(event_seq = str_replace_all(event_seq, "EvalEntryDirect", "[")) %>%
     mutate(event_seq = str_replace_all(event_seq, "EvalExitDirect", "]")) %>%
     mutate(event_seq = str_replace_all(event_seq, "EvalEntryIndirect", "{")) %>%
     mutate(event_seq = str_replace_all(event_seq, "EvalExitIndirect", "}")) %>%
     mutate(event_seq = str_replace_all(event_seq, "\\|", " ")) %>%
-    mutate(event_seq = str_trim(event_seq))
+    mutate(event_seq = str_trim(event_seq)) %>%
+    mutate(event_seq = str_replace_all(event_seq, fixed("Argument"), "A")) %>%
+    mutate(event_seq = str_replace_all(event_seq, fixed("Return"), "R")) %>%
+    mutate(event_seq = str_replace_all(event_seq, fixed("substitute"), "S")) %>%
+    mutate(event_seq = str_replace_all(event_seq, fixed("parent.frame_0"), "P")) %>%
+    mutate(event_seq = str_replace_all(event_seq, fixed("sys.frame_0"), "Y")) %>%
+    mutate(event_seq = str_replace_all(event_seq, fixed("environment_0"), "E")) %>%
+    mutate(event_seq = if_else(str_ends(event_seq, fixed("#")), str_sub(event_seq, 1, -2), event_seq))
 }
 
 call_event_seq <- 
@@ -62,7 +72,6 @@ call_event_seq <-
 
 summarized_call_event_seq <-
     call_event_seq %>%
-    filter(event_seq != "( )") %>%
     group_by(event_seq) %>%
     summarize(count = sum(count), fun_count = length(unique(qual_name))) %>%
     ungroup() %>%
@@ -73,16 +82,25 @@ summarized_call_event_seq <-
 ### Summarized Event Sequence
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
-top_summarized_call_event_seq <-
-    summarized_call_event_seq %>%
-    slice(1:100) %>%
-    datatable()
-
-top_summarized_call_event_seq <-
-    summarized_call_event_seq %>%
+summarized_call_event_seq %>%
     slice(1:100) %>%
     datatable()
 ```
+
+### Summarized event sequence by functions
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+summarized_call_event_seq_by_fun <-
+    call_event_seq %>%
+    filter(event_seq != "") %>%
+    group_by(event_seq, qual_name) %>%
+    summarize(count = sum(count)) %>%
+    ungroup() %>%
+    mutate(cum_perc = round( 100 * cumsum(count) / sum(count), 3 ))
+
+datatable(summarized_call_event_seq_by_fun)
+```
+
 
 ### Tilde
 
@@ -110,7 +128,18 @@ summarized_call_event_seq %>%
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
 summarized_call_event_seq %>% 
-    filter(!str_detect(event_seq, "\\)$")) %>%
+    filter(str_detect(event_seq, "#")) %>%
+    arrange(desc(count)) %>%
+    mutate(rel_perc = round(100 * cumsum(count) / sum(count), 2)) %>%
+    slice(1:100) %>%
+    datatable()
+```
+
+### New Environment
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+summarized_call_event_seq %>% 
+    filter(str_detect(event_seq, "new.env_1")) %>%
     arrange(desc(count)) %>%
     mutate(rel_perc = round(100 * cumsum(count) / sum(count), 2)) %>%
     slice(1:100) %>%
