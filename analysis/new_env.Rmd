@@ -117,23 +117,31 @@ process_event_seq <- function(df) {
     df %>%
     mutate(orig_seq = event_seq) %>%
     mutate(event_seq = str_replace_all(event_seq, "\\^\\d\\|", "|")) %>%
-    mutate(event_seq = str_replace_all(event_seq, "\\|environment_0\\|", "|")) %>%
-    mutate(event_seq = str_replace_all(event_seq, "\\|parent.env_1\\|", "|")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "as.environment_0\\|", "")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "parent.env_1\\|", "")) %>%
     mutate(event_seq = str_replace_all(event_seq, "Argument\\|", "")) %>%
     mutate(event_seq = str_replace_all(event_seq, "Return\\|", "")) %>%
-    mutate(event_seq = str_replace_all(event_seq, "\\|parent.env_0\\|", "|")) %>%
-    mutate(event_seq = str_replace_all(event_seq, "exists\\|", "?|")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "parent.env_0\\|", "")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "L\\|", "A|")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "D\\|", "A|")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "R\\|", "A|")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "EvalEntryDirect\\|", "[|")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "EvalExitDirect\\|", "]|")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "exists\\|", "A|")) %>%
     mutate(event_seq = str_replace_all(event_seq, "new.env_0\\|", "N|")) %>%
     mutate(event_seq = str_replace_all(event_seq, "new.env_1\\|", "!|")) %>%
-    mutate(event_seq = str_replace_all(event_seq, "environment<-_1\\|", "!|")) %>%
-    mutate(event_seq = str_replace_all(event_seq, "as.environment_0\\|", "")) %>%
-    mutate(event_seq = str_replace_all(event_seq, "(list2env_0\\|list2env_1\\|)+", "L2E|")) %>%
-    mutate(event_seq = str_replace_all(event_seq, "(mget\\|)+", "mget+|")) %>%
-    mutate(event_seq = str_replace_all(event_seq, "\\|(get\\|)+", "|get+|")) %>%
-    mutate(event_seq = str_replace_all(event_seq, "env2list_1\\|", "E2L|")) %>%
     mutate(event_seq = str_replace_all(event_seq, "lockEnvironment_1\\|", "🔒|")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "list2env_0\\|", "A|")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "list2env_1\\|", "A|")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "env2list_1\\|", "A|")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "mget\\|", "A|"))%>%
+    mutate(event_seq = str_replace_all(event_seq, "get\\|", "A|")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "assign\\|", "A|")) %>%
     mutate(event_seq = str_replace_all(event_seq, "lockBinding_1\\|", "🔒|")) %>%
-    mutate(event_seq = str_replace_all(event_seq, "parent.env<-_0\\|parent.env<-_1\\|", "parent.env<-_1|")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "\\|parent.env<-_0\\|parent.env<-_1\\|", "|parent.env<-_1|")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "environment_0\\|", "")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "environment<-_1\\|", "!|")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "parent.env<-_1\\|", "Z|")) %>%
     ## mutate(event_seq = str_replace_all(event_seq, "\\|EvalEntryDirect", "EvalEntryDirect")) %>%
     ## mutate(event_seq = str_replace_all(event_seq, "(\\|new.env_0\\|Return\\|)+", "|N|")) %>%
     ## mutate(event_seq = str_replace_all(event_seq, "(\\|list2env_0\\|list2env_1\\|)+", "|list2env|")) %>%
@@ -156,11 +164,7 @@ process_event_seq <- function(df) {
     mutate(event_seq = str_replace_all(event_seq, "(!\\|)+", "!+|")) %>%
     mutate(event_seq = str_replace_all(event_seq, "(\\?\\|)+", "?+|")) %>%
     mutate(event_seq = str_replace_all(event_seq, "(🔒\\|)+", "🔒+|")) %>%
-    mutate(event_seq = str_replace_all(event_seq, "(E2L\\|)+", "E2L+|")) %>%
-    mutate(event_seq = str_replace_all(event_seq, fixed("\\|Argument\\|"), "|A|")) %>%
-    mutate(event_seq = str_replace_all(event_seq, fixed("\\|Return\\|"), "|R|")) %>%
-    mutate(event_seq = str_replace_all(event_seq, fixed("\\|substitute\\|"), "|S|")) %>%
-    mutate(event_seq = str_replace_all(event_seq, fixed("\\|parent.frame_0\\|"), "|P|")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "\\|(A\\|)+", "|A+|")) %>%
     mutate(event_seq = str_replace_all(event_seq, fixed("\\|sys.frame_0\\|"), "|Y|")) %>%
     mutate(event_seq = str_replace_all(event_seq, fixed("\\|environment_0\\|"), "|E|")) %>%
     mutate(event_seq = str_replace_all(event_seq, "\\|", " ")) %>%
@@ -171,17 +175,25 @@ process_event_seq <- function(df) {
 new_env <-
     new_env %>%
     process_event_seq() %>%
-    mutate(event_seq = case_when(event_seq == "N parent.env<-_1 !+" ~ "N parent.env<-_1 !+ get*",
-                                 event_seq == "N parent.env<-_1 !+ get+" ~ "N parent.env<-_1 !+ get*",
-                                 event_seq == "N E2L+" ~ "N E2L+ mget*",
-                                 event_seq == "N E2L+ mget+" ~ "N E2L+ mget*",
-                                 event_seq == "N L2E @" ~ "N L2E @ ?*",
-                                 event_seq == "N L2E @ ?+" ~ "N L2E @ ?*",
+    mutate(event_seq = case_when(event_seq == "N Z !+" ~ "N Z !+ A*",
+                                 event_seq == "N Z !+ A+" ~ "N Z !+ A*",
+                                 event_seq == "N A @" ~ "N A @ A*",
+                                 event_seq == "N A @ A+" ~ "N A @ A*",
                                  ## methods
                                  event_seq == "N !+ 🔒+" | event_seq == "N !+ 🔒+ !+" | event_seq == "N 🔒+ !+" ~ "N !* 🔒+ !*",
                                  ## R6
-                                 event_seq == "N L2E 🔒+" | event_seq == "N L2E 🔒+ @" | event_seq == "N !+ L2E 🔒+" | event_seq == "N !+ L2E 🔒+ @" | event_seq == "N !+ L2E @" ~ "N !* L2E 🔒* @?",
+                                 event_seq == "N A 🔒+" | event_seq == "N A 🔒+ @" | event_seq == "N !+ A 🔒+" | event_seq == "N !+ A 🔒+ @" | event_seq == "N !+ A @" ~ "N !* A 🔒* @?",
+                                 event_seq == "N @" | event_seq == "N @ A+" | event_seq == "N A+ @" | event_seq == "N A+ @ A+" ~ "N A* @ A*",
+                                 event_seq == "N A+ 🔒+" | event_seq == "N A+ 🔒+ @" ~ "N A+ 🔒+ @?",
+                                 event_seq == "N !+ A+ 🔒+" | event_seq == "N !+ A+ 🔒+ @" ~ "N !+ A+ 🔒+ @?",
+                                 event_seq == "N [ A+ ]" | event_seq == "N [ ]" ~ "N [A*]",
+                                 event_seq == "N @ !+" | event_seq == "N !+ @" ~ "N !* @ !*",
+                                 event_seq == "N" | event_seq == "N A+" ~ "N A*",
+                                 event_seq == "N !+" | event_seq == "N A+ !+" ~ "N A* !+",
+                                 TRUE ~ event_seq)) %>%
+    mutate(event_seq = case_when(event_seq == "N A+ 🔒+ @?" | event_seq == "N !* 🔒+ !*" | event_seq == "N !+ A+ 🔒+ @?" ~ "N !* A* 🔒+ !* @?",
                                  TRUE ~ event_seq))
+
 new_env %>%
     filter(!implementation) %>%
     count(event_seq, wt = count, name = "count") %>%
@@ -193,12 +205,12 @@ new_env %>%
     
 new_env %>%
     filter(!implementation) %>%
-    group_by(event_seq) %>%
+    group_by(event_seq, orig_seq) %>%
     summarize(count = sum(count), sources = paste(unique(primary_source), collapse="|")) %>%
     ungroup() %>%
     arrange(desc(count)) %>%
     mutate(cumperc = round(100 * cumsum(count)/ sum(count), 2)) %>%
-    slice(1:100) %>%
+    slice(1:1000) %>%
     datatable()
     
 new_env %>%
