@@ -601,13 +601,58 @@ Other objects such as S4, externalptr, etc. are rare.
 \end{table}
 
 \paragraph{Where do environments come from?} The distribution of environments by
-source is presented in Table~\ref{table:env_source_dist}. Environments are
-implicitly created for scoping during function calls. This accounts for 99.4\%
-of the environments observed in our corpus. Environments are also created by the
-implementation for namespaces during package loading. This accounts for a meager
-0.1\% of all the environments since these environments are bounded by the number
-of packages loaded during program execution. 0.6\% of the environments are
-created by miscellaneous sources.
+source is presented in Table~\ref{table:env_source}. The columns of this table
+are to be read as follows. \emph{Core} represents the GNU R implementation and
+its 16 packages: \code{base}, \code{compiler}, \code{datasets},
+\code{grDevices}, \code{graphics}, \code{grid}, \code{methods}, \code{parallel},
+\code{profile}, \code{splines}, \code{stats}, \code{stats4}, \code{tcltk},
+\code{tools}, \code{translations}, and \code{utils}. \emph{User} represents CRAN
+packages. \emph{Native} represents environment creation using the C APIs
+\code{allocSExp}, \code{Rf_NewEnvironment}, and \code{Rf_NewHashedEnv}. Only
+\code{allocSexp} is exported for use by external packages. \emph{R} represents
+environment creation using \newEnv. \emph{Foreign} represents environments that
+were created outside of the code being traced; hence they are ignored from the
+rest of the discussion.
+
+The R core is responsible for 99.89\% of the environments, dominated by
+\emph{Native} . User packages are responsible for 0.03\% of the environments,
+with twice as many from \emph{R} as \emph{Native}.
+
+\begin{table}[!h]
+  \vspace{-3mm}
+  \small
+  \centering
+  \caption{Environment Source}\label{table:env_source}
+  \vspace{-3mm}
+  \begin{tabular}{llrr}
+    \toprule
+    \multirow{2}{*}{Core}  & \multicolumn{1}{l}{Native} & \multicolumn{1}{r}{1.1B} & \multicolumn{1}{r}{99.62\%}\\
+                           & \multicolumn{1}{l}{R}     & \multicolumn{1}{r}{3.1M} & \multicolumn{1}{r}{0.27\%}\\
+    \midrule
+    \multirow{2}{*}{User}  & \multicolumn{1}{l}{Native} & \multicolumn{1}{r}{163.6K} & \multicolumn{1}{r}{0.01\%}\\
+                           & \multicolumn{1}{l}{R}      & \multicolumn{1}{r}{239.3K} & \multicolumn{1}{r}{0.02\%}\\
+    \midrule
+    Foreign & &\multicolumn{1}{r}{899.6K} & \multicolumn{1}{r}{0.08\%}\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+
+\emph{Core}, \emph{Native} environments: 99.7\% of environments in this category
+are used for function calls, 334.5K are package namespaces, 2.9M are created by
+the \code{methods} package for S4 object-oriented system, and 175K by the
+\code{base} package for dynamic evaluation using \code{eval} and for registering
+native functions from R packages for access by other R packages.
+
+\emph{Core}, \emph{R} environments: 94.1\% of these environments are created by
+\code{base}, and 5.3\% by \code{methods} for the S4 object-oriented system. The
+\code{base} package contribution comes from an internal function,
+\code{lazyLoadDBexec}, used for loading package code and processed help files
+from binary files.
+
+\emph{User} environments: These environments come from many packages and are
+used for a variety of purposes such as hash tables, objects for custom OOP
+systems, sandboxing, etc.
 
 \begin{table}
   \vspace{-3mm}
@@ -690,7 +735,79 @@ package ships with GNU R and implements the S4 object-oriented system, a
 multi-argument dynamic dispatch system. The top 6 packages account for 92.6\% of
 the calls.
 
-We further look at 
+\subsection{Explicit Environments}
+
+\subsubsection{User Explicit Environments}
+
+\begin{table}[!h]
+  \vspace{-3mm}
+  \small
+  \caption{User Explicit Environment Sequence} \label{table:user_explicit_env_seq}
+  \centering
+  \begin{tabular}{lrr}
+    \toprule
+    \textbf{Event Sequence}&\textbf{\#}&\textbf{Cum. \%}\\
+    \midrule
+    \texttt{A*}&151.9K&38.8\%\\
+    \texttt{N A*}&97.6K&63.7\%\\
+    \texttt{N A* !+}&43.7K&74.8\%\\
+    \texttt{N !* A* L+ !* @?}&41.4K&85.4\%\\
+    \texttt{N A* @ A*}&38.8K&95.3\%\\
+    \texttt{N [ A* ]}&3.8K&96.3\%\\
+    \texttt{N !* @ !*}&3.1K&97.1\%\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The first sequence, \texttt{N A*}, represents 63.7\% of the environments. These
+environments are created and variables are added, looked up or removed from
+them. These environments come from 35 packages. They are used for a variety of
+purposes; storing package and custom object state being the most common use. The
+next sequence \texttt{N A* !+} involves inheritance of the environment by a
+another environment, either by passing it as the \code{parent} argument to
+\code{new.env} or explicitly setting it as a parent using \code{parent.env<-}.
+This sequence originates from packages like R6 and R.oo which implement OO
+systems and rlang which implements an alternate API for R including one for
+creating new environments. This is following by the sequence \texttt{N !* A* L+
+  !* @?}, coming exclusively from \code{R6}. It features two new events:
+\texttt{L} locks the environment and its bindings to protect from further
+modifications, and \texttt{@} sets attributes on the environment. This sequence
+is a signature for the \code{R6} package which implements an object oriented
+system. The next sequence, \texttt{N A* @ A*}, represents the creation of
+environment, and setting an attribute. An example is the \code{XML} package
+which creates a \code{hashTree} object and sets the attribute
+\code{XMLHashTree}. After this, we have environments that are created for the
+purpose of evaluating code, explained by the sequence \texttt{N [ A* ]}. This is
+a common pattern in many packages implementing custom evaluation strategies,
+such as glue testthat, shiny, and rlang. Finally, the last sequence involves
+environments that are created, inherited and an attribute is set on them. An
+example of this pattern is the indexing semantics of immutable data frames
+created by the \code{plyr} package. It creates a new environment and sets it as
+a parent of functions to customize the treatment of the indexed data frame.
+
+The most common user of explicit environments is
+\code{vec_c} function. via
+
+The \code{foreach} package provides a looping construct to execute R code,
+optionally in parallel. It creates an iterator for sequences of values. The
+dynamic state of the iterator, updated on each iteration, is represented using
+an explicit environment extending the empty environment. The 
+
+\begin{table}[!h]
+  \vspace{-3mm}
+  \small
+  \caption{Core Explicit Environment Sequence} \label{table:core_explicit_env_seq}
+  \centering
+  \begin{tabular}{lrr}
+    \toprule
+    \textbf{Event Sequence}&\textbf{\#}&\textbf{Cum. \%}\\
+    \midrule
+    \texttt{A*}&2.9M&90.8\%\\
+    \texttt{S}&144.8K&95.4\%\\
+    \texttt{[ A* ]}&140.7K&99.9\%\\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 \bibliography{bib/jv,bib/aviral}
 

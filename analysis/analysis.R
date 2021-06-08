@@ -84,6 +84,13 @@ split_qual_name <- function(qual_name) {
            fun_name = unlist(map(split, joiner(.))))
 }
 
+is_core_package <- function(packages) {
+    packages %in% c("base", "compiler", "datasets", "grDevices",
+                    "graphics", "grid", "methods", "parallel",
+                    "profile", "splines", "stats", "stats4",
+                    "tcltk", "tools", "translations", "utils")
+}
+
 read_lazy(extract_index, "extract-index.fst")
 read_lazy(package_info, "package-info.fst")
 read_lazy(sloc_script, "corpus-sloc.fst")
@@ -94,7 +101,7 @@ read_lazy(client, "client")
 read_lazy(functions, "functions.fst")
 read_lazy(allocation, "allocation.fst")
 read_lazy(execution, "execution.fst")
-read_lazy(env_class, "env_class.fst")
+read_lazy(native_env, "native_env.fst")
 read_lazy(new_env, "new_env.fst")
 read_lazy(call_event_seq, "call_event_seq.fst")
 
