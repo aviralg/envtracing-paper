@@ -693,42 +693,6 @@ a package's code from a binary file and also for loading processed help file
 data. Since this is an implementation detail, we ignore this for the rest of the
 discussion.
 
-There are 59 packages responsible for all the remaining calls to \newEnv.
-Table~\ref{table:pack_env} shows the distribution of \newEnv calls for the top
-14 packages.
-
-\begin{table}[!h]
-  \vspace{-3mm}
-  \small
-  \caption{Package Explicit Environments} \label{table:pack_env}
-  \centering
-  \begin{tabular}{lrr}
-    \toprule
-    \textbf{Package}&\textbf{\#}&\textbf{Cum. \%}\\
-    \midrule
-    methods&161.6K&38.4\%\\
-    rlang&75.0K&56.3\%\\
-    R6&73.8K&73.8\%\\
-    codetools&38.9K&83.1\%\\
-    ggplot2&24.3K&88.8\%\\
-    grid&15.7K&92.6\%\\
-    testthat&9.0K&94.7\%\\
-    \bottomrule
-  \end{tabular}
-  \begin{tabular}{lrr}
-    \toprule
-    \textbf{Package}&\textbf{\#}&\textbf{Cum. \%}\\
-    \midrule
-    dplyr&8.2K&96.7\%\\
-    stats&2.7K&97.3\%\\
-    forecast&1.5K&97.7\%\\
-    data.table&1.5K&98.0\%\\
-    plyr&1.2K&98.3\%\\
-    ps&1.1K&98.5\%\\
-    cli&846.0&98.7\%\\
-    \bottomrule
-  \end{tabular}
-\end{table}
 
 The \methods package alone is responsible for 38.4\% of these calls. This
 package ships with GNU R and implements the S4 object-oriented system, a
@@ -739,6 +703,72 @@ the calls.
 
 \subsubsection{User Explicit Environments}
 
+
+There are 59 packages responsible for all the remaining calls to \newEnv.
+Table~\ref{table:top_explicit_pack} shows the distribution of \newEnv calls for the top
+14 packages.
+
+\begin{table}[!h]
+  \vspace{-3mm}
+  \small
+  \caption{Explicit Environment Packages} \label{table:top_explicit_pack}
+  \centering
+  \begin{tabular}{lrr}
+    \toprule
+    \textbf{Package}&\textbf{\#}&\textbf{Cu. \%}\\
+    \midrule
+    \code{vctrs}&142.9K&36.2\%\\
+    \code{rlang}&75.2K&55.2\%\\
+    \code{R6}&74.1K&73.9\%\\
+    \code{codetools}&39.2K&83.8\%\\
+    \code{ggplot2}&24.3K&90.0\%\\
+    \code{testthat}&9.1K&92.3\%\\
+    \code{dplyr}&8.3K&94.4\%\\
+    \bottomrule
+  \end{tabular}
+  \begin{tabular}{lrr}
+    \toprule
+    \textbf{Package}&\textbf{\#}&\textbf{Cu. \%}\\
+    \midrule
+    \code{magrittr}&6.1K&95.9\%\\
+    \code{ps}&5.3K&97.3\%\\
+    \code{forecast}&1.5K&97.6\%\\
+    \code{data.table}&1.5K&98.0\%\\
+    \code{igraph}&1.4K&98.4\%\\
+    \code{plyr}&1.2K&98.7\%\\
+    \code{cli}&846.0&98.9\%\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The 55 packages have xxx functions that create explicit environments.
+Table~\ref{table:top_explicit_fun} shows the top ten functions. These functions
+alone contribute to 65.1\% of all the explicit environments in \emph{User}.
+\code{R6::generator_funs::new}
+\begin{table}[!h]
+  \vspace{-3mm}
+  \small
+  \caption{Top Explicit Environment Functions} \label{table:top_explicit_fun}
+  \centering
+  \begin{tabular}{lrr}
+    \toprule
+    \textbf{Function}&\textbf{\#}&\textbf{Cum. \%}\\
+    \midrule
+    \code{R6::generator_funs::new}&63.4K&16.0\%\\
+    \code{vctrs::vec_c}&55.7K&30.1\%\\
+    \code{codetools::mkHash}&31.3K&38.0\%\\
+    \code{ggplot2::ggproto}&24.3K&44.2\%\\
+    \code{rlang::eval_tidy}&18.1K&48.8\%\\
+    \code{vctrs::vec_slice}&16.5K&52.9\%\\
+    \code{rlang::new_data_mask}&13.8K&56.4\%\\
+    \code{vctrs::vec_cast_common}&12.8K&59.7\%\\
+    \code{vctrs::vec_as_names}&10.7K&62.4\%\\
+    \code{R6::create_super_env}&10.6K&65.1\%\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+
 \begin{table}[!h]
   \vspace{-3mm}
   \small
@@ -746,52 +776,84 @@ the calls.
   \centering
   \begin{tabular}{lrr}
     \toprule
-    \textbf{Event Sequence}&\textbf{\#}&\textbf{Cum. \%}\\
+    \textbf{Events}&\textbf{\#}&\textbf{Cum. \%}\\
     \midrule
-    \texttt{A*}&151.9K&38.8\%\\
-    \texttt{N A*}&97.6K&63.7\%\\
-    \texttt{N A* !+}&43.7K&74.8\%\\
-    \texttt{N !* A* L+ !* @?}&41.4K&85.4\%\\
-    \texttt{N A* @ A*}&38.8K&95.3\%\\
-    \texttt{N [ A* ]}&3.8K&96.3\%\\
-    \texttt{N !* @ !*}&3.1K&97.1\%\\
+    \texttt{A, V}&154.0K&39.0\%\\
+    \texttt{A}&102.8K&65.0\%\\
+    \texttt{A, !}&43.8K&76.1\%\\
+    \texttt{A, @}&38.9K&85.9\%\\
+    \texttt{A, L}&30.4K&93.6\%\\
+    \texttt{A, L @}&8.3K&95.7\%\\
+    \texttt{A, @ !}&3.2K&96.5\%\\
     \bottomrule
   \end{tabular}
 \end{table}
 
-The first sequence, \texttt{N A*}, represents 63.7\% of the environments. These
-environments are created and variables are added, looked up or removed from
-them. These environments come from 35 packages. They are used for a variety of
-purposes; storing package and custom object state being the most common use. The
-next sequence \texttt{N A* !+} involves inheritance of the environment by a
-another environment, either by passing it as the \code{parent} argument to
-\code{new.env} or explicitly setting it as a parent using \code{parent.env<-}.
-This sequence originates from packages like R6 and R.oo which implement OO
-systems and rlang which implements an alternate API for R including one for
-creating new environments. This is following by the sequence \texttt{N !* A* L+
-  !* @?}, coming exclusively from \code{R6}. It features two new events:
-\texttt{L} locks the environment and its bindings to protect from further
-modifications, and \texttt{@} sets attributes on the environment. This sequence
-is a signature for the \code{R6} package which implements an object oriented
-system. The next sequence, \texttt{N A* @ A*}, represents the creation of
-environment, and setting an attribute. An example is the \code{XML} package
-which creates a \code{hashTree} object and sets the attribute
-\code{XMLHashTree}. After this, we have environments that are created for the
-purpose of evaluating code, explained by the sequence \texttt{N [ A* ]}. This is
-a common pattern in many packages implementing custom evaluation strategies,
-such as glue testthat, shiny, and rlang. Finally, the last sequence involves
-environments that are created, inherited and an attribute is set on them. An
-example of this pattern is the indexing semantics of immutable data frames
-created by the \code{plyr} package. It creates a new environment and sets it as
-a parent of functions to customize the treatment of the indexed data frame.
+\begin{itemize}
+\item[{\bf A, V}:] This set accounts for the majority of environments. It is
+  observed in 36 packages. These environments are created for custom evaluation
+  strategies, \ie, for evaluating expressions with custom bindings in the scope.
+  For example, \code{rlang::eval_tidy} is an an alternative to R's \code{eval}
+  which provides support for evaluating ``quosures'', that are bundles of code
+  and environment. On package load, \code{rlang} creates three environments from
+  native code for use by its functions for evaluation in the context of a data
+  frame. Another example is the \code{vctrs::vec_c} function which is
+  alternative to R's \code{c} function for building a vector of values. It uses
+  an explicit environment under the hood for repairing the names of the vector
+  elements. The \code{testthat} testing library uses custom environment for
+  evaluating testing code.
 
-The most common user of explicit environments is
-\code{vec_c} function. via
+\item[\textbf{A}:] This pattern represents environments that are used as hash
+  tables and package state. The \code{codetools} package provides facilities for
+  analysis of R code. The \code{codetools::mkHash} function creates an
+  environment for use as a hash table to store intermediate static analysis
+  information. Another example is the \code{ps} package that provides facilities
+  for handling system processes. It creates an environment on package load and
+  initializes it with error codes and socket types. The \code{iterators} package
+  uses environments as dynamic state of iterator objects.
 
-The \code{foreach} package provides a looping construct to execute R code,
-optionally in parallel. It creates an iterator for sequences of values. The
-dynamic state of the iterator, updated on each iteration, is represented using
-an explicit environment extending the empty environment. The 
+\item[\textbf{A !}:] This pattern represents environments that are set as
+  parents of other environments or functions. This is dominated by \code{R.oo}
+  and \code{R6} packages that implement object oriented systems. They create new
+  environments and set them as lexical scopes of object methods. The
+  \code{foreach} package provides iteration constructs that can execute code in
+  sequence or parallel. The \code{foreach::\%do\%} function creates a new
+  environment, assigns a marker, and sets it as the lexical scope of the
+  function which uses the marker to decide whether to execute the code in
+  parallel.
+
+\item[\textbf{A @}:] This pattern is used by packages to create custom objects,
+  which can be used for dispatch based on the class attribute of the
+  environments. \code{ggplot2} library implements \code{ggproto}, a prototype
+  based OO system. The \code{ggproto} objects are explicit envivronments with
+  \code{``ggproto''} class attribute. The \code{XML} package creates an environment
+  to store a tree of nodes and assigns it a class attribute. the \code{xts}
+  package creates a plot environment with plotting environments and sets an
+  attribute on it.
+
+\item[\textbf{A L}:] This pattern is used by R6 to instantiate objects. The
+  private bindings are locked in the object environment to prevent
+  any modification. Many calls to \code{lockBinding} also originate form
+  \code{data.table} which uses a custom environment to store intermeidate state
+  for implementing dataframe indexing.
+
+\item[\textbf{A, L, @}] The \code{later} and \code{R6} packages are responsible
+  for this sequence. The \code{later} package use environments as handles for
+  event loop objects. These objects contain the id of the loop, which is locked
+  to prevent modifcation. The environments are assigned the class,
+  \code{``event_loop''}. Similar to the previous sequence, the \code{R6} object
+  locks the public bindings of an instantiated object, and also sets the class
+  attribute.
+
+\item[\textbf{A, @ !}] This patterns comes from the \code{plyr} package. It
+  creates an environment with attribute \code{``idf''} for representing
+  immutable data frames. It also assigns getter functions to this environment to
+  access the columns of the data frame, and sets their environment to be the
+  environment itself to ensure that lookup happens in the correct scope. This
+  also occurs in \code{R6} when a class environments is set as the parent
+  environment of a subclass environment.
+\end{itemize}
+\noindent
 
 \begin{table}[!h]
   \vspace{-3mm}

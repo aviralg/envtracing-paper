@@ -92,6 +92,7 @@ other_env <-
     native_env %>%
     filter(category == "Other") %>%
     mutate(source_fun_name_1 = case_when(event_seq == "|substitute|" ~ "base*$#$*substitute",
+                                         source_fun_name_1 == "<NA>*$#$*new" ~ "R6*$#$*generator_funs*$#$*new",
                                          source_fun_name_1 == "<NA>*$#$*e19df9d61bee0213c272516026ad08a38dd7032994489f386bcb9ec7200b95b5995a5a7467ba599f460b0bb10dbc55ff605f93269f3f3ec72614f38884fb8c99" ~ "iterators*$#$*makeIwrapper",
                                          source_fun_name_1 == "<NA>*$#$*3c35b2abb9250fb5e3a2af5c7a18bdc390b3454bee71eb0c0d0cc5fb5fb31949493df59a40660a7c816ed7a3f251dd26b93e3c88c9a920d3c0b7d07a10fe68d7" ~ "dplyr*$#$*DataMask*$#$*eval_all_mutate",
                                          TRUE ~ source_fun_name_1))
@@ -272,8 +273,10 @@ process_event_seq <- function(df) {
     mutate(event_seq = str_replace_all(event_seq, "L\\|", "A|")) %>%
     mutate(event_seq = str_replace_all(event_seq, "D\\|", "A|")) %>%
     mutate(event_seq = str_replace_all(event_seq, "R\\|", "R|")) %>%
-    mutate(event_seq = str_replace_all(event_seq, "EvalEntryDirect\\|", "[|")) %>%
-    mutate(event_seq = str_replace_all(event_seq, "EvalExitDirect\\|", "]|")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "EvalEntryDirect\\|", "V|")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "EvalExitDirect\\|", "")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "EvalEntryIndirect\\|", "U|")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "EvalExitIndirect\\|", "")) %>%
     mutate(event_seq = str_replace_all(event_seq, "exists\\|", "A|")) %>%
     mutate(event_seq = str_replace_all(event_seq, "new.env_0\\|", "N|")) %>%
     mutate(event_seq = str_replace_all(event_seq, "new.env_1\\|", "!|")) %>%
@@ -287,78 +290,130 @@ process_event_seq <- function(df) {
     mutate(event_seq = str_replace_all(event_seq, "get\\|", "A|")) %>%
     mutate(event_seq = str_replace_all(event_seq, "assign\\|", "A|")) %>%
     mutate(event_seq = str_replace_all(event_seq, "lockBinding_1\\|", "L|")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "\\$\\|", "A|")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "\\$<-\\|", "A|")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "\\[\\[\\|", "A|")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "\\[\\[<-\\|", "A|")) %>%
+    mutate(event_seq = str_replace_all(event_seq, "\\.subset2\\|", "A|")) %>%
     mutate(event_seq = str_replace_all(event_seq, "\\|parent.env<-_0\\|parent.env<-_1\\|", "|parent.env<-_1|")) %>%
     mutate(event_seq = str_replace_all(event_seq, "environment_0\\|", "")) %>%
     mutate(event_seq = str_replace_all(event_seq, "environment<-_1\\|", "!|")) %>%
     mutate(event_seq = str_replace_all(event_seq, "parent.env<-_1\\|", "Z|")) %>%
-    mutate(event_seq = str_replace_all(event_seq, "(!\\|)+", "!+|")) %>%
-    mutate(event_seq = str_replace_all(event_seq, "(\\?\\|)+", "?+|")) %>%
-    mutate(event_seq = str_replace_all(event_seq, "(L\\|)+", "L+|")) %>%
-    mutate(event_seq = str_replace_all(event_seq, "\\|(A\\|)+", "|A+|")) %>%
+    #mutate(event_seq = str_replace_all(event_seq, "(!\\|)+", "!+|")) %>%
+    #mutate(event_seq = str_replace_all(event_seq, "(L\\|)+", "L+|")) %>%
+    #mutate(event_seq = str_replace_all(event_seq, "\\|(A\\|)+", "|A+|")) %>%
     mutate(event_seq = str_replace_all(event_seq, fixed("|sys.frame_0|"), "|Y|")) %>%
     mutate(event_seq = str_replace_all(event_seq, fixed("|environment_0|"), "|E|")) %>%
     mutate(event_seq = str_replace_all(event_seq, fixed("|substitute|"), "|S|")) %>%
-    mutate(event_seq = str_replace_all(event_seq, "\\|", " ")) %>%
+    #mutate(event_seq = str_replace_all(event_seq, "\\|", " ")) %>%
     mutate(event_seq = str_trim(event_seq))
 
     df <-
     df %>%
-    mutate(event_seq = case_when(event_seq == "N Z !+" ~ "N Z !+ A*",
-                                 event_seq == "N Z !+ A+" ~ "N Z !+ A*",
-                                 event_seq == "N A @" ~ "N A @ A*",
-                                 event_seq == "N A @ A+" ~ "N A @ A*",
-                                 ## methods
-                                 event_seq == "N !+ L+" | event_seq == "N !+ L+ !+" | event_seq == "N L+ !+" ~ "N !* L+ !*",
-                                 ## R6
-                                 event_seq == "N A L+" | event_seq == "N A L+ @" | event_seq == "N !+ A L+" | event_seq == "N !+ A L+ @" | event_seq == "N !+ A @" ~ "N !* A L* @?",
-                                 event_seq == "N @" | event_seq == "N @ A+" | event_seq == "N A+ @" | event_seq == "N A+ @ A+" ~ "N A* @ A*",
-                                 event_seq == "N A+ L+" | event_seq == "N A+ L+ @" ~ "N A+ L+ @?",
-                                 event_seq == "N !+ A+ L+" | event_seq == "N !+ A+ L+ @" ~ "N !+ A+ L+ @?",
-                                 event_seq == "N [ A+ ]" | event_seq == "N [ ]" ~ "N [A*]",
-                                 event_seq == "N @ !+" | event_seq == "N !+ @" ~ "N !* @ !*",
-                                 event_seq == "N" | event_seq == "N A+" ~ "N A*",
-                                 event_seq == "N !+" | event_seq == "N A+ !+" ~ "N A* !+",
-                                 event_seq == "" | event_seq == "A+" ~ "N A*",
-                                 TRUE ~ event_seq)) %>%
-    mutate(event_seq = case_when(event_seq == "N A+ L+ @?" | event_seq == "N !* L+ !*" | event_seq == "N !+ A+ L+ @?" ~ "N !* A* L+ !* @?",
+    mutate(event_seq = map_chr(str_split(event_seq, fixed("|")),
+                               function(events) {
+                                   paste(sort(unique(str_trim(events))), collapse = " ")
+                               })) %>%
+    mutate(event_seq = str_trim(event_seq)) %>%
+    mutate(event_seq = case_when( event_seq == "" | event_seq == "A N V" | event_seq == "N V" ~ "N A V",
+                                 event_seq == "N" | event_seq == "A N" | event_seq == "A" ~ "N A",
+                                 event_seq == "! N" | event_seq == "! A N" ~ "N A !",
+                                 event_seq == "@ N" | event_seq == "@ A N" ~ "N A @",
+                                 event_seq == "! @ N" | event_seq == "! @ A N" ~ "N A @ !",
                                  TRUE ~ event_seq))
-    
     df
 }
 
-user_explicit_event_seq <-
+```
+
+## User Environments
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+USER_EXPLICIT_ENV <-
     all_env %>%
     filter(!core) %>%
-    process_event_seq() %>%
+    process_event_seq()
+
+str(USER_EXPLICIT_ENV)
+```
+
+### Event Sequence
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+USER_EXPLICIT_ENV_EVENT_SEQ <-
+    USER_EXPLICIT_ENV %>%
     group_by(event_seq) %>%
     summarize(count = sum(count), package_count = length(unique(package)), packages = paste(unique(package), collapse="|")) %>%
     ungroup() %>%
     arrange(desc(count)) %>%
     mutate(cumperc = round(100 * cumsum(count)/ sum(count), 2)) %>%
     mutate(count = label_number_si(0.1)(count)) %>%
-    mutate(package_count = label_number_si()(package_count)) %>%
-    slice(1:10)
+    mutate(package_count = label_number_si()(package_count))
+
+datatable(USER_EXPLICIT_ENV_EVENT_SEQ)
     
-datatable(user_explicit_event_seq)
-    
-user_explicit_event_seq %>%
+USER_EXPLICIT_ENV_EVENT_SEQ %>%
+slice(1:7) %>%
 pmap_chr(function(event_seq, count, package_count, packages, cumperc) {
     sprintf("\\texttt{%s}&%s&%.1f\\%%", event_seq, count, cumperc)
 }) %>%
 as_tex_table()
+```
 
+### Packages
 
-all_env %>%
-filter(!core) %>%
-process_event_seq() %>%
-filter(event_seq == "N A* !+") %>%
-count(primary_source, wt = count, name = "count") %>%
-arrange(desc(count)) %>%
-mutate(cumperc = round(100 * cumsum(count)/ sum(count), 2)) %>%
-mutate(count = label_number_si(0.1)(count)) %>%
-datatable()
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+USER_EXPLICIT_ENV_PACKAGES  <-
+    USER_EXPLICIT_ENV %>%
+    count(package, wt = count, name = "count") %>%
+    arrange(desc(count)) %>%
+    mutate(cumperc = round(100 * cumsum(count)/ sum(count), 2)) %>%
+    mutate(count = label_number_si(0.1)(count))
 
+datatable(USER_EXPLICIT_ENV_PACKAGES)
 
+USER_EXPLICIT_ENV_PACKAGES %>%
+slice(1:14) %>%
+pmap_chr(function(package, count, cumperc) {
+    sprintf("\\code{%s}&%s&%.1f\\%%", package, count, cumperc)
+}) %>%
+as_tex_table()
+```
+
+### Functions
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+USER_EXPLICIT_ENV_FUNCTIONS <-
+    USER_EXPLICIT_ENV %>%
+    count(primary_source, wt = count, name = "count") %>%
+    arrange(desc(count)) %>%
+    mutate(cumperc = round(100 * cumsum(count)/ sum(count), 2)) %>%
+    mutate(count = label_number_si(0.1)(count))
+
+datatable(USER_EXPLICIT_ENV_FUNCTIONS)
+
+USER_EXPLICIT_ENV_FUNCTIONS %>%
+slice(1:10) %>%
+pmap_chr(function(primary_source, count, cumperc) {
+    fun <- str_replace_all(primary_source, fixed("*$#$*"), "::")
+    sprintf("\\code{%s}&%s&%.1f\\%%", fun, count, cumperc)
+}) %>%
+as_tex_table()
+```
+
+### Parents
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+USER_EXPLICIT_ENV_PARENTS <-
+    USER_EXPLICIT_ENV %>%
+    count(parent_type, wt = count, name = "count")
+    
+datatable(USER_EXPLICIT_ENV_PARENTS)
+```
+
+## Core Environments
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
 core_explicit_event_seq <-
     all_env %>%
     filter(core & category == "Other") %>%
