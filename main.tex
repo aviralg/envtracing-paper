@@ -677,27 +677,7 @@ In this section, we discuss explicit environment creation using the \newEnv R
 function and native code. 395.2K of these environments are created from user
 packages. The remaining come from \emph{Core}.
 
-
-%We observe 3.3M environments created using this
-%function. The GNU R implementation (\base package) accounts for 87\% (2.9M) of
-%these and packages contribute remaining 13\% (420.6K).
-%
-%The implementation environments all come from a single \base package function,
-%\lazyLoadDBexec, used only internally. This function is responsible for loading
-%a package's code from a binary file and also for loading processed help file
-%data. Since this is an implementation detail, we ignore this for the rest of the
-%discussion.
-%
-%
-%The \methods package alone is responsible for 38.4\% of these calls. This
-%package ships with GNU R and implements the S4 object-oriented system, a
-%multi-argument dynamic dispatch system. The top 6 packages account for 92.6\% of
-%the calls.
-
-
 \subsubsection{User Explicit Environments}
-
-
 There are 55 packages responsible for all the explicit environments from
 \emph{User}. Table~\ref{table:top_explicit_pack} shows the number of
 environments created by the top 14 packages. These packages alone account for
@@ -921,7 +901,22 @@ environments by frequency and the package from which the attributes originate.
   \end{tabular}
 \end{table}
 
-
+\subsubsection{Core Explicit Environments}
+% We observe 3.3M environments created using this
+% function. The GNU R implementation (\base package) accounts for 87\% (2.9M) of
+% these and packages contribute remaining 13\% (420.6K).
+% 
+% The implementation environments all come from a single \base package function,
+% \lazyLoadDBexec, used only internally. This function is responsible for loading
+% a package's code from a binary file and also for loading processed help file
+% data. Since this is an implementation detail, we ignore this for the rest of the
+% discussion.
+% 
+% 
+% The \methods package alone is responsible for 38.4\% of these calls. This
+% package ships with GNU R and implements the S4 object-oriented system, a
+% multi-argument dynamic dispatch system. The top 6 packages account for 92.6\% of
+% the calls.
 
 \begin{table}[!h]
   \vspace{-3mm}
@@ -932,12 +927,19 @@ environments by frequency and the package from which the attributes originate.
     \toprule
     \textbf{Event Sequence}&\textbf{\#}&\textbf{Cum. \%}\\
     \midrule
-    \texttt{A*}&2.9M&90.8\%\\
-    \texttt{S}&144.8K&95.4\%\\
-    \texttt{[ A* ]}&140.7K&99.9\%\\
+    \texttt{A}&3.0M&88.4\%\\
+    \texttt{A, V}&165.6K&93.4\%\\
+    \texttt{S}&145.8K&97.7\%\\
+    \texttt{A, Z, !}&50.2K&99.2\%\\
+    \texttt{A, L, !}&12.1K&99.6\%\\
+    \texttt{A, @}&5.4K&99.7\%\\
     \bottomrule
   \end{tabular}
 \end{table}
+
+\begin{itemize}
+\item[\textbf{A}]
+\end{itemize}
 
 \bibliography{bib/jv,bib/aviral}
 
