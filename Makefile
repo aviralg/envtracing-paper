@@ -28,6 +28,9 @@ clean:
 analysis:
 	$(R) --slave -e "rmarkdown::render('analysis/$(ANALYSIS).Rmd', 'html_document', params = list(datadir = '$(DATADIR)', graphdir = '$(GRAPHDIR)', macrodir = '$(MACRODIR)', tabledir = '$(TABLEDIR)'))"
 
+allocation:
+	make analysis ANALYSIS=allocation
+
 classification:
 	make analysis ANALYSIS=classification
 

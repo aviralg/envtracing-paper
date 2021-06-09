@@ -488,7 +488,7 @@ independently executable scripts for evaluation by the \experimentr library.
 Experiments demonstrate the use of a package's functions, and vignettes
 illustrate a package's functionality with a larger example, typically using data
 supplied with the package. Table~\ref{table:corpus} presents the number and size
-of these scripts. Overall, there are 6.1K scripts with 205.8K lines of code.
+of these scripts. Overall, there are 6.9K scripts with 205.8K lines of code.
 
 The 286 corpus packages have 44.3K top-level functions, of which, 18.7K
 functions are exercised by the extracted scripts. From the un-exercised 25.6K
@@ -563,7 +563,7 @@ those, \texttt{ggplot2::theme} has the highest, 95 parameters.
 In our corpus, we observe the creation of 1.2 B environments, which makes them
 the second most widely allocated objects. Table~\ref{table:object_count_dist}
 shows the distribution of R objects for comparison. Promises are the most widely
-allocated objects, studied extensively by \citet{oopsla19b}. Vectors of logicals
+allocated objects, which is not surprising~\cite{oopsla19b}. Vectors of logicals
 and characters (string) are more frequently allocated compared to that of
 integers, reals, and raw (bytes). Language objects, i.e, first-class
 expressions, are used for metaprogramming. Lists are heterogeneous vectors.
@@ -578,24 +578,24 @@ Other objects such as S4, externalptr, etc. are rare.
     \toprule
     \textbf{Type}&\textbf{Count}\\
     \midrule
-    Promise&3.0B\\
+    Promise&2.8B\\
     Environment&1.2B\\
-    Logical&1.1B\\
-    Character&976.9M\\
-    Language&506.6M\\
-    Integer&482.0M\\
+    Logical&1.0B\\
+    Character&929.9M\\
+    Language&483.9M\\
+    Integer&453.5M\\
     \bottomrule
   \end{tabular}
   \begin{tabular}{lr}
     \toprule
     \textbf{Type}&\textbf{Count}\\
     \midrule
-    List&168.2M\\
-    Real&127.2M\\
-    Closure&118.5M\\
-    Symbol&74.3M\\
-    Raw&50.1M\\
-    Other&15.9M\\
+    List&159.3M\\
+    Closure&114.0M\\
+    Real&113.4M\\
+    Symbol&73.5M\\
+    Raw&46.4M\\
+    Other&15.2M\\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -610,9 +610,10 @@ its 16 packages: \code{base}, \code{compiler}, \code{datasets},
 packages. \emph{Native} represents environment creation using the C APIs
 \code{allocSExp}, \code{Rf_NewEnvironment}, and \code{Rf_NewHashedEnv}. Only
 \code{allocSexp} is exported for use by external packages. \emph{R} represents
-environment creation using \newEnv. \emph{Foreign} represents environments that
-were created outside of the code being traced; hence they are ignored from the
-rest of the discussion.
+environment creation using \newEnv. 904.4K (0.08\%) environments were created
+outside of the code being traced; hence they are ignored from the rest of the
+discussion. We believe that most of these are environments created during lazy
+loading of core R packges (which are loaded by default).
 
 The R core is responsible for 99.89\% of the environments, dominated by
 \emph{Native} . User packages are responsible for 0.03\% of the environments,
@@ -626,87 +627,89 @@ with twice as many from \emph{R} as \emph{Native}.
   \vspace{-3mm}
   \begin{tabular}{llrr}
     \toprule
-    \multirow{2}{*}{Core}  & \multicolumn{1}{l}{Native} & \multicolumn{1}{r}{1.1B} & \multicolumn{1}{r}{99.62\%}\\
+    \multirow{2}{*}{Core}  & \multicolumn{1}{l}{Native} & \multicolumn{1}{r}{1.2B} & \multicolumn{1}{r}{99.62\%}\\
                            & \multicolumn{1}{l}{R}     & \multicolumn{1}{r}{3.1M} & \multicolumn{1}{r}{0.27\%}\\
     \midrule
-    \multirow{2}{*}{User}  & \multicolumn{1}{l}{Native} & \multicolumn{1}{r}{163.6K} & \multicolumn{1}{r}{0.01\%}\\
-                           & \multicolumn{1}{l}{R}      & \multicolumn{1}{r}{239.3K} & \multicolumn{1}{r}{0.02\%}\\
-    \midrule
-    Foreign & &\multicolumn{1}{r}{899.6K} & \multicolumn{1}{r}{0.08\%}\\
+    \multirow{2}{*}{User}  & \multicolumn{1}{l}{Native} & \multicolumn{1}{r}{154.9K} & \multicolumn{1}{r}{0.01\%}\\
+                           & \multicolumn{1}{l}{R}      & \multicolumn{1}{r}{240.4K} & \multicolumn{1}{r}{0.02\%}\\
     \bottomrule
   \end{tabular}
 \end{table}
 
 
 \emph{Core}, \emph{Native} environments: 99.7\% of environments in this category
-are used for function calls, 334.5K are package namespaces, 2.9M are created by
-the \code{methods} package for S4 object-oriented system, and 175K by the
-\code{base} package for dynamic evaluation using \code{eval} and for registering
-native functions from R packages for access by other R packages.
+are used for function calls, 344.7K are created for package loading and package
+namespaces, 2.8M are created by the \code{methods} package for S4
+object-oriented system, 165.5K by the \code{base} package for dynamic evaluation
+using \code{eval}, 145.8K by \code{base} package for substitute.
 
 \emph{Core}, \emph{R} environments: 94.1\% of these environments are created by
 \code{base}, and 5.3\% by \code{methods} for the S4 object-oriented system. The
 \code{base} package contribution comes from an internal function,
 \code{lazyLoadDBexec}, used for loading package code and processed help files
-from binary files.
+from a binary database.
 
 \emph{User} environments: These environments come from many packages and are
 used for a variety of purposes such as hash tables, objects for custom OOP
 systems, sandboxing, etc.
 
+Overall, the environments can be divided into three categories as shown below in
+table~\ref{table:env_category}.
+
 \begin{table}
   \vspace{-3mm}
   \small
-  \caption{Environment Source} \label{table:env_source_dist}
+  \caption{Environment Source} \label{table:env_category}
   \centering
   \begin{tabular}{l|rr}
     \toprule
     \textbf{Source}&\textbf{Count}&\textbf{Percentage}\\
     \midrule
-    Call&1.2B&99.4\%\\
-    Other&7.2M&0.6\%\\
-    Package&672.5K&0.1\%\\
+    Call&1.2B&99.32\%\\
+    Explicit&6.6M&0.58\%\\
+    Package&344.7K&0.03\%\\
     \bottomrule
   \end{tabular}
 \end{table}
 
-
-\paragraph{What are environment life-cycles?} To characterize the life-cycle of
-environments, we summarize the sequence of events that affect it. The events of
-interest are \underline{S}ubstitute, \underline{P}arent.frame,
-s\underline{Y}s.frame, \underline{G}et, \underline{E}nvironment,
-\underline{A}rgument for environments passed as arguments to other functions and
-\underline{R}eturn for environments returned from functions. Events occurring to
-an environment passed to \eval are enclosed by $[$ and $]$. The event sequence
-of a call environment after the call has ended is preceded by a $\#$.
-
-
-\section{Explicit Environment Creation}
+\section{Explicit Environments}
 In this section, we discuss explicit environment creation using the \newEnv R
-function. We observe 3.3M environments created using this function. The GNU R
-implementation (\base package) accounts for 87\% (2.9M) of these and packages
-contribute remaining 13\% (420.6K).
-
-The implementation environments all come from a single \base package function,
-\lazyLoadDBexec, used only internally. This function is responsible for loading
-a package's code from a binary file and also for loading processed help file
-data. Since this is an implementation detail, we ignore this for the rest of the
-discussion.
+function and native code. 395.2K of these environments are created from user
+packages. The remaining come from \emph{Core}.
 
 
-The \methods package alone is responsible for 38.4\% of these calls. This
-package ships with GNU R and implements the S4 object-oriented system, a
-multi-argument dynamic dispatch system. The top 6 packages account for 92.6\% of
-the calls.
+%We observe 3.3M environments created using this
+%function. The GNU R implementation (\base package) accounts for 87\% (2.9M) of
+%these and packages contribute remaining 13\% (420.6K).
+%
+%The implementation environments all come from a single \base package function,
+%\lazyLoadDBexec, used only internally. This function is responsible for loading
+%a package's code from a binary file and also for loading processed help file
+%data. Since this is an implementation detail, we ignore this for the rest of the
+%discussion.
+%
+%
+%The \methods package alone is responsible for 38.4\% of these calls. This
+%package ships with GNU R and implements the S4 object-oriented system, a
+%multi-argument dynamic dispatch system. The top 6 packages account for 92.6\% of
+%the calls.
 
-\subsection{Explicit Environments}
 
 \subsubsection{User Explicit Environments}
 
 
-There are 59 packages responsible for all the remaining calls to \newEnv.
-Table~\ref{table:top_explicit_pack} shows the distribution of \newEnv calls for the top
-14 packages.
+There are 55 packages responsible for all the explicit environments from
+\emph{User}. Table~\ref{table:top_explicit_pack} shows the number of
+environments created by the top 14 packages. These packages alone account for
+98.9\% of all the environments in this category. The \code{vctrs} package
+provides tools for type-coercion and size-recycling of R vectors. The
+\code{rlang} package provides a consistent API to work with R objects and
+exposes an evaluation mechanism used by the ``tidyverse'' packages for building
+DSLs. \code{R6} implements a single-inheritance object-oriented system.
+\code{codetools} implements code analysis for the R compiler. \code{ggplot2} is
+a popular plotting library. \code{testthat} is widely used for testing R code.
+Finally, \code{dplyr} implements a DSL for database style queries on data
+frames.
 
 \begin{table}[!h]
   \vspace{-3mm}
@@ -741,10 +744,12 @@ Table~\ref{table:top_explicit_pack} shows the distribution of \newEnv calls for 
   \end{tabular}
 \end{table}
 
-The 55 packages have xxx functions that create explicit environments.
+The explicit environments in these 55 packages originate from 322 functions.
 Table~\ref{table:top_explicit_fun} shows the top ten functions. These functions
 alone contribute to 65.1\% of all the explicit environments in \emph{User}.
-\code{R6::generator_funs::new}
+These functions belong to 5 packages: \code{R6}, \code{vctrs}, \code{codetools},
+\code{ggplot2}, and \code{rlang}.
+
 \begin{table}[!h]
   \vspace{-3mm}
   \small
@@ -768,6 +773,14 @@ alone contribute to 65.1\% of all the explicit environments in \emph{User}.
   \end{tabular}
 \end{table}
 
+\paragraph{What are environment life-cycles?} We can characterize the life-cycle
+of these environments by summarizing the set of events that affect it.
+Table~\ref{table:user_explicit_env_seq} shows the top 7 event sets, which
+providing insights about 96.5\% of these environments. The events of interest
+are: \texttt{A} for read, write and remove, \texttt{V} for evaluating code in
+the environment, \texttt{L} for locking the environment or its bindings,
+\texttt{@} for setting attributes, and, \texttt{!} for setting this environment
+as the parent of another environment or lexical scope of a function.
 
 \begin{table}[!h]
   \vspace{-3mm}
@@ -783,14 +796,14 @@ alone contribute to 65.1\% of all the explicit environments in \emph{User}.
     \texttt{A, !}&43.8K&76.1\%\\
     \texttt{A, @}&38.9K&85.9\%\\
     \texttt{A, L}&30.4K&93.6\%\\
-    \texttt{A, L @}&8.3K&95.7\%\\
-    \texttt{A, @ !}&3.2K&96.5\%\\
+    \texttt{A, L, @}&8.3K&95.7\%\\
+    \texttt{A, @, !}&3.2K&96.5\%\\
     \bottomrule
   \end{tabular}
 \end{table}
 
 \begin{itemize}
-\item[{\bf A, V}:] This set accounts for the majority of environments. It is
+\item[\textbf{A, V}:] This set accounts for the majority of environments. It is
   observed in 36 packages. These environments are created for custom evaluation
   strategies, \ie, for evaluating expressions with custom bindings in the scope.
   For example, \code{rlang::eval_tidy} is an an alternative to R's \code{eval}
@@ -812,7 +825,7 @@ alone contribute to 65.1\% of all the explicit environments in \emph{User}.
   initializes it with error codes and socket types. The \code{iterators} package
   uses environments as dynamic state of iterator objects.
 
-\item[\textbf{A !}:] This pattern represents environments that are set as
+\item[\textbf{A, !}:] This pattern represents environments that are set as
   parents of other environments or functions. This is dominated by \code{R.oo}
   and \code{R6} packages that implement object oriented systems. They create new
   environments and set them as lexical scopes of object methods. The
@@ -822,7 +835,7 @@ alone contribute to 65.1\% of all the explicit environments in \emph{User}.
   function which uses the marker to decide whether to execute the code in
   parallel.
 
-\item[\textbf{A @}:] This pattern is used by packages to create custom objects,
+\item[\textbf{A, @}:] This pattern is used by packages to create custom objects,
   which can be used for dispatch based on the class attribute of the
   environments. \code{ggplot2} library implements \code{ggproto}, a prototype
   based OO system. The \code{ggproto} objects are explicit envivronments with
@@ -831,7 +844,7 @@ alone contribute to 65.1\% of all the explicit environments in \emph{User}.
   package creates a plot environment with plotting environments and sets an
   attribute on it.
 
-\item[\textbf{A L}:] This pattern is used by R6 to instantiate objects. The
+\item[\textbf{A, L}:] This pattern is used by R6 to instantiate objects. The
   private bindings are locked in the object environment to prevent
   any modification. Many calls to \code{lockBinding} also originate form
   \code{data.table} which uses a custom environment to store intermeidate state
@@ -845,7 +858,7 @@ alone contribute to 65.1\% of all the explicit environments in \emph{User}.
   locks the public bindings of an instantiated object, and also sets the class
   attribute.
 
-\item[\textbf{A, @ !}] This patterns comes from the \code{plyr} package. It
+\item[\textbf{A, @, !}] This patterns comes from the \code{plyr} package. It
   creates an environment with attribute \code{``idf''} for representing
   immutable data frames. It also assigns getter functions to this environment to
   access the columns of the data frame, and sets their environment to be the
@@ -854,6 +867,35 @@ alone contribute to 65.1\% of all the explicit environments in \emph{User}.
   environment of a subclass environment.
 \end{itemize}
 \noindent
+
+\paragraph{Class Attributes}
+XXXX Table~\ref{table:explicit_env_attr} presents the class attributes attached
+to environments by frequency and the package from which the attributes
+originate.
+\begin{table}[!h]
+  \vspace{-3mm}
+  \small
+  \caption{Environment Attributes} \label{table:explicit_env_attr}
+  \centering
+  \begin{tabular}{llrr}
+    \toprule
+    \textbf{Package}&\textbf{Attributes}&\textbf{\#}&\textbf{Cum. \%}\\
+    \midrule
+    \texttt{ggplot2}&\texttt{ggproto gg}&24.3K&47.8\%\\
+    \texttt{rlang}&\texttt{rlang\_ctxt\_pronoun}&12.1K&71.5\%\\
+    \texttt{R6}&\texttt{R6}&9.2K&89.5\%\\
+    \texttt{rlang}&\texttt{r6lite}&3.7K&96.8\%\\
+    \texttt{plyr}&\texttt{idf environment}&1.2K&99.2\%\\
+    \texttt{later}&\texttt{event\_loop}&279.0&99.7\%\\
+    \texttt{R6}&\texttt{R6ClassGenerator}&113.0&100.0\%\\
+    \texttt{shiny}&\texttt{session\_proxy}&12.0&100.0\%\\
+    \texttt{XML}&\texttt{XMLHashTree XMLAbstractDocument}&10.0&100.0\%\\
+    \texttt{xts}&\texttt{replot\_xts environment}&2.0&100.0\%\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+
 
 \begin{table}[!h]
   \vspace{-3mm}

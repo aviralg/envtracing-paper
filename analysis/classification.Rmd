@@ -24,52 +24,14 @@ params:
 source("analysis.R", local = knitr::knit_global())
 ```
 
-```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
-allocation <-
-    allocation %>%
-    select(type, count = allocated) %>%
-    filter(!(type %in% c("missing", "null", "unbound", "bytecode", "miscellaneous", "special", "builtin", "dot", "char", "weakref", "pairlist")))
-
-
-datatable(allocation)
-
-OTHER_ALLOCATION_CUTOFF <- 50000000
-
-other_allocation <-
-    allocation %>% 
-    filter(count <= OTHER_ALLOCATION_CUTOFF) %>%
-    print() %>%
-    summarize(type = "other", count = sum(count))
-
-allocation <-
-    allocation %>%
-    filter(count > OTHER_ALLOCATION_CUTOFF) %>%
-    bind_rows(other_allocation)
-
-allocation_table <-
-    allocation %>%
-    mutate(type = str_to_title(type)) %>%
-    arrange(desc(count)) %>%
-    mutate(count = label_number_si(accuracy = 0.1)(count))
-    
-datatable(allocation_table)
-
-allocation_table %>%
-pmap_chr(function(type, count) {
-    sprintf("%s&%s", type, count)
-}) %>%
-as_tex_table()
-```
-
 # Native Environments
-
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
 ## handle easy cases: call, package, and foreign
 native_env <-
     native_env %>%
     mutate(package_kind = package) %>%
-    mutate(class = !is.na(class), package = !is.na(package)) %>%
+    mutate(package = !is.na(package)) %>%
     mutate(category = case_when(call_env | dispatch ~ "Call",
                                 package ~ "Package",
                                 is.na(source_fun_name_1) ~ "Foreign",
@@ -124,7 +86,6 @@ new_env <-
                                       source_fun_name_1 == "base*$#$*new.env" & is.na(source_fun_name_2) ~ "base*$#$*package_load_file",
                                       source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*5d8ec22f1fac51fafcb0a876cc9a1dad489c1b41bfc4427f6634a9857d6e45a22b0c5a8504ee92c76d994698a2b00900888d4df7fa22d64c4e0196443f11c9b2" ~ "dplyr*$#$*dplyr_lazy_vec_chop_impl",
                                       source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*24a2bd9ef1d1d0bed806a984c395ea21bbe8f6c7e28034d5ab619490dfd2057496cb2893ea5f506ca61e31d3580e8e2ed220a9fc53ee5970cabc102f8fd241eb" ~ "R6*$#$*R6Class",
-                                      
                                       source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*2ae04899b56d2a4922d9088b16dca9f5493c3ceb37dabbfb0d6625d23af95e73e9e212ac86b83f1445eacfdbd3fa81b3a661bb7f3c5da3fa04debfa085395681*$#$*make_first_new_slice" ~ "R6*$#$*make_first_new_slice",
                                       source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*2ae04899b56d2a4922d9088b16dca9f5493c3ceb37dabbfb0d6625d23af95e73e9e212ac86b83f1445eacfdbd3fa81b3a661bb7f3c5da3fa04debfa085395681*$#$*make_new_slice" ~ "R6*$#$*make_new_slice",
                                       source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*clone*$#$*make_new_slice" ~ "R6*$#$*make_new_slice",
@@ -133,8 +94,6 @@ new_env <-
                                       source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*checkMatrix" ~ "Matrix*$#$*checkMatrix",
                                       source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*new" ~ "R6*$#$*generator_funs*$#$*new",
                                       source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*create_super_env" ~ "R6*$#$*create_super_env",
-                                      
-                                      
                                       source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*clone*$#$*make_first_new_slice" ~ "R6*$#$*make_first_new_slice",
                                       source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*initialize" ~ "R6*$#$*generator_funs*$#$*new",
                                       source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*271ae2fa8d46b84c79a0b568c8ce6fb89fe66b0ad80a18be62ae15dcf13a1fd0701aaf43706e7c4bd694aa4f34c809f2551e010abff6210ed4fe8a8c3ac7980f" ~ "httpuv*$#$*AppWrapper*$#$*initialize",
@@ -142,7 +101,9 @@ new_env <-
                                       source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*53f26b2cc4bd7c82af8e9821b32aefa979dab81840aaac8996db5353037c0ddc5f41064696a9181d13d0362cc7c6d3deed1fcc3da364a0db446ab271b90e4f08" ~ "shiny*$#$*shinyAppDir_serveR",
                                       source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*moreSessionInfo" ~ "CLA*$#$*moreSessionInfo",
                                       source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*5ee24a437c49708a0c574d944232c19f979e7bc53cbdeac097f0155a96b32aa49322aad1e26a9df50e9e9f3230a5b20f95616d31116f1e010eec4d1b9594a97a" ~ "dplyr*$#$*tests*$#$*testthat*$#$*test-across.R",                     
-                                      source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*5ee24a437c49708a0c574d944232c19f979e7bc53cbdeac097f0155a96b32aa49322aad1e26a9df50e9e9f3230a5b20f95616d31116f1e010eec4d1b9594a97a" ~ "dplyr*$#$*tests*$#$*testthat*$#$*test-across.R",                        source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*c2fc402d1f015684f414ec363dfa3b4f339189c31f973af868049d096b5b1ac3d14ea80c1b6c7e00f1e90e533871e10dfefdf9f5c2c83303c17e6feb077bf8e5" ~ "R6*$#$*examples*$#$*CustomCloner",                                      source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*r_parse_eval" ~ "rlang*$#$*tests*$#$*testthat*$#$*helper-c-api.R",                    
+                                      source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*5ee24a437c49708a0c574d944232c19f979e7bc53cbdeac097f0155a96b32aa49322aad1e26a9df50e9e9f3230a5b20f95616d31116f1e010eec4d1b9594a97a" ~ "dplyr*$#$*tests*$#$*testthat*$#$*test-across.R",                        
+                                      source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*c2fc402d1f015684f414ec363dfa3b4f339189c31f973af868049d096b5b1ac3d14ea80c1b6c7e00f1e90e533871e10dfefdf9f5c2c83303c17e6feb077bf8e5" ~ "R6*$#$*examples*$#$*CustomCloner",                                      
+                                      source_fun_name_1 == "base*$#$*new.env" & source_fun_name_2 == "<NA>*$#$*r_parse_eval" ~ "rlang*$#$*tests*$#$*testthat*$#$*helper-c-api.R",                    
                                       TRUE ~ source_fun_name_2)) %>%
     mutate(package = map_chr(str_split(primary_source, fixed("*$#$*")), ~.[1])) %>%
     # move nlme to base, it uses local function.
@@ -157,7 +118,7 @@ all_env <-
     new_env %>%
     bind_rows(native_env)
     
-env_category <-
+env_source <-
     all_env %>%
     count(core, native, wt = count, name = "count") %>%
     arrange(desc(count)) %>%
@@ -165,14 +126,25 @@ env_category <-
     mutate(count = label_number_si(accuracy = 0.1)(count),
            perc = label_percent(accuracy = 0.01)(perc))
     
-datatable(env_category)
+datatable(env_source)
 
-# env_category %>%
-# pmap_chr(function(category, count, perc) {
-#     sprintf("%s&%s&%s", str_to_title(category), count, perc)
-# }) %>%
-# as_tex_table()
+ENV_CATEGORY <-
+    all_env %>%
+    count(category, wt = count, name = "count") %>%
+    arrange(desc(count)) %>%
+    mutate(perc = compute_proportion(count, 6)) %>%
+    mutate(count = label_number_si(accuracy = 0.1)(count),
+           perc = label_percent(accuracy = 0.01)(perc))
+           
+datatable(ENV_CATEGORY)
+
+ENV_CATEGORY %>%
+pmap_chr(function(category, count, perc) {
+    sprintf("%s&%s&%s", str_to_title(category), count, perc)
+}) %>%
+as_tex_table()
 ```
+
 # Core Environments
 
 ## Native Core Environment Details
@@ -254,7 +226,7 @@ native_env %>%
 ## datatable(other_env)
 ```
 
-# New Environments
+# Explicit Environments
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
 process_event_seq <- function(df) {
@@ -335,7 +307,65 @@ USER_EXPLICIT_ENV <-
     process_event_seq()
 
 str(USER_EXPLICIT_ENV)
+
+cat("Total Explicit User Environments: ", sum(USER_EXPLICIT_ENV$count))
 ```
+
+### Packages
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+USER_EXPLICIT_ENV_PACKAGES  <-
+    USER_EXPLICIT_ENV %>%
+    count(package, wt = count, name = "count") %>%
+    arrange(desc(count)) %>%
+    mutate(cumperc = round(100 * cumsum(count)/ sum(count), 2)) %>%
+    mutate(count = label_number_si(0.1)(count))
+
+datatable(USER_EXPLICIT_ENV_PACKAGES)
+
+USER_EXPLICIT_ENV_PACKAGES %>%
+slice(1:14) %>%
+pmap_chr(function(package, count, cumperc) {
+    sprintf("\\code{%s}&%s&%.1f\\%%", package, count, cumperc)
+}) %>%
+as_tex_table()
+
+cat("Total Explicit User Packages: ", nrow(USER_EXPLICIT_ENV_PACKAGES))
+```
+
+### Functions
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+USER_EXPLICIT_ENV_FUNCTIONS <-
+    USER_EXPLICIT_ENV %>%
+    count(primary_source, wt = count, name = "count") %>%
+    arrange(desc(count)) %>%
+    mutate(cumperc = round(100 * cumsum(count)/ sum(count), 2)) %>%
+    mutate(count = label_number_si(0.1)(count))
+
+datatable(USER_EXPLICIT_ENV_FUNCTIONS)
+
+USER_EXPLICIT_ENV_FUNCTIONS %>%
+slice(1:10) %>%
+pmap_chr(function(primary_source, count, cumperc) {
+    fun <- str_replace_all(primary_source, fixed("*$#$*"), "::")
+    sprintf("\\code{%s}&%s&%.1f\\%%", fun, count, cumperc)
+}) %>%
+as_tex_table()
+
+cat("Total Explicit User Functions: ", nrow(USER_EXPLICIT_ENV_FUNCTIONS))
+```
+
+### Parent Type
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+USER_EXPLICIT_ENV_PARENTS <-
+    USER_EXPLICIT_ENV %>%
+    count(native, parent_type, wt = count, name = "count")
+    
+datatable(USER_EXPLICIT_ENV_PARENTS)
+```
+
 
 ### Event Sequence
 
@@ -360,55 +390,66 @@ pmap_chr(function(event_seq, count, package_count, packages, cumperc) {
 as_tex_table()
 ```
 
-### Packages
+
+### Formula
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
-USER_EXPLICIT_ENV_PACKAGES  <-
+USER_EXPLICIT_ENV_FORMULA <-
     USER_EXPLICIT_ENV %>%
-    count(package, wt = count, name = "count") %>%
-    arrange(desc(count)) %>%
-    mutate(cumperc = round(100 * cumsum(count)/ sum(count), 2)) %>%
-    mutate(count = label_number_si(0.1)(count))
-
-datatable(USER_EXPLICIT_ENV_PACKAGES)
-
-USER_EXPLICIT_ENV_PACKAGES %>%
-slice(1:14) %>%
-pmap_chr(function(package, count, cumperc) {
-    sprintf("\\code{%s}&%s&%.1f\\%%", package, count, cumperc)
-}) %>%
-as_tex_table()
-```
-
-### Functions
-
-```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
-USER_EXPLICIT_ENV_FUNCTIONS <-
-    USER_EXPLICIT_ENV %>%
-    count(primary_source, wt = count, name = "count") %>%
-    arrange(desc(count)) %>%
-    mutate(cumperc = round(100 * cumsum(count)/ sum(count), 2)) %>%
-    mutate(count = label_number_si(0.1)(count))
-
-datatable(USER_EXPLICIT_ENV_FUNCTIONS)
-
-USER_EXPLICIT_ENV_FUNCTIONS %>%
-slice(1:10) %>%
-pmap_chr(function(primary_source, count, cumperc) {
-    fun <- str_replace_all(primary_source, fixed("*$#$*"), "::")
-    sprintf("\\code{%s}&%s&%.1f\\%%", fun, count, cumperc)
-}) %>%
-as_tex_table()
-```
-
-### Parents
-
-```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
-USER_EXPLICIT_ENV_PARENTS <-
-    USER_EXPLICIT_ENV %>%
-    count(parent_type, wt = count, name = "count")
+    filter(str_detect(event_seq, fixed("~"))) %>%
+    count(primary_source, wt = count, name = "count")
     
-datatable(USER_EXPLICIT_ENV_PARENTS)
+datatable(USER_EXPLICIT_ENV_FORMULA)
+
+cat("Total formula environments: ", sum(USER_EXPLICIT_ENV_FORMULA$count))
+```
+
+### Eval
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+USER_EXPLICIT_ENV_EVAL <-
+    USER_EXPLICIT_ENV %>%
+    filter(!is.na(eval_category)) %>%
+    count(eval_category, wt = count, name = "count")
+    
+datatable(USER_EXPLICIT_ENV_EVAL)
+```
+
+### Class Attribute
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+USER_EXPLICIT_ENV_CLASS <-
+    USER_EXPLICIT_ENV %>%
+    filter(!is.na(class)) %>%
+    mutate(kind = case_when(str_ends(class, fixed("ggproto|gg")) ~ "ggplot2::ggproto|gg",
+                            str_ends(class, fixed("replot_xts|environment")) ~ "xts::replot_xts|environment",
+                            str_ends(class, fixed("XMLHashTree|XMLAbstractDocument")) ~ "XML::XMLHashTree|XMLAbstractDocument",
+                            str_ends(class, fixed("event_loop")) ~ "later::event_loop",
+                            str_ends(class, fixed("rlang_ctxt_pronoun")) ~ "rlang::rlang_ctxt_pronoun",
+                            str_ends(class, fixed("r6lite")) ~ "rlang::r6lite",
+                            str_ends(class, fixed("idf|environment")) ~ "plyr::idf|environment",
+                            class == "R6ClassGenerator" ~ "R6::R6ClassGenerator",
+                            str_detect(class, fixed("session_proxy")) ~ "shiny::session_proxy",
+                            str_detect(class, fixed("R6")) ~ "R6::R6",
+                            TRUE ~ NA_character_)) %>%
+    filter(!is.na(kind)) %>%
+    count(kind, wt = count, name = "count") %>%
+    arrange(desc(count)) %>%
+    mutate(cumperc = round(100 * cumsum(count)/ sum(count), 2)) %>%
+    mutate(count = label_number_si(0.1)(count))
+    
+datatable(USER_EXPLICIT_ENV_CLASS)
+
+USER_EXPLICIT_ENV_CLASS %>%
+
+pmap_chr(function(kind, count, cumperc) {
+    splits <- str_split(kind, fixed("::"))[[1]] 
+    package <- splits[1]
+    classes <- splits[2]
+    classes <- str_replace_all(classes, fixed("|"), " ")
+    sprintf("\\texttt{%s}&\\texttt{%s}&%s&%.1f\\%%", package, classes, count, cumperc)
+}) %>%
+as_tex_table()
 ```
 
 ## Core Environments
