@@ -101,7 +101,9 @@ read_lazy(client, "client")
 read_lazy(functions, "functions.fst")
 read_lazy(allocation, "allocation.fst")
 read_lazy(execution, "execution.fst")
-read_lazy(native_env, "native_env.fst")
+read_lazy(native_env_first, "native_env_first.fst")
+read_lazy(native_env_second, "native_env_second.fst")
+read_lazy(native_env_third, "native_env_third.fst")
 read_lazy(new_env, "new_env.fst")
 read_lazy(call_event_seq, "call_event_seq.fst")
 
@@ -109,6 +111,10 @@ sloc_script %<>%
     mutate(package2 = type) %>%
     mutate(type = package) %>%
     mutate(package = package2)
+
+native_env <- bind_rows(native_env_first,
+                        native_env_second,
+                        native_env_third)
 
 # read_lazy <-
 #     arg_ref %>%
