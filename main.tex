@@ -1,4 +1,4 @@
-\documentclass[10pt,review,sigplan,anonymous=true]{acmart}
+\documentclass[10pt,review,sigplan,anonymous=true,authorversion=true,nonacm=true]{acmart}
 \settopmatter{printfolios=false,printccs=false,printacmref=false}
 
 \bibliographystyle{ACM-Reference-Format}
@@ -133,14 +133,17 @@
 
 
 \begin{abstract}
-  The R programming language is widely used for statistical computations. R
-  encourages a very dynamic programming style, to enable interactive data
-  exploration and rapid prototyping. A key enabler of this dynamism is its
-  support for first-class environments. To our knowledge, R is the only
-  mainstream programming language with explicit environments. This paper
-  presents the design of environments in R, and an empirical evaluation of how
-  they are used. For this, we analyze \AG{XXXX} programs from 100 most popular CRAN
-  packages. We find that first-class environments are used for \AG{XYZ}.
+  The R programming language is widely used for statistical computing. To enable
+  interactive data exploration and rapid prototyping, R encourages a dynamic
+  programming style. This programming style is support by a number of features
+  including first-class environments. R is the only language, with millions of
+  users, that provides a full reflective interface for manipulating
+  environments. With the great flexibility afforded by first-class environments,
+  comes challenges for reasoning about code and significant restrictions about
+  what transformations a compiler is allowed to apply to programs. This paper is
+  an overview of the environment interface refined over two decades. We explain
+  the rationale behind the design and document how environments are used in the
+  wild by the means of a corpus analysis.
 \end{abstract}
 
 \begin{CCSXML}
@@ -535,7 +538,7 @@ There are few large packages; 8 packages have more than 500 functions.
 
 We observed 42.1M calls to these functions. Figure~\ref{fig:calldist} shows the
 distribution of calls. 52.9\% functions are called more than ten times. 14.3\%
-functions are called only once, leading to low coverage. 
+functions are called only once, leading to low coverage.
 
 \begin{figure}[!h]
   \centering
@@ -886,7 +889,7 @@ These functions belong to 5 packages: \code{R6}, \code{vctrs}, \code{codetools},
   \end{tabular}
 \end{table}
 
-\paragraph{What are environment life-cycles?} 
+\paragraph{What are environment life-cycles?}
 Table~\ref{table:user_explicit_env_seq} shows the top 7 event sets, which
 providing insights about 96.5\% of these environments. The event \texttt{@} is
 used for setting attributes; the rest of the events have the same meaning as
@@ -1046,4 +1049,4 @@ environments by frequency and the package from which the attributes originate.
 % - library
 %
 % environment class
-% - 
+% -
