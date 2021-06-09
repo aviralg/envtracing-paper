@@ -612,9 +612,8 @@ cat("% environments with attributes: ", sum(CORE_EXPLICIT_ENV_CLASS$count) / sum
 ```
 
 
+## Call Environments
 
-
-## Call Environment Sequence
 ```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
 process_call_event_seq <- function(df) {
     df <-
@@ -673,11 +672,15 @@ process_call_event_seq <- function(df) {
     df
 }
 
-
-call_event_seq <-
+CALL_ENV <-
     all_env %>%
     filter(category == "Call") %>%
-    process_call_event_seq() %>%
+    process_call_event_seq()
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+CALL_ENV_EVENT_SEQ <-
+    CALL_ENV %>%
     group_by(event_seq) %>%
     summarize(count = sum(count)) %>%
     ungroup() %>%
@@ -686,39 +689,23 @@ call_event_seq <-
     mutate(count = label_number_si(0.1)(count)) %>%
     slice(1:1000)
 
-datatable(call_event_seq)
+datatable(CALL_ENV_EVENT_SEQ)
 
 
-    all_env %>%
-    filter(category == "Call") %>%
-    process_call_event_seq() %>%
-    filter(event_seq == "|parent.frame_0|") %>%
+CALL_ENV %>%
+    filter(event_seq == "S+") %>%
     arrange(desc(count)) %>%
-    mutate(cumperc = round(100 * cumsum(count)/ sum(count), 2)) %>%
-    mutate(count = label_number_si(0.1)(count)) %>%
     slice(1:100) %>%
     datatable()
-```
 
-## Core Package Environments
-```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
-all_env %>%
-filter(category == "Package") %>%
-count(package_kind, wt = count, name = "count") %>%
-arrange(desc(count)) %>%
-mutate(cumperc = round(100 * cumsum(count)/ sum(count), 2)) %>%
-slice(1:100) %>%
-datatable()
 
-all_env %>%
-filter(category == "Package") %>%
-process_event_seq() %>%
-mutate(event_seq = str_replace_all(event_seq, "(A\\+ |!\\+ )+", "(A|!)+")) %>%
-mutate(event_seq = str_replace_all(event_seq, fixed("(A|!)+A+"), "(A|!)+")) %>%
-mutate(event_seq = str_replace_all(event_seq, fixed("(A|!)+!+"), "(A|!)+")) %>%
-count(event_seq, wt = count, name = "count") %>%
-arrange(desc(count)) %>%
-mutate(cumperc = round(100 * cumsum(count)/ sum(count), 2)) %>%
-slice(1:100) %>%
-datatable()
+##    all_env %>%
+##    filter(category == "Call") %>%
+##    process_call_event_seq() %>%
+##    filter(event_seq == "|parent.frame_0|") %>%
+##    arrange(desc(count)) %>%
+##    mutate(cumperc = round(100 * cumsum(count)/ sum(count), 2)) %>%
+##    mutate(count = label_number_si(0.1)(count)) %>%
+##    slice(1:100) %>%
+##    datatable()
 ```
