@@ -472,16 +472,10 @@ cat("% environments with attributes: ", sum(USER_EXPLICIT_ENV_CLASS$count) / sum
 ## Core Environments
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
-all_env %>%
-    filter(is.na(category)) %>%
-    count(core, primary_source, wt = count, name = "count") %>%
-    arrange(desc(count)) %>%
-    mutate(cumperc = round(100 * cumsum(count)/ sum(count), 2)) %>%
-    mutate(count = label_number_si(0.1)(count)) %>%
-    slice(1:10) %>%
-    datatable()
 
-core_explicit_event_seq <-
+cat("Total core explicit envs", sum(filter(all_env, core, is.na(category) | category == "Other")$count))
+
+CORE_EXPLICIT_ENV <-
     all_env %>%
     filter(core) %>%
     filter(is.na(category) | category == "Other") %>%
@@ -499,30 +493,138 @@ core_explicit_event_seq <-
                                  event_seq == "N" ~ "A N",
                                  event_seq == "! N Z" ~ "! A N Z",
                                  event_seq == "! L N" ~ "! A L N",
-                                 TRUE ~ event_seq)) %>%
-##        mutate(event_seq = case_when( event_seq == "" | event_seq == "A N V" | event_seq == "N V" ~ "N A V",
-##                                 event_seq == "N" | event_seq == "A N" | event_seq == "A" ~ "N A",
-##                                 event_seq == "! N" | event_seq == "! A N" ~ "N A !",
-##                                 event_seq == "@ N" | event_seq == "@ A N" ~ "N A @",
-##                                 event_seq == "! @ N" | event_seq == "! @ A N" ~ "N A @ !",
-##                                 TRUE ~ event_seq))
+                                 TRUE ~ event_seq))
 
+CORE_EXPLICIT_OTHER_ENV <-
+    all_env %>%
+    filter(core) %>%
+    filter(is.na(category) | category == "Other") %>%
+    filter(str_starts(primary_source, fixed("base*$#$*lazyLoadDBexec"))    |
+           str_starts(primary_source, fixed("base*$#$*loadNamespace"))     |
+           str_starts(primary_source, fixed("base*$#$*package_load_file")) |
+           str_starts(primary_source, fixed("base*$#$*dyn.load")))
+    
+CORE_EXPLICIT_OTHER_ENV %>%
+count(primary_source, wt = count, name = "count") %>%
+arrange(desc(count)) %>%
+mutate(cumperc = round(100 * cumsum(count)/ sum(count), 2)) %>%
+mutate(count = label_number_si(0.1)(count)) %>%
+datatable()
+
+cat("Other core explicit envs", sum(CORE_EXPLICIT_OTHER_ENV$count))
+```
+
+### Events
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+
+CORE_EXPLICIT_ENV_EVENT_SEQ <-
+    CORE_EXPLICIT_ENV %>%
     group_by(event_seq) %>%
     summarize(count = sum(count), sources = paste(unique(primary_source), collapse="|")) %>%
     ungroup() %>%
     arrange(desc(count)) %>%
-    mutate(cumperc = round(100 * cumsum(count)/ sum(count), 2)) %>%
-    mutate(count = label_number_si(0.1)(count)) %>%
-    slice(1:20)
+    mutate(cumperc = round(100 * cumsum(count)/ sum(count), 2))
 
-datatable(core_explicit_event_seq)
-    
-core_explicit_event_seq %>%
+datatable(CORE_EXPLICIT_ENV_EVENT_SEQ)
+
+CORE_EXPLICIT_ENV_EVENT_SEQ %>%
+mutate(count = label_number_si(0.1)(count)) %>%
+slice(1:20) %>%
 pmap_chr(function(event_seq, count, sources, cumperc) {
     sprintf("\\texttt{%s}&%s&%.1f\\%%", event_seq, count, cumperc)
 }) %>%
 as_tex_table()
+
+cat("Total Core environments: ", sum(CORE_EXPLICIT_ENV_EVENT_SEQ$count))
 ```
+
+### Packages
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+CORE_EXPLICIT_ENV_PACKAGES  <-
+    CORE_EXPLICIT_ENV %>%
+    count(package, wt = count, name = "count") %>%
+    arrange(desc(count)) %>%
+    mutate(cumperc = round(100 * cumsum(count)/ sum(count), 2)) %>%
+    mutate(count = label_number_si(0.1)(count))
+
+datatable(CORE_EXPLICIT_ENV_PACKAGES)
+
+CORE_EXPLICIT_ENV_PACKAGES %>%
+slice(1:14) %>%
+pmap_chr(function(package, count, cumperc) {
+    sprintf("\\code{%s}&%s&%.1f\\%%", package, count, cumperc)
+}) %>%
+as_tex_table()
+
+cat("Total Explicit Core Packages: ", nrow(CORE_EXPLICIT_ENV_PACKAGES))
+```
+
+### Functions
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+CORE_EXPLICIT_ENV_FUNCTIONS <-
+    CORE_EXPLICIT_ENV %>%
+    count(primary_source, wt = count, name = "count") %>%
+    arrange(desc(count)) %>%
+    mutate(cumperc = round(100 * cumsum(count)/ sum(count), 2)) %>%
+    mutate(count = label_number_si(0.1)(count))
+
+datatable(CORE_EXPLICIT_ENV_FUNCTIONS)
+
+CORE_EXPLICIT_ENV_FUNCTIONS %>%
+slice(1:10) %>%
+pmap_chr(function(primary_source, count, cumperc) {
+    fun <- str_replace_all(primary_source, fixed("*$#$*"), "::")
+    sprintf("\\code{%s}&%s&%.1f\\%%", fun, count, cumperc)
+}) %>%
+as_tex_table()
+
+cat("Total Explicit Core Functions: ", nrow(CORE_EXPLICIT_ENV_FUNCTIONS))
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+CORE_EXPLICIT_ENV_CLASS <-
+    CORE_EXPLICIT_ENV %>%
+    filter(!is.na(class)) %>%
+    mutate(kind = case_when(str_ends(class, fixed("ggproto|gg")) ~ "ggplot2::ggproto|gg",
+                            str_ends(class, fixed("replot_xts|environment")) ~ "xts::replot_xts|environment",
+                            str_ends(class, fixed("XMLHashTree|XMLAbstractDocument")) ~ "XML::XMLHashTree|XMLAbstractDocument",
+                            str_ends(class, fixed("event_loop")) ~ "later::event_loop",
+                            str_ends(class, fixed("rlang_ctxt_pronoun")) ~ "rlang::rlang_ctxt_pronoun",
+                            str_ends(class, fixed("r6lite")) ~ "rlang::r6lite",
+                            str_ends(class, fixed("idf|environment")) ~ "plyr::idf|environment",
+                            class == "R6ClassGenerator" ~ "R6::R6ClassGenerator",
+                            str_detect(class, fixed("session_proxy")) ~ "shiny::session_proxy",
+                            str_detect(class, fixed("R6")) ~ "R6::R6",
+                            TRUE ~ NA_character_)) %>%
+    filter(!is.na(kind)) %>%
+    count(kind, wt = count, name = "count") %>%
+    arrange(desc(count)) %>%
+    mutate(cumperc = round(100 * cumsum(count)/ sum(count), 2))
+
+CORE_EXPLICIT_ENV_CLASS %>%
+mutate(count = label_number_si(0.1)(count)) %>%
+datatable()
+
+CORE_EXPLICIT_ENV_CLASS %>%
+mutate(count = label_number_si(0.1)(count)) %>%
+pmap_chr(function(kind, count, cumperc) {
+    splits <- str_split(kind, fixed("::"))[[1]] 
+    package <- splits[1]
+    classes <- splits[2]
+    classes <- str_replace_all(classes, fixed("|"), " ")
+    sprintf("\\texttt{%s}&\\texttt{%s}&%s&%.1f\\%%", package, classes, count, cumperc)
+}) %>%
+as_tex_table()
+
+cat("Total environments with attributes: ", sum(CORE_EXPLICIT_ENV_CLASS$count))
+cat("% environments with attributes: ", sum(CORE_EXPLICIT_ENV_CLASS$count) / sum(CORE_EXPLICIT_ENV_EVENT_SEQ$count))
+```
+
+
+
 
 ## Call Environment Sequence
 ```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
