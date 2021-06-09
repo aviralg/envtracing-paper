@@ -938,7 +938,36 @@ environments by frequency and the package from which the attributes originate.
 \end{table}
 
 \begin{itemize}
-\item[\textbf{A}]
+\item[\textbf{A}:] This is the most common pattern, and it occurs in many
+  functions. The most common example is the \code{new} function of the methods
+  object used for creating S4 objects. Another example is the grid package that
+  uses explicit environments to create viewport objects and key their children
+  by name. The \code{parallel::addClusterOptions} function uses an environment
+  to store options about the cluster for parallel execution such as port number,
+  timeout, and R path.
+\item[\textbf{A, V}:] This pattern represents environments created by the
+  \code{base::eval} and \code{base::evalq} functions. The default behavior of
+  these functions is to evaluate an expression in the supplied environment.
+  However, if a list of named elements is supplied instead of an environment, it
+  is internally converted into an environment.
+\item[\textbf{S}:] This pattern comes from the \code{base::substitute} function.
+  This function is used for substituting symbols with expressions in ASTs. The
+  substitutions are read either from an environment, or a list. If a list is
+  supplied, it is converted into an environment internally.
+\item[\textbf{A, Z, !}:] This patterns comes from the methods package's
+  \code{makeGeneric} function. In the process of converting a function
+  definition to a generic function, it creates a new environment, assigns the
+  field \code{".Generic"} to the name of the generic method, sets its parent as
+  the lexical scope of the function (\texttt{Z}), and finally, sets the new
+  environment as the lexical scope of the function (\texttt{!}).
+\item[\textbf{A, L, !}:] These event s happen in S4 objects. Their underlying
+  data object consists of an environment with a reference \code{self} to the
+  object itself. This binding is locked to prevent modification.
+\item[\textbf{A, @}:] This set occurs in \code{base} package's srcfilecopy and
+  srcfilealias functions. These functions are used for source code references,
+  \ie, with references to code in text files. They create a new environment, set
+  the filename and source code location information, and add the class
+  attributes \code{"srcfilealis"}, \code{"srcfilecopy"}, and \code{"srcfile"}.
 \end{itemize}
 
 \bibliography{bib/jv,bib/aviral}
