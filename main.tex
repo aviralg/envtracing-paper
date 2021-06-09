@@ -868,10 +868,36 @@ as the parent of another environment or lexical scope of a function.
 \end{itemize}
 \noindent
 
+\paragraph{Formula}
+Only 597 of these environments were used for formula construction. 389 of these
+environments were created by testthat for code testing, implying that the code
+being tested created a formula. The \code{survival} package creates explicit
+environments for use in formulas. We observe 22 environments created by
+\code{survival::coxph} and \code{survival::model.frame.coxph} to be used for
+formula construction, as shown below.
+
+\begin{lstlisting}
+coxenv <- new.env(parent= environment(formula))
+assign("tt", function(x) x, envir=coxenv)
+environment(tform$formula) <- coxenv
+\end{lstlisting}
+
+
+
+\paragraph{Eval}
+162K (41\%) of the explicit environments are used for dynamic code evaluation.
+These environments come from 33 packages. 88.2\% of these environments come from
+the \code{vctrs} package. Four packages, \code{vctrs}, \code{testthat},
+\code{magrittr}, and \code{rlang} together contribute 98.2\% of these
+environments.
+
 \paragraph{Class Attributes}
-XXXX Table~\ref{table:explicit_env_attr} presents the class attributes attached
-to environments by frequency and the package from which the attributes
-originate.
+50.8K (12.9\%) of the environments have a class attribute.
+Table~\ref{table:explicit_env_attr} presents the class attributes attached to
+environments by frequency and the package from which the attributes originate.
+\code{ggplot2} alone accounts for 47.8\% of environments, owing to the
+\code{ggproto} object system. \code{ggplot2}, \code{rlang}, \code{R6}, and
+\code{plyr} account for 99.2\% of the environments with attributes.
 \begin{table}[!h]
   \vspace{-3mm}
   \small

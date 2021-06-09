@@ -376,13 +376,17 @@ USER_EXPLICIT_ENV_EVENT_SEQ <-
     summarize(count = sum(count), package_count = length(unique(package)), packages = paste(unique(package), collapse="|")) %>%
     ungroup() %>%
     arrange(desc(count)) %>%
-    mutate(cumperc = round(100 * cumsum(count)/ sum(count), 2)) %>%
-    mutate(count = label_number_si(0.1)(count)) %>%
-    mutate(package_count = label_number_si()(package_count))
+    mutate(cumperc = round(100 * cumsum(count)/ sum(count), 2))
 
-datatable(USER_EXPLICIT_ENV_EVENT_SEQ)
+
+USER_EXPLICIT_ENV_EVENT_SEQ %>%
+    mutate(count = label_number_si(0.1)(count)) %>%
+    mutate(package_count = label_number_si()(package_count)) %>%
+    datatable()
     
 USER_EXPLICIT_ENV_EVENT_SEQ %>%
+    mutate(count = label_number_si(0.1)(count)) %>%
+    mutate(package_count = label_number_si()(package_count)) %>%
 slice(1:7) %>%
 pmap_chr(function(event_seq, count, package_count, packages, cumperc) {
     sprintf("\\texttt{%s}&%s&%.1f\\%%", event_seq, count, cumperc)
@@ -409,10 +413,19 @@ cat("Total formula environments: ", sum(USER_EXPLICIT_ENV_FORMULA$count))
 ```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
 USER_EXPLICIT_ENV_EVAL <-
     USER_EXPLICIT_ENV %>%
-    filter(!is.na(eval_category)) %>%
-    count(eval_category, wt = count, name = "count")
+    mutate(eval_kind = case_when(str_detect(event_seq, fixed("V")) & str_detect(event_seq, fixed("U")) ~ "both",
+                                 str_detect(event_seq, fixed("V")) ~ "direct",
+                                 str_detect(event_seq, fixed("U")) ~ "indirect",
+                                 TRUE ~ NA_character_)) %>%
+    filter(!is.na(eval_kind)) %>%
+    count(package, wt = count, name = "count") %>%
+    arrange(desc(count)) %>%
+    mutate(cumperc = round(100 * cumsum(count)/ sum(count), 2))
     
 datatable(USER_EXPLICIT_ENV_EVAL)
+
+cat("Total environments passed to eval: ", sum(USER_EXPLICIT_ENV_EVAL$count))
+cat("% environments passed to eval: ", sum(USER_EXPLICIT_ENV_EVAL$count) / sum(USER_EXPLICIT_ENV_EVENT_SEQ$count))
 ```
 
 ### Class Attribute
@@ -435,13 +448,14 @@ USER_EXPLICIT_ENV_CLASS <-
     filter(!is.na(kind)) %>%
     count(kind, wt = count, name = "count") %>%
     arrange(desc(count)) %>%
-    mutate(cumperc = round(100 * cumsum(count)/ sum(count), 2)) %>%
-    mutate(count = label_number_si(0.1)(count))
-    
-datatable(USER_EXPLICIT_ENV_CLASS)
+    mutate(cumperc = round(100 * cumsum(count)/ sum(count), 2))
 
 USER_EXPLICIT_ENV_CLASS %>%
+mutate(count = label_number_si(0.1)(count)) %>%
+datatable()
 
+USER_EXPLICIT_ENV_CLASS %>%
+mutate(count = label_number_si(0.1)(count)) %>%
 pmap_chr(function(kind, count, cumperc) {
     splits <- str_split(kind, fixed("::"))[[1]] 
     package <- splits[1]
@@ -450,6 +464,9 @@ pmap_chr(function(kind, count, cumperc) {
     sprintf("\\texttt{%s}&\\texttt{%s}&%s&%.1f\\%%", package, classes, count, cumperc)
 }) %>%
 as_tex_table()
+
+cat("Total environments with attributes: ", sum(USER_EXPLICIT_ENV_CLASS$count))
+cat("% environments with attributes: ", sum(USER_EXPLICIT_ENV_CLASS$count) / sum(USER_EXPLICIT_ENV_EVENT_SEQ$count))
 ```
 
 ## Core Environments
