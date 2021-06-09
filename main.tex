@@ -666,81 +666,34 @@ table~\ref{table:env_category}.
     \textbf{Source}&\textbf{Count}&\textbf{Percentage}\\
     \midrule
     Call&1.2B&99.32\%\\
-    Explicit&6.6M&0.58\%\\
-    Package&344.7K&0.03\%\\
+    Explicit&3.7M&0.33\%\\
+    Package&3.3M&0.28\%\\
     \bottomrule
   \end{tabular}
 \end{table}
+
+\section{Package Environments}
+We observe 3.3M environments related to packages and namespaces. The package
+loading mechanism alone accounts for 2.9M of these environments, the remaining
+representing packages and namespaces. 2.3M of the environments come from a
+single \base package function, \lazyLoadDBexec, used only internally. This
+function is responsible for loading a package's code from a binary file and also
+for loading processed help file data. 481K functions come from the
+\code{loadNamespace} function of the \code{base} package. This function is used
+for loading package namespaces. A few environments are created internally by the
+interpreter to store a package's native functions exported for use by other
+packages. The final source of these environments is the sandbox created by R's
+\code{base::local} function to initiate the loading of package. We ignore the
+environments associated with packages and namespaces from the rest of the
+discussion.
+
 
 \section{Explicit Environments}
 In this section, we discuss explicit environment creation using the \newEnv R
-function and native code. 6.3M of these environments come from core and 395.2K
+function and native code. 3.4M of these environments come from core and 395.2K
 from user packages.
 
 \subsubsection{Core Explicit Environments}
-We observe 6.3M explicit environments created from \emph{Core}. The package
-loading mechanism accounts for 2.9M of these environments. 2.3M of these
-environments come from a single \base package function, \lazyLoadDBexec, used
-only internally. This function is responsible for loading a package's code from
-a binary file and also for loading processed help file data. Since this is an
-implementation detail, we ignore this for the rest of the discussion. 481K
-functions come from the \code{loadNamespace} function of the \code{base}
-package. This function is used for loading package namespaces. In the rest of
-the discussion, we will ignore these 2.9M environments and discussion the
-remaining 3.4M \emph{Core} environments.
-
-\begin{table}[!h]
-  \vspace{-3mm}
-  \small
-  \caption{Core Explicit Environment Sequence} \label{table:core_explicit_env_seq}
-  \centering
-  \begin{tabular}{lrr}
-    \toprule
-    \textbf{Event Sequence}&\textbf{\#}&\textbf{Cum. \%}\\
-    \midrule
-    \texttt{A}&3.0M&88.4\%\\
-    \texttt{A, V}&165.6K&93.4\%\\
-    \texttt{S}&145.8K&97.7\%\\
-    \texttt{A, Z, !}&50.2K&99.2\%\\
-    \texttt{A, L, !}&12.1K&99.6\%\\
-    \texttt{A, @}&5.4K&99.7\%\\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-\begin{itemize}
-\item[\textbf{A}:] This is the most common pattern, and it occurs in many
-  functions. The most common example is the \code{new} function of the methods
-  object used for creating S4 objects. Another example is the grid package that
-  uses explicit environments to create viewport objects and key their children
-  by name. The \code{parallel::addClusterOptions} function uses an environment
-  to store options about the cluster for parallel execution such as port number,
-  timeout, and R path.
-\item[\textbf{A, V}:] This pattern represents environments created by the
-  \code{base::eval} and \code{base::evalq} functions. The default behavior of
-  these functions is to evaluate an expression in the supplied environment.
-  However, if a list of named elements is supplied instead of an environment, it
-  is internally converted into an environment.
-\item[\textbf{S}:] This pattern comes from the \code{base::substitute} function.
-  This function is used for substituting symbols with expressions in ASTs. The
-  substitutions are read either from an environment, or a list. If a list is
-  supplied, it is converted into an environment internally.
-\item[\textbf{A, Z, !}:] This patterns comes from the methods package's
-  \code{makeGeneric} function. In the process of converting a function
-  definition to a generic function, it creates a new environment, assigns the
-  field \code{".Generic"} to the name of the generic method, sets its parent as
-  the lexical scope of the function (\texttt{Z}), and finally, sets the new
-  environment as the lexical scope of the function (\texttt{!}).
-\item[\textbf{A, L, !}:] These event s happen in S4 objects. Their underlying
-  data object consists of an environment with a reference \code{self} to the
-  object itself. This binding is locked to prevent modification.
-\item[\textbf{A, @}:] This set occurs in \code{base} package's srcfilecopy and
-  srcfilealias functions. These functions are used for source code references,
-  \ie, with references to code in text files. They create a new environment, set
-  the filename and source code location information, and add the class
-  attributes \code{"srcfilealis"}, \code{"srcfilecopy"}, and \code{"srcfile"}.
-\end{itemize}
-
 
 There are 9 packages responsible for all the explicit environments from
 \emph{Core}. Table~\ref{table:core_explicit_pack} shows the number of
@@ -793,6 +746,69 @@ belong to \code{methods} and \code{base} packages.
     \bottomrule
   \end{tabular}
 \end{table}
+
+\paragraph{Life-cycles}
+We can characterize the life-cycle of these environments by summarizing the set
+of events that affect them. Table~\ref{table:core_explicit_env_seq} shows the
+top 6 event sets. The events of interest are: \texttt{A} for read, write and
+remove, \texttt{V} for environments used for evaluating code , \texttt{L} for
+locking the environment or its bindings, \texttt{!} for setting this environment
+as the parent of another environment or lexical scope of a function, and
+\texttt{Z} for modifying this environment's parent environment.
+
+\begin{table}[!h]
+  \vspace{-3mm}
+  \small
+  \caption{Core Explicit Environment Sequence} \label{table:core_explicit_env_seq}
+  \centering
+  \begin{tabular}{lrr}
+    \toprule
+    \textbf{Event Sequence}&\textbf{\#}&\textbf{Cum. \%}\\
+    \midrule
+    \texttt{A}&3.0M&88.4\%\\
+    \texttt{A, V}&165.6K&93.4\%\\
+    \texttt{S}&145.8K&97.7\%\\
+    \texttt{A, Z, !}&50.2K&99.2\%\\
+    \texttt{A, L, !}&12.1K&99.6\%\\
+%    \texttt{A, @}&5.4K&99.7\%\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{itemize}
+\item[\textbf{A}:] This is the most common pattern, and it occurs in many
+  functions. The most common example is the \code{new} function of the methods
+  object used for creating S4 objects. Another example is the grid package that
+  uses explicit environments to create viewport objects and key their children
+  by name. The \code{parallel::addClusterOptions} function uses an environment
+  to store options about the cluster for parallel execution such as port number,
+  timeout, and R path.
+\item[\textbf{A, V}:] This pattern represents environments created by the
+  \code{base::eval} and \code{base::evalq} functions. The default behavior of
+  these functions is to evaluate an expression in the supplied environment.
+  However, if a list of named elements is supplied instead of an environment, it
+  is internally converted into an environment.
+\item[\textbf{S}:] This pattern comes from the \code{base::substitute} function.
+  This function is used for substituting symbols with expressions in ASTs. The
+  substitutions are read either from an environment, or a list. If a list is
+  supplied, it is converted into an environment internally.
+\item[\textbf{A, Z, !}:] This patterns comes from the methods package's
+  \code{makeGeneric} function. In the process of converting a function
+  definition to a generic function, it creates a new environment, assigns the
+  field \code{".Generic"} to the name of the generic method, sets its parent as
+  the lexical scope of the function (\texttt{Z}), and finally, sets the new
+  environment as the lexical scope of the function (\texttt{!}).
+\item[\textbf{A, L, !}:] These event s happen in S4 objects. Their underlying
+  data object consists of an environment with a reference \code{self} to the
+  object itself. This binding is locked to prevent modification.
+%\item[\textbf{A, @}:] This set occurs in \code{base} package's srcfilecopy and
+%  srcfilealias functions. These functions are used for source code references,
+%  \ie, with references to code in text files. They create a new environment, set
+%  the filename and source code location information, and add the class
+%  attributes \code{"srcfilealis"}, \code{"srcfilecopy"}, and \code{"srcfile"}.
+\end{itemize}
+
+
 
 \subsubsection{User Explicit Environments}
 There are 55 packages responsible for all the explicit environments from
@@ -870,14 +886,11 @@ These functions belong to 5 packages: \code{R6}, \code{vctrs}, \code{codetools},
   \end{tabular}
 \end{table}
 
-\paragraph{What are environment life-cycles?} We can characterize the life-cycle
-of these environments by summarizing the set of events that affect it.
+\paragraph{What are environment life-cycles?} 
 Table~\ref{table:user_explicit_env_seq} shows the top 7 event sets, which
-providing insights about 96.5\% of these environments. The events of interest
-are: \texttt{A} for read, write and remove, \texttt{V} for evaluating code in
-the environment, \texttt{L} for locking the environment or its bindings,
-\texttt{@} for setting attributes, and, \texttt{!} for setting this environment
-as the parent of another environment or lexical scope of a function.
+providing insights about 96.5\% of these environments. The event \texttt{@} is
+used for setting attributes; the rest of the events have the same meaning as
+before.
 
 \begin{table}[!h]
   \vspace{-3mm}

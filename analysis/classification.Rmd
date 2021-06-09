@@ -35,7 +35,8 @@ native_env <-
     mutate(category = case_when(call_env | dispatch ~ "Call",
                                 package ~ "Package",
                                 is.na(source_fun_name_1) ~ "Foreign",
-                                TRUE ~ "Other"))
+                                TRUE ~ "Other")) %>%
+    filter()                                
 
 ## handle S4 by looking at function definition
 native_env <-
@@ -116,7 +117,12 @@ new_env <-
 ```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
 all_env <-
     new_env %>%
-    bind_rows(native_env)
+    bind_rows(native_env) %>%
+    mutate(category = case_when(str_starts(primary_source, fixed("base*$#$*lazyLoadDBexec")) ~ "Package",
+                                str_starts(primary_source, fixed("base*$#$*loadNamespace")) ~ "Package",
+                                str_starts(primary_source, fixed("base*$#$*package_load_file")) ~ "Package",
+                                str_starts(primary_source, fixed("base*$#$*dyn.load")) ~ "Package",
+                                TRUE ~ category))
     
 env_source <-
     all_env %>%
@@ -494,24 +500,6 @@ CORE_EXPLICIT_ENV <-
                                  event_seq == "! N Z" ~ "! A N Z",
                                  event_seq == "! L N" ~ "! A L N",
                                  TRUE ~ event_seq))
-
-CORE_EXPLICIT_OTHER_ENV <-
-    all_env %>%
-    filter(core) %>%
-    filter(is.na(category) | category == "Other") %>%
-    filter(str_starts(primary_source, fixed("base*$#$*lazyLoadDBexec"))    |
-           str_starts(primary_source, fixed("base*$#$*loadNamespace"))     |
-           str_starts(primary_source, fixed("base*$#$*package_load_file")) |
-           str_starts(primary_source, fixed("base*$#$*dyn.load")))
-    
-CORE_EXPLICIT_OTHER_ENV %>%
-count(primary_source, wt = count, name = "count") %>%
-arrange(desc(count)) %>%
-mutate(cumperc = round(100 * cumsum(count)/ sum(count), 2)) %>%
-mutate(count = label_number_si(0.1)(count)) %>%
-datatable()
-
-cat("Other core explicit envs", sum(CORE_EXPLICIT_OTHER_ENV$count))
 ```
 
 ### Events
