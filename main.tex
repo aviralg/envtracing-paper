@@ -124,7 +124,7 @@
 %% \acmArticle{153}
 %%% \acmMonth{10}
 \begin{document}
-\title{On the Use of First-Class Environments in R}
+\title{On Design and Use of First-Class Environments in R}
 
 \author{Aviral Goel}\affiliation{\institution{Northeastern University}\country{USA}}
 \author{Jan Vitek}\affiliation{\institution{Czech Technical University and Northeastern University}\country{USA}}
@@ -181,8 +181,17 @@
 \maketitle
 \section{Introduction}
 
-{\small \medskip\noindent\emph{Availability.} Our work is in open source, experiments are
-repeatable and will be submitted to the AEC.}
+The ability to name values in a computation is a key building block of
+linguistic abstractions. Programming languages have concepts such as local
+variables, global variables, function parameters that boil down to a mapping
+values to names, commonly referred to as an \emph{environment}. The semantics of
+environments have a profound impact on how programming languages can be
+implemented. At a first approximation, restricted semantics greatly simplify the
+task of
+
+
+% THERE is no AEC at DLS -- Jan!
+%{\small \medskip\noindent\emph{Availability.} Our work is in open source, experiments are repeatable and will be submitted to the AEC.}
 
 \section{Background}\label{sec:background}
 
@@ -214,7 +223,7 @@ first-class environments.
 \paragraph{Supporting First-Class Environments} \citet{NishizakiSTLC94}
 introduced a simply typed lambda calculus with first-class environments, proved
 that it is strongly normalizing, and proposed a type inference algorithm.
-~\citet{NishizakiML94} proposed a sound type inference algorithm for a type
+\citet{NishizakiML94} proposed a sound type inference algorithm for a type
 system with ML-polymorphism in a $\lambda$-calculus with first-class
 environments.
 
