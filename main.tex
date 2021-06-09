@@ -189,10 +189,6 @@ environments have a profound impact on how programming languages can be
 implemented. At a first approximation, restricted semantics greatly simplify the
 task of
 
-
-% THERE is no AEC at DLS -- Jan!
-%{\small \medskip\noindent\emph{Availability.} Our work is in open source, experiments are repeatable and will be submitted to the AEC.}
-
 \section{Background}\label{sec:background}
 
 \subsection{Related Work}
@@ -684,21 +680,11 @@ table~\ref{table:env_category}.
   \end{tabular}
 \end{table}
 
-\section{Package Environments}
-We observe 3.3M environments related to packages and namespaces. The package
-loading mechanism alone accounts for 2.9M of these environments, the remaining
-representing packages and namespaces. 2.3M of the environments come from a
-single \base package function, \lazyLoadDBexec, used only internally. This
-function is responsible for loading a package's code from a binary file and also
-for loading processed help file data. 481K functions come from the
-\code{loadNamespace} function of the \code{base} package. This function is used
-for loading package namespaces. A few environments are created internally by the
-interpreter to store a package's native functions exported for use by other
-packages. The final source of these environments is the sandbox created by R's
-\code{base::local} function to initiate the loading of package. We ignore the
-environments associated with packages and namespaces from the rest of the
-discussion.
+\section{Call Environments}
+%% This is locked. I am working on it - Aviral
 
+
+%% Lock ends here
 
 \section{Explicit Environments}
 In this section, we discuss explicit environment creation using the \newEnv R
@@ -1043,6 +1029,21 @@ environments by frequency and the package from which the attributes originate.
   \end{tabular}
 \end{table}
 
+
+\section{Package Environments}
+We observe 3.3M environments related to packages and namespaces. The package
+loading mechanism alone accounts for 2.9M of these environments, the remaining
+representing packages and namespaces. 2.3M of the environments come from a
+single \base package function, \lazyLoadDBexec, used only internally. This
+function is responsible for loading a package's code from a binary file and also
+for loading processed help file data. 481K functions come from the
+\code{loadNamespace} function of the \code{base} package. This function is used
+for loading package namespaces. A few environments are created internally by the
+interpreter to store a package's native functions exported for use by other
+packages. The final source of these environments is the sandbox created by R's
+\code{base::local} function to initiate the loading of package. We ignore the
+environments associated with packages and namespaces from the rest of the
+discussion.
 
 
 \bibliography{bib/jv,bib/aviral}
