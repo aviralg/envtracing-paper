@@ -289,16 +289,16 @@ heterogeneous vectors with optionally named elements. They can be indexed by
 position or name. R objects can be tagged with user-defined data called
 attributes. They are an optional name value map typically used to add a
 domain-specific type structure. For example, \code{attr(x, dim) <- c(2, 2))}
-attaches the attribute \code{dim} to vector \code{x <- c(1,2,3,4)} and R
+attaches the attribute \code{dim} to vector \code{x<-c(1,2,3,4)} and R
 subsequently treats it as a 2$\times$2 matrix. Of special interest is the
-\code{class} attribute. \code{class(x) <- c("cat", "animal")} sets the class of
+\code{class} attribute. \code{class(x)<-c("cat","animal")} sets the class of
 \code{x} to \code{"cat"} and \code{"animal"}. This is used for object-oriented
 programming by S3 and S4, two OOP frameworks of R. S3 uses the \code{class}
 attribute to dispatch on the first argument, and S4 allows multiple dispatch.
 Formula is a compact symbolic representation of models used by model fitting
-functions. For example, the linear model \code{y ~ x - 1} specifies a line
-through the origin. Formula contains a reference to the environment in which it
-is defined to refer to the variables, if they are not otherwise provided during
+functions. For example, the linear model \code{y ~ x-1} specifies a line through
+the origin. Formula contains a reference to the environment in which it is
+defined to refer to the variables, if they are not otherwise provided during
 model fitting.
 
 Environments bind names to values. They are backed either by an association list
@@ -325,39 +325,38 @@ obtained by calling \code{getNamespace(ns)}. An R session starts with the
 \subsection{Environments as Scopes}
 The top-level scope is the \code{global} environment, referred by the variable
 \code{.GlobalEnv}, or returned by \code{globalenv()}. The \code{environment()}
-call returns the current evaluation environment. At the top level, it returns
-the \code{global} environment, and inside a function, it returns the function's
-environment. When supplied with a function argument, it returns the function's
-definition environment. \code{environment(fun) <- env} sets \code{env} as the
-environment of \code{fun}.
+call returns the current evaluation environment which is either the
+\code{global} environment or the current function's environment. When supplied
+with a function argument, it returns the function's definition environment.
+\code{environment(fun) <- env} sets \code{env} as the environment of \code{fun}.
 
 \begin{lstlisting}
- f <- function() { print(environment()) }
+ f <- function() print(environment())
  environment(); environment(f); f()
  # <env: Global> <env: Global> <env: 0x7ff>
- e <- new.env(); print(e)
+ e <- new.env()
+ print(e)
  # <env: 0x7f1>
- environment(f) <- e; environment(f)
+ environment(f) <- e
+ environment(f)
  # <env: 0x7f1>
 \end{lstlisting}
 
-R provides a rich call stack reflection interface, which can be divided into two
-categories. The first category provides the frame numbers. Frame number starts
-from 0, for \code{global} environment (top level), and increases by 1 for each
-nested call. \code{sys.nframe()} returns the current frame number.
-\code{sys.parent(n)} returns the frame number of the \code{n}th parent (caller
-if \code{n} is 1). The second set yields a frame's environment.
-\code{sys.frame(which)} returns the environment of the frame at position
-\code{which} (counting backwards if \code{which} is negative).
-\code{parent.frame(n)} is an optimized implementation of
-\code{sys.frame(sys.parent(n))}. Lastly, \code{sys.frames()} returns a list of
-all active frames' environments.
+\noindent
+R provides a call stack reflection interface. Frame number starts from 0, for
+\code{global} environment (top level), and increases by 1 for each nested call.
+\code{sys.nframe()} returns the current frame number. \code{sys.parent(n)}
+returns the frame number of the \code{n}th parent. The function
+\code{sys.frame(n)} returns the environment of the frame at position \code{n}
+(counting backwards if \code{n} is negative). Function \code{parent.frame(n)} is
+an optimized implementation of \code{sys.frame(sys.parent(n))}. Lastly,
+\code{sys.frames()} returns a list of all active frames' environments.
 
 \begin{lstlisting}
-> f <- function() { print(environment())
->     g <- function() { parent.frame(1) }; g() }
-> f()
-<env: 0x7f2> <env: 0x7f2>
+ f <- function() { print(environment())
+ g <- function() { parent.frame(1) }; g() }
+ f()
+ # <env: 0x7f2> <env: 0x7f2>
 \end{lstlisting}
 
 \subsection{Environments as Data Structures}
@@ -372,12 +371,14 @@ of an environment and \code{parent.env(envir) <- parent} sets the enclosing
 environment of \code{envir} to \code{parent}.
 
 \begin{lstlisting}
-> e <- new.env(parent=emptyenv()); length(e)
-0
-> parent.env(e)
-<environment: R_EmptyEnv>
-> parent.env(e) <- globalenv(); parent.env(e)
-<environment: R_GlobalEnv>
+  e <- new.env(parent=emptyenv())
+  length(e)
+  # 0
+  parent.env(e)
+  # <environment: R_EmptyEnv>
+  parent.env(e) <- globalenv()
+  parent.env(e)
+  # <environment: R_GlobalEnv>
 \end{lstlisting}
 
 \asList converts environments to lists, heterogeneous vectors with optionally
@@ -387,12 +388,13 @@ an environment can be retrieved as a vector using the \ls and \objects
 functions.
 
 \begin{lstlisting}
-> l <- list(x=1, y=2); e <- list2env(l); length(e)
-2
-> as.list(e)
-list(y = 2, x = 1)
-> ls(e)
-[1] "x" "y"
+  l <- list(x=1, y=2); e <- list2env(l)
+  length(e)
+  # 2
+  as.list(e)
+  # list(y = 2, x = 1)
+  ls(e)
+  # [1] "x" "y"
 \end{lstlisting}
 
 A variable's existence in an environment can be queried using \exist. Its value
