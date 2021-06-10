@@ -974,20 +974,19 @@ formula construction.
 
 \subsubsection{User Explicit Environments}
 There are 55 packages responsible for all the explicit environments from
-\emph{User}. Table~\ref{table:user_explicit_pack} shows the number of
-environments created by the top 14 packages. These packages alone account for
-98.9\% of all the environments in this category. The \code{vctrs} package
-provides tools for type-coercion and size-recycling of R vectors. The
-\code{rlang} package provides a consistent API to work with R objects and
-exposes an evaluation mechanism used by the ``tidyverse'' packages for building
-DSLs. \code{R6} implements a single-inheritance object-oriented system.
-\code{codetools} implements code analysis for the R compiler. \code{ggplot2} is
-a popular plotting library. \code{testthat} is widely used for testing R code.
-Finally, \code{dplyr} implements a DSL for database style queries on data
-frames.
+\emph{User}. Table~\ref{table:user_explicit_pack} shows the distribution of
+environments by the top 8 packages, which account for 95.9\% of the environments
+in this category. The \code{vctrs} package provides tools for type-coercion and
+size-recycling of R vectors. The \code{rlang} package provides a consistent API
+to work with R objects and exposes an evaluation mechanism used by the
+``tidyverse'' packages for building DSLs. \code{R6} implements a
+single-inheritance object-oriented system. \code{codetools} implements code
+analysis for the R compiler. \code{ggplot2} is a popular plotting library.
+\code{testthat} is widely used for testing R code. The \code{dplyr} implements a
+DSL for database style queries on data frames. Lastly, the \code{magrittr}
+package implements the pipe operator for building function pipelines.
 
 \begin{table}[!h]
-  \vspace{-3mm}
   \small
   \caption{User Explicit Environment Packages} \label{table:user_explicit_pack}
   \centering
@@ -1002,27 +1001,15 @@ frames.
     \code{ggplot2}&24.3K&90.0\%\\
     \code{testthat}&9.1K&92.3\%\\
     \code{dplyr}&8.3K&94.4\%\\
-    \bottomrule
-  \end{tabular}
-  \begin{tabular}{lrr}
-    \toprule
-    \textbf{Package}&\textbf{\#}&\textbf{Cu. \%}\\
-    \midrule
     \code{magrittr}&6.1K&95.9\%\\
-    \code{ps}&5.3K&97.3\%\\
-    \code{forecast}&1.5K&97.6\%\\
-    \code{data.table}&1.5K&98.0\%\\
-    \code{igraph}&1.4K&98.4\%\\
-    \code{plyr}&1.2K&98.7\%\\
-    \code{cli}&846.0&98.9\%\\
     \bottomrule
   \end{tabular}
 \end{table}
 
 The explicit environments in these 55 packages originate from 322 functions.
 Table~\ref{table:user_explicit_fun} shows the top ten functions. These functions
-alone contribute to 65.1\% of all the explicit environments in \emph{User}.
-These functions belong to 5 packages: \code{R6}, \code{vctrs}, \code{codetools},
+contribute to 65.1\% of all the explicit environments in \emph{User}. They
+functions belong to 5 packages: \code{R6}, \code{vctrs}, \code{codetools},
 \code{ggplot2}, and \code{rlang}.
 
 \begin{table}[!h]
@@ -1049,13 +1036,12 @@ These functions belong to 5 packages: \code{R6}, \code{vctrs}, \code{codetools},
 \end{table}
 
 \paragraph{What are environment life-cycles?}
-Table~\ref{table:user_explicit_env_seq} shows the top 7 event sets, which
-providing insights about 96.5\% of these environments. The event \texttt{@} is
+Table~\ref{table:user_explicit_env_seq} shows the top 7 of the 82 event sets, which
+characterize 96.5\% of these environments. The event \texttt{@} is
 used for setting attributes; the rest of the events have the same meaning as
 before.
 
 \begin{table}[!h]
-  \vspace{-3mm}
   \small
   \caption{User Explicit Environment Sequence} \label{table:user_explicit_env_seq}
   \centering
@@ -1074,71 +1060,75 @@ before.
   \end{tabular}
 \end{table}
 
-\begin{itemize}
-\item[\textbf{A, V}:] This set accounts for the majority of environments. It is
-  observed in 36 packages. These environments are created for custom evaluation
-  strategies, \ie, for evaluating expressions with custom bindings in the scope.
-  For example, \code{rlang::eval_tidy} is an an alternative to R's \code{eval}
-  which provides support for evaluating ``quosures'', that are bundles of code
-  and environment. On package load, \code{rlang} creates three environments from
-  native code for use by its functions for evaluation in the context of a data
-  frame. Another example is the \code{vctrs::vec_c} function which is
-  alternative to R's \code{c} function for building a vector of values. It uses
-  an explicit environment under the hood for repairing the names of the vector
-  elements. The \code{testthat} testing library uses custom environment for
-  evaluating testing code.
-
-\item[\textbf{A}:] This pattern represents environments that are used as hash
-  tables and package state. The \code{codetools} package provides facilities for
-  analysis of R code. The \code{codetools::mkHash} function creates an
-  environment for use as a hash table to store intermediate static analysis
-  information. Another example is the \code{ps} package that provides facilities
-  for handling system processes. It creates an environment on package load and
-  initializes it with error codes and socket types. The \code{iterators} package
-  uses environments as dynamic state of iterator objects.
-
-\item[\textbf{A, !}:] This pattern represents environments that are set as
-  parents of other environments or functions. This is dominated by \code{R.oo}
-  and \code{R6} packages that implement object oriented systems. They create new
-  environments and set them as lexical scopes of object methods. The
-  \code{foreach} package provides iteration constructs that can execute code in
-  sequence or parallel. The \code{foreach::\%do\%} function creates a new
-  environment, assigns a marker, and sets it as the lexical scope of the
-  function which uses the marker to decide whether to execute the code in
-  parallel.
-
-\item[\textbf{A, @}:] This pattern is used by packages to create custom objects,
-  which can be used for dispatch based on the class attribute of the
-  environments. \code{ggplot2} library implements \code{ggproto}, a prototype
-  based OO system. The \code{ggproto} objects are explicit envivronments with
-  \code{``ggproto''} class attribute. The \code{XML} package creates an environment
-  to store a tree of nodes and assigns it a class attribute. the \code{xts}
-  package creates a plot environment with plotting environments and sets an
-  attribute on it.
-
-\item[\textbf{A, L}:] This pattern is used by R6 to instantiate objects. The
-  private bindings are locked in the object environment to prevent
-  any modification. Many calls to \code{lockBinding} also originate form
-  \code{data.table} which uses a custom environment to store intermeidate state
-  for implementing dataframe indexing.
-
-\item[\textbf{A, L, @}] The \code{later} and \code{R6} packages are responsible
-  for this sequence. The \code{later} package use environments as handles for
-  event loop objects. These objects contain the id of the loop, which is locked
-  to prevent modifcation. The environments are assigned the class,
-  \code{``event_loop''}. Similar to the previous sequence, the \code{R6} object
-  locks the public bindings of an instantiated object, and also sets the class
-  attribute.
-
-\item[\textbf{A, @, !}] This patterns comes from the \code{plyr} package. It
-  creates an environment with attribute \code{``idf''} for representing
-  immutable data frames. It also assigns getter functions to this environment to
-  access the columns of the data frame, and sets their environment to be the
-  environment itself to ensure that lookup happens in the correct scope. This
-  also occurs in \code{R6} when a class environments is set as the parent
-  environment of a subclass environment.
-\end{itemize}
 \noindent
+\textbf{A, V:} This set accounts for the majority of environments. It is
+observed in 36 packages. These environments are created for custom evaluation
+strategies, \ie, for evaluating expressions with custom bindings in the scope.
+For example, \code{rlang::eval_tidy} is an an alternative to R's \code{eval}
+which provides support for evaluating ``quosures'', that are bundles of code
+and environment. On package load, \code{rlang} creates three environments from
+native code for use by its functions for evaluation in the context of a data
+frame. Another example is the \code{vctrs::vec_c} function which is
+alternative to R's \code{c} function for building a vector of values. It uses
+an explicit environment under the hood for repairing the names of the vector
+elements. The \code{testthat} testing library uses custom environment for
+evaluating testing code.
+
+\noindent
+\textbf{A:} This pattern represents environments that are used as hash
+tables and package state. The \code{codetools} package provides facilities for
+analysis of R code. The \code{codetools::mkHash} function creates an
+environment for use as a hash table to store intermediate static analysis
+information. Another example is the \code{ps} package that provides facilities
+for handling system processes. It creates an environment on package load and
+initializes it with error codes and socket types. The \code{iterators} package
+uses environments as dynamic state of iterator objects.
+
+\noindent
+\textbf{A, !:} This pattern represents environments that are set as
+parents of other environments or functions. This is dominated by \code{R.oo}
+and \code{R6} packages that implement object oriented systems. They create new
+environments and set them as lexical scopes of object methods. The
+\code{foreach} package provides iteration constructs that can execute code in
+sequence or parallel. The \code{foreach::\%do\%} function creates a new
+environment, assigns a marker, and sets it as the lexical scope of the
+function which uses the marker to decide whether to execute the code in
+parallel.
+
+\noindent
+\textbf{A, @:} This pattern is used by packages to create custom objects,
+which can be used for dispatch based on the class attribute of the
+environments. \code{ggplot2} library implements \code{ggproto}, a prototype
+based OO system. The \code{ggproto} objects are explicit envivronments with
+\code{``ggproto''} class attribute. The \code{XML} package creates an environment
+to store a tree of nodes and assigns it a class attribute. the \code{xts}
+package creates a plot environment with plotting environments and sets an
+attribute on it.
+
+\noindent
+\textbf{A, L:} This pattern is used by R6 to instantiate objects. The
+private bindings are locked in the object environment to prevent
+any modification. Many calls to \code{lockBinding} also originate form
+\code{data.table} which uses a custom environment to store intermeidate state
+for implementing dataframe indexing.
+
+\noindent
+\textbf{A, L, @:} The \code{later} and \code{R6} packages are responsible
+for this sequence. The \code{later} package use environments as handles for
+event loop objects. These objects contain the id of the loop, which is locked
+to prevent modifcation. The environments are assigned the class,
+\code{``event_loop''}. Similar to the previous sequence, the \code{R6} object
+locks the public bindings of an instantiated object, and also sets the class
+attribute.
+
+\noindent
+\textbf{A, @, !:} This patterns comes from the \code{plyr} package. It creates
+an environment with attribute \code{``idf''} for representing immutable data
+frames. It also assigns getter functions to this environment to access the
+columns of the data frame, and sets their environment to be the environment
+itself to ensure that lookup happens in the correct scope. This also occurs in
+\code{R6} when a class environments is set as the parent environment of a
+subclass environment.
 
 \paragraph{Formula}
 Only 597 of these environments were used for formula construction. 389 of these
@@ -1215,12 +1205,3 @@ discussion.
 
 
 \end{document}
-
-% TODO
-% - environment source
-%            C   new.env
-% - base
-% - library
-%
-% environment class
-% -
