@@ -749,8 +749,8 @@ followed by a long tail of event sets.
   \end{tabular}
 \end{table}
 
-\begin{itemize}
-\item[\textbf{S}:] This event happens in functions that use \code{substitute}.
+\noindent
+\textbf{S:} This event happens in functions that use \code{substitute}.
   Most of these cases originate from calls to \base package functions:
   \code{::}, \code{:::}, \code{delayedAssign}, and \code{evalq}. The expression
   \code{ns::sym} reads the value of publicly exported binding \code{sym} from
@@ -764,7 +764,8 @@ followed by a long tail of event sets.
   \code{assign_env}. The expression is evaluated in \code{eval_env}. The
   \code{expr} text is extracted using \code{substitute}.
 
-\item[\textbf{X, A}:] These events happen to function environments whose
+\noindent
+\textbf{X, A:} These events happen to function environments whose
   environment is extracted and used for accessing or modifying bindings. An
   example is the use of \code{delayedAssign} by
   \code{base::registerS3methods::assignWrapped} which uses \code{parent.frame}
@@ -775,7 +776,8 @@ followed by a long tail of event sets.
   is the \code{rlang::env_get} function which performs a lookup in the parent
   environment, extracted using \code{parent.frame}.
 
-\item[\textbf{X, V, A}:] These events happen when an environment is extracted
+\noindent
+\textbf{X, V, A:} These events happen when an environment is extracted
   and used for evaluating expressions. The use of \code{glue::glue} function by
   \code{waldo::path_attr} is one such example. The \code{glue::glue} function
   performs string interpolation by evaluating R code embedded in curly braces in
@@ -786,7 +788,8 @@ followed by a long tail of event sets.
   call expression with the supplied function name and arguments and evaluates it
   in the caller's environment, extracted using \code{parent.frame}.
 
-\item[\textbf{X, S, V, A}] These events happen when an environment is used for
+\noindent
+\textbf{X, S, V, A:} These events happen when an environment is used for
   \substitute as well as for evaluating expressions. This is particularly common
   in a code path of \code{match.arg} when the set of values against which the
   argument is to be matched are non provided. In this case, \code{match.arg}
@@ -800,7 +803,7 @@ followed by a long tail of event sets.
   strings to be interpolated, or named arguments to be made available for
   substitution. Then, it evaluates them using the \code{eval} function which
   extracts the environment using \code{parent.frame} for evaluation.
-\end{itemize}
+
 
 Apart from these sequences, formula construction also stands out as a relatively
 frequent operation. These formulas extract the call environment in which they
@@ -813,7 +816,7 @@ Apart from this, 2.8M call environments are used for evaluating code.
 \subsection{Explicit Environments}
 In this section, we discuss explicit environment creation using the \newEnv R
 function and native code. 3.4M of these environments come from core and 395.2K
-from user packages.
+from user packages. We analyze the two environment categories below, separately.
 
 \subsubsection{Core Explicit Environments}
 
