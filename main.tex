@@ -228,49 +228,45 @@ compiler writers as to where optimization opportunities may lie.
 
 \section{Related Work}
 
-\paragraph{Contemporary Languages} The Scheme Standard~\cite{SchemeR5RS}
-requires implementations to support \code{eval} whose second argument is an
-\emph{environment-specifier}, not required to be a first-class environment. The
-effect of assignment to bound variables in this environment is unspecified,
-leaving open the possibility of it being immutable. MIT/GNU Scheme supports
-first-class environments, and as a consequence, its \code{eval} takes an
-explicit environment as its second argument. This Scheme provides functions to
-create new environments, read and write bindings, examine parent environments,
-and obtain the current environment as a reified value. Python provides the
-\code{locals} function that returns the local bindings as a dictionary, attached
-to the current frame as the \code{f_locals} attribute. Updates to this
-dictionary are not reflected in the function's scope, unlike R. Caller's
-bindings can be accessed by looking up \code{f_locals} from their frames,
-obtained from \code{inspect.stack}. Calling \code{locals} outside of a function
-returns the namespace as a dictionary at the point and changes to this
-dictionary are reflected in the namespace. Similar to R's \code{globalenv},
-Python's \code{globals} returns a dictionary of the global namespace whose
-updates are also reflected in the namespace.
+While the Scheme Standard specifies that the \code{eval} function takes an
+environment-specifier, this need not be a first-class
+environment~\cite{SchemeR5RS}. The effect of assignment to variables in this
+environment is unspecified, leaving open the possibility of it being immutable.
+GNU Scheme supports first-class environments and, as a consequence, its
+\code{eval} takes an explicit environment. It provides functions to create new
+environments, read and write bindings, examine parent environments, and obtain
+the current environment as a reified value. Python provides the \code{locals}
+function that returns the local bindings as a dictionary, attached to the
+current frame as an attribute. Updates to this dictionary are not reflected in
+the function's scope. Caller's bindings can be accessed from their frame
+obtained by calling \code{inspect.stack}. Calling \code{locals} outside of a
+function returns the namespace as a dictionary at the point and changes to this
+dictionary are reflected in the namespace. Python's \code{globals} returns a
+dictionary of the global namespace whose updates are also reflected in the
+namespace.
 
-\paragraph{Supporting First-Class Environments} \citet{NishizakiSTLC94}
-introduced a simply typed lambda calculus with first-class environments, proved
-that it is strongly normalizing, and proposed a type inference algorithm.
-\citet{NishizakiML94} proposed a sound type inference algorithm for a type
-system with ML-polymorphism in a $\lambda$-calculus with first-class
-environments.
-
-\paragraph{The R language} \citet{ecoop12} evaluated the design of R, providing
-a comprehensive explanation of R's scoping and evaluation mechanism. They
-present many aspects of environments in the context of laziness,
-metaprogramming, dynamic evaluation, explicit environment manipulation, and call
-stack inspection, but they don't discuss explicit environment creation using
-\code{new.env}. In comparison to their work, our work focuses only on
-environments and provides a much more detailed qualitative and quantitative
-account. Furthermore, our study shows a significantly larger and richer use of
-explicit environments in the R ecosystem compared to theirs. \citet{oopsla19b}
-studied the design and use of laziness in R. They provide a detailed account of
-the language’s evaluation strategy with a small-step operational semantics and
-an empirical evaluation of laziness in 16,707 packages. Their semantics shows
-that promises are stored in environments and can outlive the frame that created
-them if returned as part of that environment. \citet{oopsla20b} inferred type
-signatures for R functions by observing the type of argument and return values.
-Their type language includes a designated \textbf{\texttt{env}} type for
+\citet{NishizakiSTLC94} introduced a simply typed lambda calculus with
+first-class environments, proved that it is strongly normalizing, and proposed a
+type inference algorithm. \citet{NishizakiML94} proposed a sound type inference
+algorithm for a type system with ML-polymorphism in a $\lambda$-calculus with
 first-class environments.
+
+\citet{ecoop12} discussed the design of R, providing a comprehensive explanation
+of R's scoping and evaluation mechanism. They present many aspects of
+environments in the context of laziness, metaprogramming, dynamic evaluation,
+explicit environment manipulation, and call stack inspection, but they don't
+discuss explicit environment creation using \code{new.env}. In comparison to
+their work, our work focuses only on environments and provides a much more
+detailed qualitative and quantitative account. Furthermore, our study shows a
+significantly larger and richer use of explicit environments in the R ecosystem
+compared to theirs. \citet{oopsla19b} studied the design and use of laziness in
+R. They provide a detailed account of the language’s evaluation strategy with a
+small-step operational semantics and an empirical evaluation of laziness in
+16,707 packages. Their semantics shows that promises are stored in environments
+and can outlive the frame that created them if returned as part of that
+environment. \citet{oopsla20b} inferred type signatures for R functions by
+observing the type of argument and return values. Their type language includes a
+designated type for first-class environments.
 
 
 \section{Environments in the R Language}
