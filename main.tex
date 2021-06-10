@@ -187,7 +187,44 @@ variables, global variables, function parameters that boil down to a mapping
 values to names, commonly referred to as an \emph{environment}. The semantics of
 environments have a profound impact on how programming languages can be
 implemented. At a first approximation, restricted semantics greatly simplify the
-task of
+task of generating efficient machine code.
+
+Early languages had variables that were read and written to by statically
+determined names, and they did not support recursive functions. Thus there was a
+single environment for compilation unit and, in that environment, each variable
+its own memory location; as it generated code the compiler knew exactly which
+location every name referred to. When a variable's value was constant, that
+variable could be treated as a synonym for its value and did not require a
+memory location. To improve performance, variables could be cached in machine
+registered and spilled to memory only when needed.
+
+As languages became more expressive, allowing recursion and first-class
+functions, implementations had to allocate environments, respectively, on the
+stack or in the heap. Lisp treated code as data, and thus lifted the restriction
+that variable names be statically known. This meant that from a compiler's point
+of view, it became much harder to generate efficient code. Environments were
+data structures that could at any time be inspected and the mapping between
+variables and values be observed.
+
+In this paper we focus on the R programming language created in 1993~\cite{r96}, as
+a directed descendent to S whose origin dates to 1976~\cite{s88}. Inspired by Lisp,
+CLOS, and Scheme, the designers of R created a lazy functional language that
+supported various forms of object-oriented programming. One of the keys to
+expressivity was the choice of making environments first-class. Environments are
+data structures that can be created and manipulated programmatically. One can,
+for example, write code that acquires the environment of the caller of the
+currently executing function, check if it contains a variable named \c{x}, and,
+if it does, rename that variable to \c{y}. Needless to say that this flexibility
+does limit what a compiler can do make R run fast~\cite{dls19}.
+
+Our goal with this paper is to document the interface that R exposes to
+environments. This interface evolved through the years, some of it dates back to
+S, with changes and adaptations through the decades. The interface is rich and
+not always consistent or certainly not minimal. Through a dynamic analysis
+conducted on a corpus of popular R libraries and their clients, we report on the
+practical usage of environments. This allows us to explain the need for this
+rich interface and could, possibly, be a step towards a re-design or a hint for
+compiler writers as to where optimization opportunities may lie.
 
 \section{Background}\label{sec:background}
 
