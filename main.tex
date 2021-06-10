@@ -589,12 +589,7 @@ those, \texttt{ggplot2::theme} has the highest, 95 parameters.
   \label{fig:paramdist}
 \end{figure}
 
-\section{Evaluation}
-
-This section presents the results of our empirical evaluation of environments in
-R.
-
-\subsection{Environment Provenance}
+\section{Environment Provenance}
 The first question we address is where environments are created. In our corpus,
 we observe the creation of 1.2B environments, which makes them the second most
 widely allocated objects. Table~\ref{table:object_count_dist} shows the
@@ -677,6 +672,25 @@ rest of the discussion.
   \end{tabular}
 \end{table}
 
+In the \textbf{Core} \emph{Native} class, 99.7\% of the environments are created
+for function calls, 344.7K for package loading and package namespaces, 2.8M by
+the \code{methods} package for S4 object-oriented system, 165.5K by the
+\code{base} package for dynamic evaluation using \code{eval}, and 145.8K by
+\code{base} package for substitute.
+
+In the \textbf{Core} \emph{R} class, 94.1\% of the environments are created by
+the \code{base} package, and 5.3\% by \code{methods} for the S4 object-oriented
+system. The \code{base} package contribution comes from an internal function,
+\code{lazyLoadDBexec}, used for loading package code and processed help files
+from a binary database.
+
+In the \textbf{User} class, environments are created by the packages in R and
+native code for a variety of purposes such as for use as hash tables, objects
+for custom OOP systems, sandboxing, etc.
+
+
+\section{Environment Life-Cycles}
+
 Table~\ref{table:env_category} presents a high-level breakdown of how these
 environments are used.
 
@@ -696,24 +710,7 @@ environments are used.
   \end{tabular}
 \end{table}
 
-In the \textbf{Core} \emph{Native} class, 99.7\% of the environments are created
-for function calls, 344.7K for package loading and package namespaces, 2.8M by
-the \code{methods} package for S4 object-oriented system, 165.5K by the
-\code{base} package for dynamic evaluation using \code{eval}, and 145.8K by
-\code{base} package for substitute.
-
-In the \textbf{Core} \emph{R} class, 94.1\% of the environments are created by
-the \code{base} package, and 5.3\% by \code{methods} for the S4 object-oriented
-system. The \code{base} package contribution comes from an internal function,
-\code{lazyLoadDBexec}, used for loading package code and processed help files
-from a binary database.
-
-In the \textbf{User} class, environments are created by the packages in R and
-native code for a variety of purposes such as for use as hash tables, objects
-for custom OOP systems, sandboxing, etc.
-
-
-\section{Call Environments}
+\subsection{Call Environments}
 
 Of the 1.2 B call environments, only 20.9M call environments register any
 events. Table~\ref{table:call_env_seq} presents the event set for the call
@@ -793,7 +790,7 @@ for environments used for evaluating code , \texttt{S} for substitute,
   \code{parent.frame} for evaluation.
 \end{itemize}
 
-\section{Explicit Environments}
+\subsection{Explicit Environments}
 In this section, we discuss explicit environment creation using the \newEnv R
 function and native code. 3.4M of these environments come from core and 395.2K
 from user packages.
@@ -1131,8 +1128,7 @@ environments by frequency and the package from which the attributes originate.
   \end{tabular}
 \end{table}
 
-
-\section{Package Environments}
+\subsection{Package Environments}
 We observe 3.3M environments related to packages and namespaces. The package
 loading mechanism alone accounts for 2.9M of these environments, the remaining
 representing packages and namespaces. 2.3M of the environments come from a
@@ -1147,6 +1143,7 @@ packages. The final source of these environments is the sandbox created by R's
 environments associated with packages and namespaces from the rest of the
 discussion.
 
+\section{Discussion}
 
 \bibliography{bib/jv,bib/aviral}
 
