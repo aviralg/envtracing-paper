@@ -846,13 +846,14 @@ Apart from this, 2.8M call environments are used for evaluating code.
 
 
 From this analysis we conclude that most call environments do not have to be
-explicit. One would then expect an optimizing compiler to optimize away accesses
-for these cases. Unfortunately, there are sufficient cases where environments
-are accessed reflectively and the dynamic nature of R can make it challenging to
-predict when this will happen. These environments can be passed around and
-modified at will, making it hard to reason about the program from that point
-onwards. Especially challenging is the use of the \code{eval} function on call
-environments, which makes it possible to execute arbitrary code.
+explicit, since only 20.9M register any events. One would then expect an
+optimizing compiler to optimize away accesses for these cases. Unfortunately, as
+the event sets show, there are sufficient cases where environments are accessed
+reflectively and the dynamic nature of R can make it challenging to predict when
+this will happen. These environments can be passed around and modified at will,
+making it hard to reason about the program from that point onwards. Especially
+challenging is the use of the \code{eval} function on call environments, which
+makes it possible to execute any code with arbitrary effects.
 
 \subsection{Explicit Environments}
 In this section, we discuss explicit environment creation using the \newEnv R
@@ -1227,8 +1228,6 @@ identify particular patterns of usage that can be used by a compiler to predict
 whether an environment will require full generality or if a more restricted
 semantics could be applicable. As of this writing we do not know if this will
 yield results.
-
-\newpage
 
 \bibliography{bib/jv,bib/aviral}
 
