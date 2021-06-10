@@ -266,23 +266,21 @@ small-step operational semantics and an empirical evaluation of laziness in
 and can outlive the frame that created them if returned as part of that
 environment. \citet{oopsla20b} inferred type signatures for R functions by
 observing the type of argument and return values. Their type language includes a
-designated type for first-class environments.
+type for first-class environments.
 
 
 \section{Environments in the R Language}
 
-R is a vectorized, dynamic, lazy, functional and object-oriented programming
-language, designed by Ihaka and Gentleman in 1993 as a successor to S. In this
-section, we provide a brief primer on R, with a focus on environments.
+%R is a dynamic language with first-class, lexically scoped, functions.
 
-R has first-class, anonymous, lexically scoped functions. They are the most
-important linguistic construct; all expressions (bracketing, operators, etc.)
-desugar to function calls.
+R is a lazy functional language in which most values are immutable. R has
+first-class lexically scoped functions. They are an important linguistic
+construct as all expressions desugar to function calls.
 
 Vectors in R are homogeneous fixed-size arrays of integer, double, character
 (string), logical (boolean), complex, or raw (byte) values. Lists are
 heterogeneous vectors with optionally named elements. They can be indexed by
-position or name. R objects can be tagged with user-defined data called
+position or name. R values can be tagged with user-defined data called
 attributes. They are an optional name value map typically used to add a
 domain-specific type structure. For example, \code{attr(x, dim) <- c(2, 2))}
 attaches the attribute \code{dim} to vector \code{x<-c(1,2,3,4)} and R
@@ -306,17 +304,16 @@ environment; which is always empty. The call, \code{emptyenv()}, returns the
 
 \subsection{Environments as Packages}
 
-Packages loaded by calling \code{library} are represented as environments; their
-names are added to a global search path (returned by \code{search()}) for
-lookup. The \code{n}th package environment can be retrieved using
-\code{pos.to.env(n)}, or \code{as.environment(n)}. \asEnvironment also accepts
-the package name as its argument. Every package has a corresponding namespace
-environment which also contains its private bindings and implementation specific
-metadata. The namespace environment for a package named \code{ns} can be
-obtained by calling \code{getNamespace(ns)}. An R session starts with the
-\code{base} package preloaded, which contains the default R APIs.
-\code{baseenv()} returns the \code{base} package environment and
-\code{.BaseNamespaceEnv} is bound to the \code{base} package namespace.
+Packages loaded by calls to \code{library()} are represented as environments;
+their names are added to a global search path (returned by \code{search()}). The
+\emph{n}-th package environment can be retrieved using \code{pos.to.env(n)}, or
+\code{as.environment(n)}. \asEnvironment also accepts the package name as its
+argument. Every package has a corresponding namespace environment which also
+contains its private bindings and implementation specific metadata. The
+namespace environment for a package \code{P} can be obtained by calling
+\code{getNamespace(P)}. An R session starts with the base package preloaded,
+which contains the default R APIs. \code{baseenv()} returns the base package
+environment and binds \code{.BaseNamespaceEnv} to that environment.
 
 \subsection{Environments as Scopes}
 The top-level scope is the \code{global} environment, referred by the variable
@@ -324,7 +321,7 @@ The top-level scope is the \code{global} environment, referred by the variable
 call returns the current evaluation environment which is either the
 \code{global} environment or the current function's environment. When supplied
 with a function argument, it returns the function's definition environment.
-\code{environment(fun) <- env} sets \code{env} as the environment of \code{fun}.
+\code{environment(f)<-e} sets \code{e} as the environment of \code{f}.
 
 \begin{lstlisting}
  f <- function() print(environment())
@@ -356,15 +353,14 @@ an optimized implementation of \code{sys.frame(sys.parent(n))}. Lastly,
 \end{lstlisting}
 
 \subsection{Environments as Data Structures}
+
 Environments can be created using the \newEnv function. This function takes
-three arguments: \code{hash}, a boolean for selecting a hash table
-representation over the default association list representation, \code{size}, a
-number specifying the size for preallocation, and, \code{parent}, the enclosing
+three optional arguments: a boolean to select a hash table representation over
+the default association list, a size for preallocation, and, an enclosing
 environment. R does not provide any function to query the representation used
-for an environment.The \code{length} function of an environment (number of
-bindings) can be obtained using the. \parentEnv yields the enclosing environment
-of an environment and \code{parent.env(envir) <- parent} sets the enclosing
-environment of \code{envir} to \code{parent}.
+for an environment. The \code{length} function returns the number of bindings in
+an environment. \parentEnv yields the enclosing environment and
+\code{parent.env(e)<-p} sets the enclosing environment of \code{e} to \code{p}.
 
 \begin{lstlisting}
   e <- new.env(parent=emptyenv())
@@ -377,11 +373,10 @@ environment of \code{envir} to \code{parent}.
   # <environment: R_GlobalEnv>
 \end{lstlisting}
 
-\asList converts environments to lists, heterogeneous vectors with optionally
-named elements. \listToEnv copies the elements of a list to an environment. If
-the environment is not supplied, it creates one using \newEnv. The variables of
-an environment can be retrieved as a vector using the \ls and \objects
-functions.
+\asList converts environments to lists; in R lists can associate names with
+elements. \listToEnv copies the elements of a list to an environment. If the
+environment is not supplied, it creates one using \newEnv. The variables of an
+environment can be retrieved as a vector using the \ls and \objects functions.
 
 \begin{lstlisting}
   l <- list(x=1, y=2); e <- list2env(l)
@@ -393,6 +388,7 @@ functions.
   # [1] "x" "y"
 \end{lstlisting}
 
+\noindent
 A variable's existence in an environment can be queried using \exist. Its value
 can be retrieved using \subDollar and \subBracket operators. \get, \getZero,
 \mget, and \dynGet functions are generalizations of these operators with options
@@ -915,11 +911,6 @@ as the parent of another environment or lexical scope of a function, and
 \item[\textbf{A, L, !}:] These event s happen in S4 objects. Their underlying
   data object consists of an environment with a reference \code{self} to the
   object itself. This binding is locked to prevent modification.
-%\item[\textbf{A, @}:] This set occurs in \code{base} package's srcfilecopy and
-%  srcfilealias functions. These functions are used for source code references,
-%  \ie, with references to code in text files. They create a new environment, set
-%  the filename and source code location information, and add the class
-%  attributes \code{"srcfilealis"}, \code{"srcfilecopy"}, and \code{"srcfile"}.
 \end{itemize}
 
 
