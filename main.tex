@@ -716,6 +716,20 @@ table~\ref{table:env_category}.
 
 %% This is locked. I am working on it - Aviral
 
+Of the 1.2 B call environments, only 20.9M call environments register any
+events. Out of those 299.24K call environments outlive the frame that create
+them. We present the sequence of events for the two kinds of call environments
+separately.
+
+\subsection{Normal Call Environments}
+
+Table~\ref{table:call_env_seq} presents the event set for call environments that
+don't escape. The top four sequences correspond to 98.4\% of the environments.
+The events of interest are: \texttt{A} for read, write and remove, \texttt{V}
+for environments used for evaluating code , \texttt{S} for substitute,
+\texttt{X} corresponds to environment extraction using \code{parent.frame},
+\code{sys.frame} or \code{sys.frames}.
+
 \begin{table}[!h]
   \vspace{-3mm}
   \small
@@ -785,6 +799,11 @@ table~\ref{table:env_category}.
   it evaluates them using \code{eval} which extracts the environment using
   \code{parent.frame} for evaluation.
 \end{itemize}
+
+
+\subsection{Escaped Call Environments}
+
+
 %% Lock ends here
 
 \section{Explicit Environments}
@@ -850,7 +869,7 @@ belong to \code{methods} and \code{base} packages.
 We can characterize the life-cycle of these environments by summarizing the set
 of events that affect them. Table~\ref{table:core_explicit_env_seq} shows the
 top 6 event sets. The events of interest are: \texttt{A} for read, write and
-remove, \texttt{V} for environments used for evaluating code , \texttt{L} for
+remove, \texttt{V} for environments used for evaluating code, \texttt{L} for
 locking the environment or its bindings, \texttt{!} for setting this environment
 as the parent of another environment or lexical scope of a function, and
 \texttt{Z} for modifying this environment's parent environment.
