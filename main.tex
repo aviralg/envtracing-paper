@@ -721,7 +721,7 @@ native code for a variety of purposes such as for use as hash tables, objects
 for custom OOP systems, sandboxing, etc.
 
 
-\section{Environment Usage Patterns}
+\section{Usage Patterns}
 
 In this section we study how the environments are used in our corpus. For this,
 we divide the environments into three categories, presented in
@@ -756,7 +756,8 @@ that occur on them. The events of interest are described below.
 \item \texttt{A} for read, write and remove.
 \item \texttt{V} for evaluating code in the environment using the \eval function.
 \item \texttt{S} for using the \substitute function in the environment.
-\item \texttt{X} for extracting the environment using \code{parent.frame}, \code{sys.frame} or \code{sys.frames}.
+\item \texttt{X} for extracting the environment using \code{parent.frame},
+  \code{sys.frame} or \code{sys.frames}.
 \end{itemize}
 
 Table~\ref{table:call_env_seq} presents the frequency of the most common event
@@ -1175,7 +1176,7 @@ environments by frequency and the package from which the attributes originate.
   \small
   \caption{Environment Attributes} \label{table:explicit_env_attr}
   \centering
-  \begin{tabular}{llrr}
+  \begin{tabular}{@{}ll@{}rr@{}}
     \toprule
     \textbf{Package}&\textbf{Attributes}&\textbf{\#}&\textbf{Cum. \%}\\
     \midrule
@@ -1208,19 +1209,24 @@ packages. The final source of these environments is the sandbox created by R's
 environments associated with packages and namespaces from the rest of the
 discussion.
 
-\section{Discussion}
+\section{Conclusion}
+
+This paper looked at first-class environments in R. We introduced the main
+functions that operate on environments and reported on an observational study of
+100 popular R packages. At the outset, our hope was that we could uncover some
+ways to simplify and rationalize the design of R's environments. We conclude
+with the rather disappointing observation that it seems that all of the
+generality of the environment interface is needed, or at least that it is used.
+While in the vast majority of cases environment access could be optimized and
+environment could be implemented in a straightforward manner, there are
+sufficient number of cases where environments escape and are used in a
+reflective manner that it is not clear such optimizations can be widely applied.
+
+In our future work, we plan to dig deeper in the data we have gathered and
+identify particular patterns of usage that can be used by a compiler to predict
+whether an environment will require full generality or if a more restricted
+semantics could be applicable. As of this writing we do not know if this will
+yield results.
 
 \bibliography{bib/jv,bib/aviral}
-
-
-
 \end{document}
-
-% TODO
-% - environment source
-%            C   new.env
-% - base
-% - library
-%
-% environment class
-% -
