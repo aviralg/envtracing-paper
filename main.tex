@@ -846,12 +846,20 @@ are created and carry them around as attributes for later lookup. We observed
 Apart from this, 2.8M call environments are used for evaluating code.
 
 
+The most important observation from this analysis is that most call environments
+do not have to be explicit. One would expect an optimizing compiler to optimize
+away accesses in these cases. Unfortunately, there are sufficient cases where
+environments are accessed reflectively and the dynamic nature of R can make it
+challenging to predict when this will happen. These environments can be passed
+around and modified at will, making it hard to reason about the program from
+that point onwards.
+
 \subsection{Explicit Environments}
 In this section, we discuss explicit environment creation using the \newEnv R
 function and native code. 3.4M of these environments come from core and 395.2K
 from user packages. We analyze the two environment categories below, separately.
 
-\subsubsection{Core Explicit Environments}
+\subsubsection{Core Environments}
 
 There are 9 packages responsible for all the explicit environments from
 \emph{Core}. Table~\ref{table:core_explicit_pack} shows the frequency of
@@ -972,8 +980,13 @@ binding is locked to prevent modification.
 Overall, 168.6K environments are passed to eval and only 100 were used for
 formula construction.
 
+Explicit environments in the \emph{Core} category are used for code evaluation,
+substitution, and in the S4 object system. We find that these environments
+register a variety of events, implying that they rely on a significant
+proportion of R's environment API.
 
-\subsubsection{User Explicit Environments}
+\subsubsection{User Environments}
+
 There are 55 packages responsible for all the explicit environments from
 \emph{User}. Table~\ref{table:user_explicit_pack} shows the distribution of
 environments by the top 8 packages, which account for 95.9\% of the environments
@@ -1119,21 +1132,22 @@ locked to prevent modifcation. The environments are then assigned the class
 attribute, \code{``event_loop''}.
 
 \noindent
-\textbf{A, @, !:} This pattern shows up on the environments from the
+\textbf{A, @, !:} This event pattern shows up on the environments from the
 \code{plyr} package. This package creates environments with attribute
 \code{``idf''} for representing immutable data frames. It also assigns getter
-functions to these environments to access the columns of the data frame, and sets
-their environment to be the environment itself to ensure that lookup happens in
-the correct scope. This also occurs in \code{R6} when a class environments is
-set as the parent environment of a subclass environment.
+functions to these environments to access the columns of the data frame, and
+sets their lexical scope to be the environment itself. The same pattern occurs
+in \code{R6} when an environment representing a superclass object is set as the
+parent environment of a subclass object environment.
 
-\paragraph{Formula}
-Only 597 of these environments were used for formula construction. 389 of these
-environments were created by testthat for code testing, implying that the code
-being tested created a formula. The \code{survival} package creates explicit
-environments for use in formulas. We observe 22 environments created by
-\code{survival::coxph} and \code{survival::model.frame.coxph} to be used for
-formula construction, as shown below.
+
+Only 597 of the environments in this category were used for formula
+construction. Out of these, 389 were created by the code being tested by
+\code{testthat}. One example that stands out is the \code{survival} package
+which creates explicit environments for use in formulas. We observe 22
+environments created by \code{survival::coxph} and
+\code{survival::model.frame.coxph} to be used for formula construction, as shown
+below.
 
 \begin{lstlisting}
 coxenv <- new.env(parent= environment(formula))
@@ -1141,15 +1155,13 @@ assign("tt", function(x) x, envir=coxenv)
 environment(tform$formula) <- coxenv
 \end{lstlisting}
 
+162K (41\%) of the explicit environments were used for dynamic code evaluation.
+These environments were created from 33 packages. 88.2\% of these environments
+were from the \code{vctrs} package. Four packages, \code{vctrs},
+\code{testthat}, \code{magrittr}, and \code{rlang} together contribute 98.2\% of
+these environments.
 
-\paragraph{Eval}
-162K (41\%) of the explicit environments are used for dynamic code evaluation.
-These environments come from 33 packages. 88.2\% of these environments come from
-the \code{vctrs} package. Four packages, \code{vctrs}, \code{testthat},
-\code{magrittr}, and \code{rlang} together contribute 98.2\% of these
-environments.
 
-\paragraph{Class Attributes}
 50.8K (12.9\%) of the environments have a class attribute.
 Table~\ref{table:explicit_env_attr} presents the class attributes attached to
 environments by frequency and the package from which the attributes originate.
@@ -1179,20 +1191,25 @@ environments by frequency and the package from which the attributes originate.
   \end{tabular}
 \end{table}
 
+Environments in this category are used in a variety of ways. They are used as
+hash tables, for customizing expression evaluation, and for designing custom
+object systems. Attribute setting, environment locking, and modifying function's
+local scopes are frequently occurring events for these environments. They are
+rarely used for building formulas.
+
 \subsection{Package Environments}
+
 We observe 3.3M environments related to packages and namespaces. The package
-loading mechanism alone accounts for 2.9M of these environments, the remaining
-representing packages and namespaces. 2.3M of the environments come from a
-single \base package function, \lazyLoadDBexec, used only internally. This
-function is responsible for loading a package's code from a binary file and also
-for loading processed help file data. 481K functions come from the
-\code{loadNamespace} function of the \code{base} package. This function is used
-for loading package namespaces. A few environments are created internally by the
-interpreter to store a package's native functions exported for use by other
-packages. The final source of these environments is the sandbox created by R's
-\code{base::local} function to initiate the loading of package. We ignore the
-environments associated with packages and namespaces from the rest of the
-discussion.
+loading mechanism alone accounts for 2.9M of these environments. The remaining
+environments are used as package namespaces. 2.3M of these environments
+originate from a single function, \code{base::lazyLoadDBexec}, used only
+internally by R. This function is responsible for loading a package's code from
+a binary file and also for loading processed help file data. A few environments
+are created internally by the interpreter to store a package's native functions
+for use by other packages. The namespace APIs of R are private, and the internal
+structure of these environments is unspecified. It is also not recommended to
+modify these environments. Hence, we don't capture the events for these
+environments.
 
 \section{Conclusion}
 
