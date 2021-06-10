@@ -561,7 +561,7 @@ functions, the majority, 17.2K, belong to transitively included packages, and,
 are extracted from 100 packages, they don't provide good coverage for the
 transitively included 186 packages.
 
-Table~\ref{table:fundist} presents the distribution of exercised functions
+Table~\ref{table:packsize} presents the distribution of exercised functions
 across these packages. We observe that 171 packages have 25 functions or less.
 There are few large packages; 8 packages have more than 500 functions.
 
@@ -973,8 +973,8 @@ environment as the lexical scope of the function (\texttt{!}).
 
 \noindent
 \textbf{A, L, !:} These events happen in S4 objects. Their underlying data store
-consists of an environment with a reference \code{self} to the object. This
-binding is locked to prevent modification.
+consists of an environment with a reference to the object. This binding is
+locked to prevent modification.
 
 Overall, 168.6K environments are passed to eval and only 100 were used for
 formula construction.
