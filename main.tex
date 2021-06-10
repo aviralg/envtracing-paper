@@ -690,13 +690,15 @@ for custom OOP systems, sandboxing, etc.
 
 
 \section{Environment Life-Cycles}
-
-Table~\ref{table:env_category} presents a high-level breakdown of how these
-environments are used.
+In this section we study how the environments are used in our corpus. We
+separately focus on the three categories of environments, presented in
+Table~\ref{table:env_category}. \textbf{Call} environments are created for
+evaluating function calls, \textbf{Explicit} environments are created for
+non-standard purposes, and \textbf{Package} environments are created by the
+package loading subsystem of R.
 
 \begin{table}[!h]
-  \vspace{-3mm}
-  \small
+  \vspace{-3mm} \small
   \caption{Environment Categories} \label{table:env_category}
   \centering
   \begin{tabular}{lrr}
