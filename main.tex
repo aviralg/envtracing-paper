@@ -329,12 +329,10 @@ reference to the environment in which it is defined to refer to the variables,
 if they are not otherwise provided during model fitting.
 
 \paragraph{Environments}
-Environments bind names to values. They are backed either by an association list
-(default) or a hash table, chosen on initialization. Unlike other R objects,
-they are modified by reference. Environments form a chain; each environment
-points to a parent environment. The chain terminates at the \code{empty}
-environment; which is always empty. The call, \code{emptyenv()}, returns the
-\code{empty} environment.
+Environments bind names to values, implemented by an association list or a
+hashmap, chosen at construction. Each environment also has a parent, forming an
+acyclic chain terminated by the empty environment. That environment is returned
+by \code{emptyenv()}. Unlike other values, environments are mutable.
 
 \subsection{Environments as Packages}
 
@@ -451,27 +449,28 @@ function. To support metaprogramming, R provides the \substitute function. This
 function extracts the unevaluated argument text from the promise bound to the
 argument in the supplied environment.
 
-\paragraph{Discussion.} R provides a large API for interactive with environments
-and accessing scopes as explicit environments. Environments in R are very
-versatile objects. While they primarily serve as scopes, they can also be used
-as hash tables, and sandboxing expression evaluation. Though R is lexically
-scoped, ad-hoc lookup strategies can be implemented by accessing arbitrary
-caller environments. The lexical scope of a function can be changed, a technique
-often used for designing custom object-oriented systems.
+\paragraph{Discussion.}
+R provides a large API for interactive with environments and accessing scopes as
+explicit environments. Environments in R are very versatile objects. While they
+primarily serve as scopes, they can also be used as hash tables, and sandboxing
+expression evaluation. Though R is lexically scoped, ad-hoc lookup strategies
+can be implemented by accessing arbitrary caller environments. The lexical scope
+of a function can be changed, a technique often used for designing custom
+object-oriented systems.
 
 \section{Analysis Infrastructure}
-In this section, we describe the analysis infrastructure. It performs three
-high-level tasks: assembling executable programs from R packages, generating
-execution traces using a tracer, and post-processing the traces to generate
-graphs and statistics. The entire pipeline is managed by a Makefile that invokes
-R scripts for each step. Trace collection and analysis steps are parallelized
-using GNU Parallel~\cite{gnuparallel}. The evaluation has been performed on a
-dedicated analysis machine featuring an Intel Skylake CPU with 72 processors and
-256 GB of RAM, and running Ubuntu 18.04 on a 5.4.0-73-generic Linux kernel. For
-reproducibility, the infrastructure is installed in a container, based on Debian
-10.9, and executed on the Docker runtime 20.10.5, build 55c4c88.
 
-\subsection{Assembling Corpus}
+In this section, we describe the infrastructure that will be used for dynamic
+analysis. This infrastructure has three main tasks: assembling executable
+programs from R packages, generating execution traces using an modified R
+interpreter, and post-processing the traces to generate graphs and statistics.
+The entire pipeline is managed by a Makefile that invokes R scripts for each
+step. Trace collection and analysis steps are parallelized using GNU
+Parallel~\cite{gnuparallel}. For reproducibility, the infrastructure is
+installed in a container, based on Debian 10.9, and executed on Docker.
+
+\subsection{Assembling a Corpus}
+
 The corpus of executable programs is assembled from R packages hosted on CRAN,
 the official R package repository. Our scripts mirror CRAN on the analysis
 server and install its packages. Another script invokes the R APIs that
@@ -481,6 +480,7 @@ Another set of scripts computes metadata such as lines of code from the
 installed packages and extracted corpus.
 
 \subsection{Generating Execution Traces}
+
 Execution traces are generated using \envtracer, a dynamic analyzer built on top
 of \rdyntrace. \rdyntrace is a modified GNU R virtual machine version
 4.0.2~\cite{oopsla19b} that raises events during program execution. Callbacks
@@ -511,14 +511,13 @@ the corpus. Scale is the major challenge. We use a custom map-reduce style
 analysis to process this data. First, in the \textit{reduce} phase, the
 individual execution traces are partially summarized in parallel to generate
 smaller data tables per program, per analysis. This is the most expensive step
-and it reduces the data size to XXX GB. Second, in the \textit{combine} phase,
-these tables are concatenated into a single table per analysis. Third, in the
-\textit{summarize} phase, final summaries are computed from the concatenated
-tables. At this point, the data occupies only XXXKB. Finally, in the
-\textit{report} phase, graphs and tables are generated from these summaries
-using R Markdown notebooks\cite{rmdpkg, rmdguide, rmdcookbook}.
+and it substantially reduces the data size. Second, in the \textit{combine}
+phase, these tables are concatenated into a single table per analysis. Third, in
+the \textit{summarize} phase, final summaries are computed from the concatenated
+tables. Finally, in the \textit{report} phase, graphs and tables are generated
+from these summaries using R Markdown notebooks~\cite{rmdpkg}.
 
-\section{Corpus of R Programs}
+\subsection{Our Corpus of R Programs}
 
 For this study, we assembled a corpus of 100 most widely used packages from
 CRAN~\cite{ligges2017}, based on the number of client packages. These packages
@@ -610,10 +609,10 @@ functions are called only once, leading to low coverage.
 \end{figure}
 
 These functions have a total of 67,225 parameter positions.
-Figure~\ref{fig:paramdist} shows the distribution of parameter positions.
-3.0\% functions have 0 parameters, 22.4\% have 1, and 5.0\% have over
-10. There are 4 functions with over 50 parameters that come from 3 packages. Of
-those, \texttt{ggplot2::theme} has the highest, 95 parameters.
+Figure~\ref{fig:paramdist} shows the distribution of parameter positions. 3.0\%
+functions have 0 parameters, 22.4\% have 1, and 5.0\% have over 10. There are 4
+functions with over 50 parameters that come from 3 packages. Of those,
+\texttt{ggplot2::theme} has the highest, 95 parameters.
 
 \begin{figure}[!h]
   \centering
@@ -622,17 +621,17 @@ those, \texttt{ggplot2::theme} has the highest, 95 parameters.
   \label{fig:paramdist}
 \end{figure}
 
-\section{Environment Provenance}
-The first question we address is where environments are created. In our corpus,
-we observe the creation of 1.2B environments, which makes them the second most
-widely allocated objects. Table~\ref{table:object_count_dist} shows the
-frequency of other R objects for comparison. Promises are the most widely
-allocated objects, which is expected~\cite{oopsla19b}. Vectors of logicals and
-characters (string) are more frequently allocated compared to that of integers,
-reals, and raw (bytes). Language objects, i.e, first-class expressions, are used
-for metaprogramming. Lists are heterogeneous vectors. Other objects such as S4,
-externalptr, etc. are rare, and are presented together in the \emph{Other}
-category.
+\section{Provenance}
+
+The first question we address is where environments come from. In our corpus, we
+observed 1.2B environments, which makes them the second most widely allocated
+values. Table~\ref{table:object_count_dist} shows the frequency of other values
+for comparison. Promises are the most widely allocated values, which is
+expected~\cite{oopsla19b}. Vectors of logicals and characters are more frequent
+than integers, reals, and raw. Language objects, i.e, first-class expressions,
+are used for metaprogramming. Lists are heterogeneous vectors. Other objects
+such as S4 or externalptr are rare, and are presented together in the
+\emph{Other} category.
 
 \begin{table}[!h]
   \vspace{-3mm}
@@ -671,7 +670,7 @@ environments created by the GNU R implementation and 16 packages that ship with
 it. These packages are \code{base}, \code{compiler}, \code{datasets},
 \code{grDevices}, \code{graphics}, \code{grid}, \code{methods}, \code{parallel},
 \code{profile}, \\\code{splines}, \code{stats}, \code{stats4}, \code{tcltk},
-\code{tools}, \code{translations}, and \code{utils}. The \emph{User} row
+\code{tools}, \code{translations}, and \code{utils.} The \emph{User} row
 represents environments created by the corpus of CRAN packages. The environments
 created by these sources can come from \emph{Native} or \emph{R} code.
 Environments in \emph{Native} code are created using the C APIs:
