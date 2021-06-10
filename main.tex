@@ -689,14 +689,15 @@ native code for a variety of purposes such as for use as hash tables, objects
 for custom OOP systems, sandboxing, etc.
 
 
-\section{Environment Life-Cycles}
+\section{Environment Usage Patterns}
 
-In this section we study how the environments are used in our corpus. We
-separately focus on the three categories of environments, presented in
+In this section we study how the environments are used in our corpus. For this,
+we divide the environments into three categories, presented in
 Table~\ref{table:env_category}. \textbf{Call} environments are created for
 evaluating function calls, \textbf{Explicit} environments are created for
 non-standard purposes, and \textbf{Package} environments are created by the
-package loading subsystem of R.
+package loading subsystem of R. We separately focus on the environments in these
+three categories.
 
 \begin{table}[!h]
   \vspace{-3mm} \small
@@ -793,6 +794,14 @@ for environments used for evaluating code , \texttt{S} for substitute,
   it evaluates them using \code{eval} which extracts the environment using
   \code{parent.frame} for evaluation.
 \end{itemize}
+
+
+%Formula. Only 597 of these environments were used for 855 formula construction. 389 of these environments were cre- 856 ated by testthat for code testing, implying that the code 857 being tested created a formula. The survival package cre- 858 ates explicit environments for use in formulas. We observe 859 22 environments created by survival::coxph and survival 860 ::model.frame.coxph to be used for formula construction, as 861 shown below. 862 863 864 865 866
+%Eval. 162K (41%) of the explicit environments are used for 867
+%dynamic code evaluation. These environments come from 868
+%33 packages. 88.2% of these environments come from the 869
+%vctrs package. Four packages, vctrs, testthat, magrittr, 870
+%and rlang together contribute 98.2% of these environments.
 
 \subsection{Explicit Environments}
 In this section, we discuss explicit environment creation using the \newEnv R
