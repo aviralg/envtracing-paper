@@ -271,30 +271,64 @@ type for first-class environments.
 
 \section{Environments in the R Language}
 
+The evolution of R has been gradual, rather than offering clearly delineated
+abstractions, the language designer opened up the internals of the interpreter
+for all to see, and packaged some commonly needed functionality into functions
+bundled with the core of the language. Thus, the task of describing the
+``interface'' of environments as seen by developers and end-users involves quite
+a lot of sleuthing. As we prepared this paper, we kept discovering new functions
+that accessed environments from native code. This section is not meant to be an
+exhaustive description, but it gives an overview of the most commonly used
+functions that manipulate environments.
+
 %R is a dynamic language with first-class, lexically scoped, functions.
+\subsection{The R language}
 
-R is a lazy functional language in which most values are immutable. R has
-first-class lexically scoped functions. They are an important linguistic
-construct as all expressions desugar to function calls.
+A presentation of the language requires introducing some key concepts. We will
+be brief, interested readers should consult~\cite{AdvancedR}.
 
-Vectors in R are homogeneous fixed-size arrays of integer, double, character
-(string), logical (boolean), complex, or raw (byte) values. Lists are
-heterogeneous vectors with optionally named elements. They can be indexed by
-position or name. R values can be tagged with user-defined data called
-attributes. They are an optional name value map typically used to add a
-domain-specific type structure. For example, \code{attr(x, dim) <- c(2, 2))}
-attaches the attribute \code{dim} to vector \code{x<-c(1,2,3,4)} and R
-subsequently treats it as a 2$\times$2 matrix. Of special interest is the
-\code{class} attribute. \code{class(x)<-c("cat","animal")} sets the class of
-\code{x} to \code{"cat"} and \code{"animal"}. This is used for object-oriented
-programming by S3 and S4, two OOP frameworks of R. S3 uses the \code{class}
-attribute to dispatch on the first argument, and S4 allows multiple dispatch.
-Formula is a compact symbolic representation of models used by model fitting
-functions. For example, the linear model \code{y ~ x-1} specifies a line through
-the origin. Formula contains a reference to the environment in which it is
-defined to refer to the variables, if they are not otherwise provided during
-model fitting.
+\paragraph{Functions} Functions are first-class, anonymous, lexically-scoped values
+with optional parameters and default values. R is ``functional'' in the sense
+that values have a copy-on-write semantics, so that side-effects to arguments
+inside a function are not reflected to the caller.
 
+\paragraph{Promises} R is a mostly lazy language.  Arguments to functions are
+packaged into promises which bundle an expression and its environment. When the
+value of a promise is needed, the expression is evaluated in the adjoined
+environment and the result is cached in the promise.
+
+\paragraph{Vectors}  Most values in R are vectors, and most operations are
+vectorized. Vectors are homogeneous arrays of integer, double,
+character, logical, complex, or raw values.
+
+\paragraph{Lists} List are heterogeneous vectors with optionally named elements.
+They can be indexed by position or name. Lists (and vectors) have a
+copy-on-write semantics, but the language maintains a reference count and allows
+mutation in place when a value is not aliased.
+
+
+\paragraph{Attributes}
+Values can be tagged with user-defined attributes which are a map from string to
+value. Consider the following code which sets the attributes \code{dim} and
+\c{class} of some vector \code{x}.
+
+\begin{lstlisting}
+  x <- c(1,2,3,4)
+  attr(x, dim) <- c(2,2)
+  class(x) <- c("cat")
+\end{lstlisting}
+
+Setting the \code{dim} attribute causes the vector to be subsequently treated as
+a 2$\times$2 matrix. Similarly, the class attribute is used for method dispatch
+in an object-oriented style.
+
+\paragraph{Formulas}  A formula is a compact symbolic
+representation of models used by statistical functions. For example, the linear
+model \code{y~x-1} specifies a line through the origin. Each formula contains a
+reference to the environment in which it is defined to refer to the variables,
+if they are not otherwise provided during model fitting.
+
+\paragraph{Environments}
 Environments bind names to values. They are backed either by an association list
 (default) or a hash table, chosen on initialization. Unlike other R objects,
 they are modified by reference. Environments form a chain; each environment
@@ -347,7 +381,7 @@ an optimized implementation of \code{sys.frame(sys.parent(n))}. Lastly,
 
 \begin{lstlisting}
  f <- function() { print(environment())
- g <- function() { parent.frame(1) }; g() }
+ g <- function() { parent.frame(1); g() }
  f()
  # <env: 0x7f2> <env: 0x7f2>
 \end{lstlisting}
@@ -416,7 +450,6 @@ Expressions can be evaluated explicitly in an environment using the \eval
 function. To support metaprogramming, R provides the \substitute function. This
 function extracts the unevaluated argument text from the promise bound to the
 argument in the supplied environment.
-
 
 \paragraph{Discussion.} R provides a large API for interactive with environments
 and accessing scopes as explicit environments. Environments in R are very
