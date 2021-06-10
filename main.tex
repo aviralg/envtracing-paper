@@ -1036,11 +1036,9 @@ functions belong to 5 packages: \code{R6}, \code{vctrs}, \code{codetools},
   \end{tabular}
 \end{table}
 
-\paragraph{What are environment life-cycles?}
-Table~\ref{table:user_explicit_env_seq} shows the top 7 of the 82 event sets, which
-characterize 96.5\% of these environments. The event \texttt{@} is
-used for setting attributes; the rest of the events have the same meaning as
-before.
+Table~\ref{table:user_explicit_env_seq} shows the top 7 of the 82 event sets,
+which characterize 96.5\% of these environments. We observe a new event,
+\texttt{@}, used for setting the class attributes.
 
 \begin{table}[!h]
   \small
@@ -1065,71 +1063,69 @@ before.
 \textbf{A, V:} This set accounts for the majority of environments. It is
 observed in 36 packages. These environments are created for custom evaluation
 strategies, \ie, for evaluating expressions with custom bindings in the scope.
-For example, \code{rlang::eval_tidy} is an an alternative to R's \code{eval}
-which provides support for evaluating ``quosures'', that are bundles of code
-and environment. On package load, \code{rlang} creates three environments from
-native code for use by its functions for evaluation in the context of a data
-frame. Another example is the \code{vctrs::vec_c} function which is
-alternative to R's \code{c} function for building a vector of values. It uses
-an explicit environment under the hood for repairing the names of the vector
-elements. The \code{testthat} testing library uses custom environment for
-evaluating testing code.
+The \code{testthat} testing library uses custom environment for evaluating
+testing code. The \code{vctrs::vec_c} function is an alternative to R's \code{c}
+function for building a vector of values. It uses an explicit environment under
+the hood for repairing the names of the vector elements. The
+\code{rlang::eval_tidy} function is an alternative to R's \code{eval} which
+provides support for evaluating ``quosures'', that are bundles of code and
+environment. The \code{rlang} package creates three environments in native code
+for use by its functions for evaluating expressions in the context of a data
+frame.
 
 \noindent
-\textbf{A:} This pattern represents environments that are used as hash
-tables and package state. The \code{codetools} package provides facilities for
-analysis of R code. The \code{codetools::mkHash} function creates an
+\textbf{A:} This pattern represents environments that are used as hash tables
+and mutable state for packages. The \code{codetools} package provides facilities
+for analysis of R code. Its \code{codetools::mkHash} function creates an
 environment for use as a hash table to store intermediate static analysis
 information. Another example is the \code{ps} package that provides facilities
-for handling system processes. It creates an environment on package load and
-initializes it with error codes and socket types. The \code{iterators} package
+for handling system processes. It uses an explicit environment for storing
+package state such as error codes and socket types. The \code{iterators} package
 uses environments as dynamic state of iterator objects.
 
 \noindent
-\textbf{A, !:} This pattern represents environments that are set as
-parents of other environments or functions. This is dominated by \code{R.oo}
-and \code{R6} packages that implement object oriented systems. They create new
-environments and set them as lexical scopes of object methods. The
-\code{foreach} package provides iteration constructs that can execute code in
-sequence or parallel. The \code{foreach::\%do\%} function creates a new
-environment, assigns a marker, and sets it as the lexical scope of the
-function which uses the marker to decide whether to execute the code in
-parallel.
+\textbf{A, !:} This pattern represents environments that are set as parents of
+other environments or functions. This is dominated by \code{R.oo} and \code{R6}
+packages that implement object oriented systems. They create new environments
+and set them as lexical scopes of object methods. Another example is the
+\code{foreach} package which provides iteration constructs that can execute code
+sequentially or in parallel. The \code{foreach::\%do\%} function creates a new
+environment, assigns a marker, and sets it as the lexical scope of the function
+which uses the marker to decide whether to execute the code in parallel or
+sequentially.
 
 \noindent
-\textbf{A, @:} This pattern is used by packages to create custom objects,
-which can be used for dispatch based on the class attribute of the
-environments. \code{ggplot2} library implements \code{ggproto}, a prototype
-based OO system. The \code{ggproto} objects are explicit envivronments with
-\code{``ggproto''} class attribute. The \code{XML} package creates an environment
-to store a tree of nodes and assigns it a class attribute. the \code{xts}
-package creates a plot environment with plotting environments and sets an
-attribute on it.
+\textbf{A, @:} This pattern is used by packages to create custom objects, which
+can be used for dispatch based on the class attribute of the environments.
+\code{ggplot2} library implements \code{ggproto}, a prototype based OO system.
+The \code{ggproto} objects are explicit envivronments with the
+\code{``ggproto''} class attribute. The \code{XML} package creates an
+environment to store a tree of nodes and assigns it a class attribute. The
+\code{xts} package creates a plot environment with plotting configuration and
+sets a class attribute on it.
 
 \noindent
-\textbf{A, L:} This pattern is used by R6 to instantiate objects. The
-private bindings are locked in the object environment to prevent
-any modification. Many calls to \code{lockBinding} also originate form
-\code{data.table} which uses a custom environment to store intermeidate state
-for implementing dataframe indexing.
+\textbf{A, L:} This pattern shows up in the R6 package during object
+instantiation. The private method bindings are locked in the object environment
+to prevent any modification. Many calls to \code{lockBinding} also originate
+form \code{data.table} which uses a custom environment to store intermediate
+state for implementing dataframe indexing.
 
 \noindent
-\textbf{A, L, @:} The \code{later} and \code{R6} packages are responsible
-for this sequence. The \code{later} package use environments as handles for
-event loop objects. These objects contain the id of the loop, which is locked
-to prevent modifcation. The environments are assigned the class,
-\code{``event_loop''}. Similar to the previous sequence, the \code{R6} object
-locks the public bindings of an instantiated object, and also sets the class
-attribute.
+\textbf{A, L, @:} These events occur on environments from the \code{later} and
+\code{R6} packages . The \code{later} package uses environments as handles for
+event loop objects. These objects contain the unique loop identifier, which is
+locked to prevent modifcation. The environments are then assigned the class
+attribute, \code{``event_loop''}.
 
 \noindent
-\textbf{A, @, !:} This patterns comes from the \code{plyr} package. It creates
-an environment with attribute \code{``idf''} for representing immutable data
-frames. It also assigns getter functions to this environment to access the
-columns of the data frame, and sets their environment to be the environment
-itself to ensure that lookup happens in the correct scope. This also occurs in
-\code{R6} when a class environments is set as the parent environment of a
-subclass environment.
+\textbf{A, @, !:} This pattern shows up on the environments from the
+\code{plyr} package. This package creates environments with attribute
+\code{``idf''} for representing immutable data frames. It also assigns getter
+functions to these environments to access the columns of the data frame, and sets
+their environment to be the environment itself to ensure that lookup happens in
+the correct scope. This also occurs in \code{R6} when a class environments is
+set as the parent environment of a subclass environment.
 
 \paragraph{Formula}
 Only 597 of these environments were used for formula construction. 389 of these
@@ -1144,7 +1140,6 @@ coxenv <- new.env(parent= environment(formula))
 assign("tt", function(x) x, envir=coxenv)
 environment(tform$formula) <- coxenv
 \end{lstlisting}
-
 
 
 \paragraph{Eval}
