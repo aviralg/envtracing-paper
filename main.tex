@@ -622,19 +622,19 @@ those, \texttt{ggplot2::theme} has the highest, 95 parameters.
   \label{fig:paramdist}
 \end{figure}
 
-\section{Analyzing Environment Usage Patterns}
+\section{Environment Provenance}
+The first question we address is where environments are created. In our corpus,
+we observe the creation of 1.2B environments, which makes them the second most
+widely allocated objects. Table~\ref{table:object_count_dist} shows the
+frequency of other R objects for comparison. Promises are the most widely
+allocated objects, which is expected~\cite{oopsla19b}. Vectors of logicals and
+characters (string) are more frequently allocated compared to that of integers,
+reals, and raw (bytes). Language objects, i.e, first-class expressions, are used
+for metaprogramming. Lists are heterogeneous vectors. Other objects such as S4,
+externalptr, etc. are rare, and are presented together in the \emph{Other}
+category.
 
-\subsection{Life Cycle of Environments}
-In our corpus, we observe the creation of 1.2 B environments, which makes them
-the second most widely allocated objects. Table~\ref{table:object_count_dist}
-shows the distribution of R objects for comparison. Promises are the most widely
-allocated objects, which is not surprising~\cite{oopsla19b}. Vectors of logicals
-and characters (string) are more frequently allocated compared to that of
-integers, reals, and raw (bytes). Language objects, i.e, first-class
-expressions, are used for metaprogramming. Lists are heterogeneous vectors.
-Other objects such as S4, externalptr, etc. are rare.
-
-\begin{table}
+\begin{table}[!h]
   \vspace{-3mm}
   \small
   \caption{Object Counts} \label{table:object_count_dist}
@@ -665,176 +665,191 @@ Other objects such as S4, externalptr, etc. are rare.
   \end{tabular}
 \end{table}
 
-\paragraph{Where do environments come from?} The distribution of environments by
-source is presented in Table~\ref{table:env_source}. The columns of this table
-are to be read as follows. \emph{Core} represents the GNU R implementation and
-its 16 packages: \code{base}, \code{compiler}, \code{datasets},
+The distribution of environments by source is presented in
+Table~\ref{table:env_source}. In this table, the \emph{Core} row represents
+environments created by the GNU R implementation and 16 packages that ship with
+it. These packages are \code{base}, \code{compiler}, \code{datasets},
 \code{grDevices}, \code{graphics}, \code{grid}, \code{methods}, \code{parallel},
-\code{profile}, \code{splines}, \code{stats}, \code{stats4}, \code{tcltk},
-\code{tools}, \code{translations}, and \code{utils}. \emph{User} represents CRAN
-packages. \emph{Native} represents environment creation using the C APIs
-\code{allocSExp}, \code{Rf_NewEnvironment}, and \code{Rf_NewHashedEnv}. Only
-\code{allocSexp} is exported for use by external packages. \emph{R} represents
-environment creation using \newEnv. 904.4K (0.08\%) environments were created
-outside of the code being traced; hence they are ignored from the rest of the
-discussion. We believe that most of these are environments created during lazy
-loading of core R packges (which are loaded by default).
-
-The R core is responsible for 99.89\% of the environments, dominated by
-\emph{Native} . User packages are responsible for 0.03\% of the environments,
-with twice as many from \emph{R} as \emph{Native}.
+\code{profile}, \\\code{splines}, \code{stats}, \code{stats4}, \code{tcltk},
+\code{tools}, \code{translations}, and \code{utils}. The \emph{User} row
+represents environments created by the corpus of CRAN packages. The environments
+created by these sources can come from \emph{Native} or \emph{R} code.
+Environments in \emph{Native} code are created using the C APIs:
+\code{allocSExp}, \\\code{Rf_NewEnvironment}, and \code{R_NewHashedEnv}.
+Environments in \emph{R} code are created using the \newEnv function. From the
+table, we observe that \emph{Core} is responsible for 99.89\% of the
+environments, and \emph{User} packages are responsible for 0.03\% of the
+environments. Environments in the \emph{Core} category mostly come from native
+code, whereas in the \emph{User} category, twice as many environments are
+created from \emph{R} as \emph{Native}. We also encountered 904.4K (0.08\%) of
+environments during tracing which were unrelated to the code being traced. These
+environments were created during the initialization of R session, which involves
+loading some of the \emph{Core} packages. We ignore these environments from the
+rest of the discussion.
 
 \begin{table}[!h]
-  \vspace{-3mm}
   \small
   \centering
   \caption{Environment Source}\label{table:env_source}
   \vspace{-3mm}
   \begin{tabular}{llrr}
     \toprule
-    \multirow{2}{*}{Core}  & \multicolumn{1}{l}{Native} & \multicolumn{1}{r}{1.2B} & \multicolumn{1}{r}{99.62\%}\\
-                           & \multicolumn{1}{l}{R}     & \multicolumn{1}{r}{3.1M} & \multicolumn{1}{r}{0.27\%}\\
+    &\textbf{Source}&\textbf{\#}&\textbf{\%}\\
     \midrule
-    \multirow{2}{*}{User}  & \multicolumn{1}{l}{Native} & \multicolumn{1}{r}{154.9K} & \multicolumn{1}{r}{0.01\%}\\
-                           & \multicolumn{1}{l}{R}      & \multicolumn{1}{r}{240.4K} & \multicolumn{1}{r}{0.02\%}\\
+    \multirow{2}{*}{\textbf{Core}}  & \multicolumn{1}{l}{\emph{Native}} & \multicolumn{1}{r}{1.2B} & \multicolumn{1}{r}{99.62\%}\\
+                                    & \multicolumn{1}{l}{\emph{R}}      & \multicolumn{1}{r}{3.1M} & \multicolumn{1}{r}{0.27\%}\\
+    \midrule
+    \multirow{2}{*}{\textbf{User}}  & \multicolumn{1}{l}{\emph{Native}} & \multicolumn{1}{r}{154.9K} & \multicolumn{1}{r}{0.01\%}\\
+                                    & \multicolumn{1}{l}{\emph{R}}      & \multicolumn{1}{r}{240.4K} & \multicolumn{1}{r}{0.02\%}\\
     \bottomrule
   \end{tabular}
 \end{table}
 
+In the \textbf{Core} \emph{Native} class, 99.7\% of the environments are created
+for function calls, 344.7K for package loading and package namespaces, 2.8M by
+the \code{methods} package for S4 object-oriented system, 165.5K by the
+\code{base} package for dynamic evaluation using \code{eval}, and 145.8K by
+\code{base} package for substitute.
 
-\emph{Core}, \emph{Native} environments: 99.7\% of environments in this category
-are used for function calls, 344.7K are created for package loading and package
-namespaces, 2.8M are created by the \code{methods} package for S4
-object-oriented system, 165.5K by the \code{base} package for dynamic evaluation
-using \code{eval}, 145.8K by \code{base} package for substitute.
-
-\emph{Core}, \emph{R} environments: 94.1\% of these environments are created by
-\code{base}, and 5.3\% by \code{methods} for the S4 object-oriented system. The
-\code{base} package contribution comes from an internal function,
+In the \textbf{Core} \emph{R} class, 94.1\% of the environments are created by
+the \code{base} package, and 5.3\% by \code{methods} for the S4 object-oriented
+system. The \code{base} package contribution comes from an internal function,
 \code{lazyLoadDBexec}, used for loading package code and processed help files
 from a binary database.
 
-\emph{User} environments: These environments come from many packages and are
-used for a variety of purposes such as hash tables, objects for custom OOP
-systems, sandboxing, etc.
+In the \textbf{User} class, environments are created by the packages in R and
+native code for a variety of purposes such as for use as hash tables, objects
+for custom OOP systems, sandboxing, etc.
 
-Overall, the environments can be divided into three categories as shown below in
-table~\ref{table:env_category}.
 
-\begin{table}
-  \vspace{-3mm}
-  \small
-  \caption{Environment Source} \label{table:env_category}
+\section{Environment Usage Patterns}
+
+In this section we study how the environments are used in our corpus. For this,
+we divide the environments into three categories, presented in
+Table~\ref{table:env_category}. \textbf{Call} environments are created for
+evaluating function calls, \textbf{Explicit} environments are created for
+non-standard purposes, and \textbf{Package} environments are created by the
+package loading subsystem of R. We separately focus on the environments in these
+three categories.
+
+\begin{table}[!h]
+  \vspace{-3mm} \small
+  \caption{Environment Categories} \label{table:env_category}
   \centering
-  \begin{tabular}{l|rr}
+  \begin{tabular}{lrr}
     \toprule
-    \textbf{Source}&\textbf{Count}&\textbf{Percentage}\\
+    &\textbf{\#}&\textbf{\%}\\
     \midrule
-    Call&1.2B&99.32\%\\
-    Explicit&3.7M&0.33\%\\
-    Package&3.3M&0.28\%\\
+    \textbf{Call}&1.2B&99.32\%\\
+    \textbf{Explicit}&3.7M&0.33\%\\
+    \textbf{Package}&3.3M&0.28\%\\
     \bottomrule
   \end{tabular}
 \end{table}
 
-\section{Call Environments}
 
-%% This is locked. I am working on it - Aviral
+\subsection{Call Environments}
 
 Of the 1.2 B call environments, only 20.9M call environments register any
-events. Out of those 299.24K call environments outlive the frame that create
-them. We present the sequence of events for the two kinds of call environments
-separately.
+events. To understand how these environments are used, we look at the of events
+that occur on them. The events of interest are described below.
+\begin{itemize}
+\item \texttt{A} for read, write and remove.
+\item \texttt{V} for evaluating code in the environment using the \eval function.
+\item \texttt{S} for using the \substitute function in the environment.
+\item \texttt{X} for extracting the environment using \code{parent.frame}, \code{sys.frame} or \code{sys.frames}.
+\end{itemize}
 
-\subsection{Normal Call Environments}
-
-Table~\ref{table:call_env_seq} presents the event set for call environments that
-don't escape. The top four sequences correspond to 98.4\% of the environments.
-The events of interest are: \texttt{A} for read, write and remove, \texttt{V}
-for environments used for evaluating code , \texttt{S} for substitute,
-\texttt{X} corresponds to environment extraction using \code{parent.frame},
-\code{sys.frame} or \code{sys.frames}.
+Table~\ref{table:call_env_seq} presents the frequency of the most common event
+sets. Overall, there are 63 event sets but the top four sets explain the
+usage patterns for 98.4\% of the call environments with any events. This is
+followed by a long tail of event sets.
 
 \begin{table}[!h]
   \vspace{-3mm}
   \small
-  \caption{Call Environment Sequence} \label{table:call_env_seq}
+  \caption{Call Environment Life-Cycle} \label{table:call_env_life_cycle}
   \centering
   \begin{tabular}{lrr}
     \toprule
     \textbf{Event}&\textbf{\#}&\textbf{Cum. \%}\\
     \midrule
     \texttt{S}&9.8M&46.6\%\\
-    \texttt{A, X}&8.3M&86.3\%\\
-    \texttt{A, V, X}&2.2M&96.9\%\\
-    \texttt{A, S, V, X}&312.6K&98.4\%\\
+    \texttt{X, A}&8.3M&86.3\%\\
+    \texttt{X, V, A}&2.2M&96.9\%\\
+    \texttt{X, S, V, A}&312.6K&98.4\%\\
     \bottomrule
   \end{tabular}
 \end{table}
 
-\begin{itemize}
-\item[\textbf{S}:] This event happens in functions that use \code{substitute} on
-  call's environment. 91\% of these cases originate from calls to \base package
-  functions \code{::}, \code{:::}, \code{match.arg}, \code{delayedAssign}, and
-  \code{evalq}. Expression \code{ns::sym} looks up the value of exported binding
-  \code{sym} in namespace \code{ns}. \code{:::} allows lookup of private
-  bindings. They uses substitute to access the symbol and namespace names,
-  convert them to strings, and use \code{get} to perform the actual lookup. The
-  \code{evalq} function is a composition of \code{quote} and \code{eval}. It
-  uses substitute to extract the expression AST for evaluation in a custom
-  environment. The expression \code{delayedAssign(x, expr, eval_env,
-    assign_env)} binds \code{x} to a promise containing the unevaluated
-  expression \code{expr} in \code{assign_env}. The expression itself is
-  evaluated in \code{eval_env}. The extract the expression AST, this function
-  uses \code{substitute}. The \code{match.arg} function matches the argument
-  text against a specified list of choices.
+\noindent
+\textbf{S:} This event happens in functions that use \code{substitute}.
+  Most of these cases originate from calls to \base package functions:
+  \code{::}, \code{:::}, \code{delayedAssign}, and \code{evalq}. The expression
+  \code{ns::sym} reads the value of publicly exported binding \code{sym} from
+  namespace \code{ns}; \code{:::} also reads private bindings. These functions
+  uses \substitute to access the symbol and namespace names, convert them to
+  strings, and use the \code{get} function for the actual lookup. The
+  \code{evalq} function is a variant of \eval. It uses the \substitute function
+  to extract the expression AST for evaluation in a custom environment. The
+  expression \code{delayedAssign(x, expr, eval_env, assign_env)} binds \code{x}
+  to a promise containing the unevaluated expression \code{expr} in
+  \code{assign_env}. The expression is evaluated in \code{eval_env}. The
+  \code{expr} text is extracted using \code{substitute}.
 
-\item[\textbf{X, A}:] These events happen to function environments whose environment
-  is extracted and used for accessing or modifying bindings. An example is the use
-  of \code{delayedAssign} by \code{base::registerS3methods::assignWrapped} which
-  uses \code{parent.frame} to access caller environment for evaluating promise
-  code. Similarly, \code{withr::set_envvar} calls \code{base::match.arg} which
-  uses the parent frame for matching arguments. The \code{rlang::env_get} function
-  looks up variables in parent's environment, extracted using \code{parent.frame}.
+\noindent
+\textbf{X, A:} These events happen to function environments whose
+  environment is extracted and used for accessing or modifying bindings. An
+  example is the use of \code{delayedAssign} by
+  \code{base::registerS3methods::assignWrapped} which uses \code{parent.frame}
+  to extract the caller environment for evaluating promise code. Similarly,
+  \code{withr::set_envvar} calls \code{base::match.arg} which also uses the
+  parent environment. The \code{match.arg} function matches the argument text
+  against a specified list of choices, provided as an argument. Another example
+  is the \code{rlang::env_get} function which performs a lookup in the parent
+  environment, extracted using \code{parent.frame}.
 
-\item[\textbf{X, V, A}:] These events happens when an environment is extracted
+\noindent
+\textbf{X, V, A:} These events happen when an environment is extracted
   and used for evaluating expressions. The use of \code{glue::glue} function by
   \code{waldo::path_attr} is one such example. The \code{glue::glue} function
   performs string interpolation by evaluating R code embedded in curly braces in
-  the string. It extracts the caller's environment using \code{parent.frame},
+  a string. It extracts the caller's environment using \code{parent.frame},
   evaluates these embedded code blocks, and replaces them with their value to
-  obtain the interpolated string. Another source of these events is the use of
-  \code{do.call} function, used by the \code{base::order} function. This
-  function constructs a call expression with the supplied function name and
-  arguments and evaluates it in the caller's environment, extracted using
-  \code{parent.frame}.
+  obtain the interpolated string. Another example is the \code{do.call}
+  function, used by the \code{base::order} function. This function constructs a
+  call expression with the supplied function name and arguments and evaluates it
+  in the caller's environment, extracted using \code{parent.frame}.
 
-\item[\textbf{X, S, V, A}] These events happen when environment is used for
-  substitute as well as for evaluating expressions. This particularly happens
-  when \code{match.arg} is used to match an argument against a set of options
-  without specifying the set. In this case, \code{match.arg} uses
-  \code{substitute} to get the argument name, reflectively accesses its default
-  value expression from the parent environment, and evaluates it to get the set
-  of acceptable options. The \code{match.arg} function is used in this form in
-  the \code{base::textConnection} function for matching string encoding. Another
-  example is the \code{glue::glue_data} function. This function forms the core
-  of the \code{glue::glue} function, doing the actual interpolation. It uses
-  substitute to access the inputs, which could be unnamed strings to be
-  interpolated, or named arguments to be made available for substitution. Then,
-  it evaluates them using \code{eval} which extracts the environment using
-  \code{parent.frame} for evaluation.
-\end{itemize}
-
-
-\subsection{Escaped Call Environments}
+\noindent
+\textbf{X, S, V, A:} These events happen when an environment is used for
+  \substitute as well as for evaluating expressions. This is particularly common
+  in a code path of \code{match.arg} when the set of values against which the
+  argument is to be matched are non provided. In this case, \code{match.arg}
+  uses \code{substitute} to get the argument name, reflectively accesses its
+  default value expression from the parent environment, and evaluates it to
+  obtain the set of acceptable options. The \code{match.arg} function is used in
+  this form in the \code{base::textConnection} function for matching string
+  encoding. Another example is the \code{glue::glue_data} function. This
+  function forms the core of the \code{glue::glue} function, doing the actual
+  interpolation. It uses substitute to access the inputs, which could be unnamed
+  strings to be interpolated, or named arguments to be made available for
+  substitution. Then, it evaluates them using the \code{eval} function which
+  extracts the environment using \code{parent.frame} for evaluation.
 
 
-%% Lock ends here
+Apart from these sequences, formula construction also stands out as a relatively
+frequent operation. These formulas extract the call environment in which they
+are created and carry them around as attributes for later lookup. We observed
+66.6K formulas constructed in call environments. The most common example is the
+\code{stats::formula} function, which results in the creation of 11.2K formulas.
+Apart from this, 2.8M call environments are used for evaluating code.
 
-\section{Explicit Environments}
+
+\subsection{Explicit Environments}
 In this section, we discuss explicit environment creation using the \newEnv R
 function and native code. 3.4M of these environments come from core and 395.2K
-from user packages.
+from user packages. We analyze the two environment categories below, separately.
 
 \subsubsection{Core Explicit Environments}
 
@@ -1169,8 +1184,7 @@ environments by frequency and the package from which the attributes originate.
   \end{tabular}
 \end{table}
 
-
-\section{Package Environments}
+\subsection{Package Environments}
 We observe 3.3M environments related to packages and namespaces. The package
 loading mechanism alone accounts for 2.9M of these environments, the remaining
 representing packages and namespaces. 2.3M of the environments come from a
@@ -1185,6 +1199,7 @@ packages. The final source of these environments is the sandbox created by R's
 environments associated with packages and namespaces from the rest of the
 discussion.
 
+\section{Discussion}
 
 \bibliography{bib/jv,bib/aviral}
 
