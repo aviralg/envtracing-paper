@@ -766,9 +766,8 @@ usage patterns for 98.4\% of the call environments with any events. This is
 followed by a long tail of event sets.
 
 \begin{table}[!h]
-  \vspace{-3mm}
   \small
-  \caption{Call Environment Life-Cycle} \label{table:call_env_life_cycle}
+  \caption{Call Environment Events} \label{table:call_env_seq}
   \centering
   \begin{tabular}{lrr}
     \toprule
@@ -846,13 +845,14 @@ are created and carry them around as attributes for later lookup. We observed
 Apart from this, 2.8M call environments are used for evaluating code.
 
 
-The most important observation from this analysis is that most call environments
-do not have to be explicit. One would expect an optimizing compiler to optimize
-away accesses in these cases. Unfortunately, there are sufficient cases where
-environments are accessed reflectively and the dynamic nature of R can make it
-challenging to predict when this will happen. These environments can be passed
-around and modified at will, making it hard to reason about the program from
-that point onwards.
+From this analysis we conclude that most call environments do not have to be
+explicit. One would then expect an optimizing compiler to optimize away accesses
+for these cases. Unfortunately, there are sufficient cases where environments
+are accessed reflectively and the dynamic nature of R can make it challenging to
+predict when this will happen. These environments can be passed around and
+modified at will, making it hard to reason about the program from that point
+onwards. Especially challenging is the use of the \code{eval} function on call
+environments, which makes it possible to execute arbitrary code.
 
 \subsection{Explicit Environments}
 In this section, we discuss explicit environment creation using the \newEnv R
@@ -869,7 +869,6 @@ basic built-in functions of R and the \code{methods} package implements the S4
 OO system.
 
 \begin{table}[!h]
-  \vspace{-3mm}
   \small
   \caption{Core Explicit Environment Packages} \label{table:core_explicit_pack}
   \centering
@@ -882,10 +881,10 @@ OO system.
     \code{grid}&15.7K&99.5\%\\
     \code{grDevices}&10.7K&99.8\%\\
     \code{stats}&2.7K&99.9\%\\
-    \code{compiler}&2.4K&100.0\%\\
-    \code{parallel}&610.0&100.0\%\\
-    \code{tools}&217.0&100.0\%\\
-    \code{utils}&7.0&100.0\%\\
+    \code{compiler}&2.4K&100\%\\
+    \code{parallel}&610&100\%\\
+    \code{tools}&217&100\%\\
+    \code{utils}&7&100\%\\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -896,7 +895,6 @@ alone contribute to 98\% of all the explicit environments in \emph{Core}. They
 all belong to \code{methods} and \code{base} packages.
 
 \begin{table}[!h]
-  \vspace{-3mm}
   \small
   \caption{Core Explicit Environment Functions} \label{table:core_explicit_fun}
   \centering
@@ -925,9 +923,8 @@ sets. We observe three new events.
 \end{itemize}
 
 \begin{table}[!h]
-  \vspace{-3mm}
   \small
-  \caption{Core Explicit Environment Sequence} \label{table:core_explicit_env_seq}
+  \caption{Core Explicit Environment Events} \label{table:core_explicit_env_seq}
   \centering
   \begin{tabular}{lrr}
     \toprule
@@ -982,23 +979,25 @@ formula construction.
 
 Explicit environments in the \emph{Core} category are used for code evaluation,
 substitution, and in the S4 object system. We find that these environments
-register a variety of events, implying that they rely on a significant
-proportion of R's environment API.
+register a variety of events. Their reliance on a significant proportion of R's
+environment API makes these APIs crucial for the R ecosystem. Any efforts to
+remove or simplify them will likely break all these packages.
 
 \subsubsection{User Environments}
 
-There are 55 packages responsible for all the explicit environments from
-\emph{User}. Table~\ref{table:user_explicit_pack} shows the distribution of
-environments by the top 8 packages, which account for 95.9\% of the environments
-in this category. The \code{vctrs} package provides tools for type-coercion and
-size-recycling of R vectors. The \code{rlang} package provides a consistent API
-to work with R objects and exposes an evaluation mechanism used by the
-``tidyverse'' packages for building DSLs. \code{R6} implements a
-single-inheritance object-oriented system. \code{codetools} implements code
-analysis for the R compiler. \code{ggplot2} is a popular plotting library.
-\code{testthat} is widely used for testing R code. The \code{dplyr} implements a
-DSL for database style queries on data frames. Lastly, the \code{magrittr}
-package implements the pipe operator for building function pipelines.
+From our corpus, 55 packages are responsible for all the explicit environments
+in the \emph{User} category. Table~\ref{table:user_explicit_pack} shows the
+distribution of these environments by the top 8 packages, which account for
+95.9\% of the environments in this category. The \code{vctrs} package provides
+tools for type-coercion and size-recycling of R vectors. The \code{rlang}
+package provides a consistent API to work with R objects and exposes an
+evaluation mechanism used by the ``tidyverse'' packages for building DSLs.
+\code{R6} implements a single-inheritance object-oriented system.
+\code{codetools} implements code analysis for the R compiler. \code{ggplot2} is
+a popular plotting library. \code{testthat} is widely used for testing R code.
+The \code{dplyr} implements a DSL for database style queries on data frames.
+Lastly, the \code{magrittr} package implements the pipe operator for building
+function pipelines.
 
 \begin{table}[!h]
   \small
@@ -1027,7 +1026,6 @@ functions belong to 5 packages: \code{R6}, \code{vctrs}, \code{codetools},
 \code{ggplot2}, and \code{rlang}.
 
 \begin{table}[!h]
-  \vspace{-3mm}
   \small
   \caption{User Explicit Environment Functions} \label{table:user_explicit_fun}
   \centering
@@ -1049,13 +1047,14 @@ functions belong to 5 packages: \code{R6}, \code{vctrs}, \code{codetools},
   \end{tabular}
 \end{table}
 
+Now, we turn our attention to how these environments are used.
 Table~\ref{table:user_explicit_env_seq} shows the top 7 of the 82 event sets,
 which characterize 96.5\% of these environments. We observe a new event,
 \texttt{@}, used for setting the class attributes.
 
 \begin{table}[!h]
   \small
-  \caption{User Explicit Environment Sequence} \label{table:user_explicit_env_seq}
+  \caption{User Explicit Environment Events} \label{table:user_explicit_env_seq}
   \centering
   \begin{tabular}{lrr}
     \toprule
@@ -1112,7 +1111,7 @@ sequentially.
 can be used for dispatch based on the class attribute of the environments.
 \code{ggplot2} library implements \code{ggproto}, a prototype based OO system.
 The \code{ggproto} objects are explicit envivronments with the
-\code{``ggproto''} class attribute. The \code{XML} package creates an
+\code{"ggproto"} class attribute. The \code{XML} package creates an
 environment to store a tree of nodes and assigns it a class attribute. The
 \code{xts} package creates a plot environment with plotting configuration and
 sets a class attribute on it.
@@ -1129,7 +1128,7 @@ state for implementing dataframe indexing.
 \code{R6} packages . The \code{later} package uses environments as handles for
 event loop objects. These objects contain the unique loop identifier, which is
 locked to prevent modifcation. The environments are then assigned the class
-attribute, \code{``event_loop''}.
+attribute, \code{"event_loop"}.
 
 \noindent
 \textbf{A, @, !:} This event pattern shows up on the environments from the
@@ -1139,7 +1138,6 @@ functions to these environments to access the columns of the data frame, and
 sets their lexical scope to be the environment itself. The same pattern occurs
 in \code{R6} when an environment representing a superclass object is set as the
 parent environment of a subclass object environment.
-
 
 Only 597 of the environments in this category were used for formula
 construction. Out of these, 389 were created by the code being tested by
@@ -1161,15 +1159,13 @@ were from the \code{vctrs} package. Four packages, \code{vctrs},
 \code{testthat}, \code{magrittr}, and \code{rlang} together contribute 98.2\% of
 these environments.
 
-
-50.8K (12.9\%) of the environments have a class attribute.
+50.8K (12.9\%) of these environments have a class attribute.
 Table~\ref{table:explicit_env_attr} presents the class attributes attached to
 environments by frequency and the package from which the attributes originate.
 \code{ggplot2} alone accounts for 47.8\% of environments, owing to the
 \code{ggproto} object system. \code{ggplot2}, \code{rlang}, \code{R6}, and
 \code{plyr} account for 99.2\% of the environments with attributes.
 \begin{table}[!h]
-  \vspace{-3mm}
   \small
   \caption{Environment Attributes} \label{table:explicit_env_attr}
   \centering
@@ -1182,11 +1178,11 @@ environments by frequency and the package from which the attributes originate.
     \texttt{R6}&\texttt{R6}&9.2K&89.5\%\\
     \texttt{rlang}&\texttt{r6lite}&3.7K&96.8\%\\
     \texttt{plyr}&\texttt{idf environment}&1.2K&99.2\%\\
-    \texttt{later}&\texttt{event\_loop}&279.0&99.7\%\\
-    \texttt{R6}&\texttt{R6ClassGenerator}&113.0&100.0\%\\
-    \texttt{shiny}&\texttt{session\_proxy}&12.0&100.0\%\\
-    \texttt{XML}&\texttt{XMLHashTree XMLAbstractDocument}&10.0&100.0\%\\
-    \texttt{xts}&\texttt{replot\_xts environment}&2.0&100.0\%\\
+    \texttt{later}&\texttt{event\_loop}&279&99.7\%\\
+    \texttt{R6}&\texttt{R6ClassGenerator}&113&100\%\\
+    \texttt{shiny}&\texttt{session\_proxy}&12&100\%\\
+    \texttt{XML}&\texttt{XMLHashTree XMLAbstractDocument}&10.0&100\%\\
+    \texttt{xts}&\texttt{replot\_xts environment}&2&100\%\\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -1194,8 +1190,10 @@ environments by frequency and the package from which the attributes originate.
 Environments in this category are used in a variety of ways. They are used as
 hash tables, for customizing expression evaluation, and for designing custom
 object systems. Attribute setting, environment locking, and modifying function's
-local scopes are frequently occurring events for these environments. They are
-rarely used for building formulas.
+local scopes are frequently occurring events for these environments. Any
+modifications to the corresponding environment APIs is likely to break these
+packages.
+
 
 \subsection{Package Environments}
 
@@ -1230,5 +1228,8 @@ whether an environment will require full generality or if a more restricted
 semantics could be applicable. As of this writing we do not know if this will
 yield results.
 
+\newpage
+
 \bibliography{bib/jv,bib/aviral}
+
 \end{document}
