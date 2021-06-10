@@ -226,40 +226,7 @@ practical usage of environments. This allows us to explain the need for this
 rich interface and could, possibly, be a step towards a re-design or a hint for
 compiler writers as to where optimization opportunities may lie.
 
-\section{Background}\label{sec:background}
-
-\subsection{Related Work}
-
-There are three strands of related work: research on the R language, research on
-supporting first-class environments, and first-class environments in contemporary
-languages.
-
-\paragraph{The R language} \citet{ecoop12} evaluated the design of R, providing
-a comprehensive explanation of R's scoping and evaluation mechanism. They
-present many aspects of environments in the context of laziness,
-metaprogramming, dynamic evaluation, explicit environment manipulation, and call
-stack inspection, but they don't discuss explicit environment creation using
-\code{new.env}. In comparison to their work, our work focuses only on
-environments and provides a much more detailed qualitative and quantitative
-account. Furthermore, our study shows a significantly larger and richer use of
-explicit environments in the R ecosystem compared to theirs. \citet{oopsla19b}
-studied the design and use of laziness in R. They provide a detailed account of
-the language’s evaluation strategy with a small-step operational semantics and
-an empirical evaluation of laziness in 16,707 packages. Their semantics shows
-that promises are stored in environments and can outlive the frame that created
-them if returned as part of that environment. \cite{oopsla20b} inferred type
-signatures for R functions by observing the type of argument and return values.
-Their type language includes a designated \textbf{\texttt{env}} type for
-first-class environments.
-
-
-\paragraph{Supporting First-Class Environments} \citet{NishizakiSTLC94}
-introduced a simply typed lambda calculus with first-class environments, proved
-that it is strongly normalizing, and proposed a type inference algorithm.
-\citet{NishizakiML94} proposed a sound type inference algorithm for a type
-system with ML-polymorphism in a $\lambda$-calculus with first-class
-environments.
-
+\section{Related Work}
 
 \paragraph{Contemporary Languages} The Scheme Standard~\cite{SchemeR5RS}
 requires implementations to support \code{eval} whose second argument is an
@@ -280,7 +247,33 @@ dictionary are reflected in the namespace. Similar to R's \code{globalenv},
 Python's \code{globals} returns a dictionary of the global namespace whose
 updates are also reflected in the namespace.
 
-\subsection{The R Language}
+\paragraph{Supporting First-Class Environments} \citet{NishizakiSTLC94}
+introduced a simply typed lambda calculus with first-class environments, proved
+that it is strongly normalizing, and proposed a type inference algorithm.
+\citet{NishizakiML94} proposed a sound type inference algorithm for a type
+system with ML-polymorphism in a $\lambda$-calculus with first-class
+environments.
+
+\paragraph{The R language} \citet{ecoop12} evaluated the design of R, providing
+a comprehensive explanation of R's scoping and evaluation mechanism. They
+present many aspects of environments in the context of laziness,
+metaprogramming, dynamic evaluation, explicit environment manipulation, and call
+stack inspection, but they don't discuss explicit environment creation using
+\code{new.env}. In comparison to their work, our work focuses only on
+environments and provides a much more detailed qualitative and quantitative
+account. Furthermore, our study shows a significantly larger and richer use of
+explicit environments in the R ecosystem compared to theirs. \citet{oopsla19b}
+studied the design and use of laziness in R. They provide a detailed account of
+the language’s evaluation strategy with a small-step operational semantics and
+an empirical evaluation of laziness in 16,707 packages. Their semantics shows
+that promises are stored in environments and can outlive the frame that created
+them if returned as part of that environment. \citet{oopsla20b} inferred type
+signatures for R functions by observing the type of argument and return values.
+Their type language includes a designated \textbf{\texttt{env}} type for
+first-class environments.
+
+
+\section{Environments in the R Language}
 
 R is a vectorized, dynamic, lazy, functional and object-oriented programming
 language, designed by Ihaka and Gentleman in 1993 as a successor to S. In this
@@ -308,14 +301,14 @@ through the origin. Formula contains a reference to the environment in which it
 is defined to refer to the variables, if they are not otherwise provided during
 model fitting.
 
-Environments bind (unique) names to values. They are backed either by an
-association list (default) or a hash table, chosen on initialization. Unlike
-other R objects, they are modified by reference. Environments form a chain; each
-environment points to a parent environment. The chain terminates at the
-\code{empty} environment; which is always empty. The call, \code{emptyenv()},
-returns the \code{empty} environment.
+Environments bind names to values. They are backed either by an association list
+(default) or a hash table, chosen on initialization. Unlike other R objects,
+they are modified by reference. Environments form a chain; each environment
+points to a parent environment. The chain terminates at the \code{empty}
+environment; which is always empty. The call, \code{emptyenv()}, returns the
+\code{empty} environment.
 
-\subsubsection{Environments as Packages}
+\subsection{Environments as Packages}
 
 Packages loaded by calling \code{library} are represented as environments; their
 names are added to a global search path (returned by \code{search()}) for
@@ -329,7 +322,7 @@ obtained by calling \code{getNamespace(ns)}. An R session starts with the
 \code{baseenv()} returns the \code{base} package environment and
 \code{.BaseNamespaceEnv} is bound to the \code{base} package namespace.
 
-\subsubsection{Environments as Scopes}
+\subsection{Environments as Scopes}
 The top-level scope is the \code{global} environment, referred by the variable
 \code{.GlobalEnv}, or returned by \code{globalenv()}. The \code{environment()}
 call returns the current evaluation environment. At the top level, it returns
@@ -339,13 +332,13 @@ definition environment. \code{environment(fun) <- env} sets \code{env} as the
 environment of \code{fun}.
 
 \begin{lstlisting}
-> f <- function() { print(environment()) }
-> environment(); environment(f); f()
-<env: Global> <env: Global> <env: 0x7ff>
-> e <- new.env(); print(e)
-<env: 0x7f1>
-> environment(f) <- e; environment(f)
-<env: 0x7f1>
+ f <- function() { print(environment()) }
+ environment(); environment(f); f()
+ # <env: Global> <env: Global> <env: 0x7ff>
+ e <- new.env(); print(e)
+ # <env: 0x7f1>
+ environment(f) <- e; environment(f)
+ # <env: 0x7f1>
 \end{lstlisting}
 
 R provides a rich call stack reflection interface, which can be divided into two
@@ -367,7 +360,7 @@ all active frames' environments.
 <env: 0x7f2> <env: 0x7f2>
 \end{lstlisting}
 
-\subsubsection{Environments as Data Structures}
+\subsection{Environments as Data Structures}
 Environments can be created using the \newEnv function. This function takes
 three arguments: \code{hash}, a boolean for selecting a hash table
 representation over the default association list representation, \code{size}, a
