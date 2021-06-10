@@ -601,7 +601,7 @@ for metaprogramming. Lists are heterogeneous vectors. Other objects such as S4,
 externalptr, etc. are rare, and are presented together in the \emph{Other}
 category.
 
-\begin{table}
+\begin{table}[!h]
   \vspace{-3mm}
   \small
   \caption{Object Counts} \label{table:object_count_dist}
@@ -636,15 +636,15 @@ The distribution of environments by source is presented in
 Table~\ref{table:env_source}. In this table, the \emph{Core} row represents
 environments created by the GNU R implementation and 16 packages that ship with
 it. These packages are \code{base}, \code{compiler}, \code{datasets},
-\code{grDevices}, \code{graphics}, \code{grid}, \code{methods},
-\code{parallel}, \code{profile}, \\\code{splines}, \code{stats},
-\code{stats4}, \code{tcltk}, \code{tools}, \code{translations}, and
-\code{utils}. The \emph{User} row represents environments created by the
-corpus of CRAN packages. The environments created by these sources can come from
-\emph{Native} or \emph{R} code. Environments in \emph{Native} code are created
-using the C APIs: \code{allocSExp}, \\\code{Rf_NewEnvironment}, and
-\code{R_NewHashedEnv}. Environments in \emph{R} code are created using \newEnv.
-From the table, we observe that \emph{Core} is responsible for 99.89\% of the
+\code{grDevices}, \code{graphics}, \code{grid}, \code{methods}, \code{parallel},
+\code{profile}, \\\code{splines}, \code{stats}, \code{stats4}, \code{tcltk},
+\code{tools}, \code{translations}, and \code{utils}. The \emph{User} row
+represents environments created by the corpus of CRAN packages. The environments
+created by these sources can come from \emph{Native} or \emph{R} code.
+Environments in \emph{Native} code are created using the C APIs:
+\code{allocSExp}, \\\code{Rf_NewEnvironment}, and \code{R_NewHashedEnv}.
+Environments in \emph{R} code are created using the \newEnv function. From the
+table, we observe that \emph{Core} is responsible for 99.89\% of the
 environments, and \emph{User} packages are responsible for 0.03\% of the
 environments. Environments in the \emph{Core} category mostly come from native
 code, whereas in the \emph{User} category, twice as many environments are
@@ -690,6 +690,7 @@ for custom OOP systems, sandboxing, etc.
 
 
 \section{Environment Life-Cycles}
+
 In this section we study how the environments are used in our corpus. We
 separately focus on the three categories of environments, presented in
 Table~\ref{table:env_category}. \textbf{Call} environments are created for
@@ -711,6 +712,7 @@ package loading subsystem of R.
     \bottomrule
   \end{tabular}
 \end{table}
+
 
 \subsection{Call Environments}
 
