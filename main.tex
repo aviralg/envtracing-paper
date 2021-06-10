@@ -184,7 +184,7 @@
 The ability to name values in a computation is a key building block of
 linguistic abstractions. Programming languages have concepts such as local
 variables, global variables, function parameters that boil down to a mapping
-values to names, commonly referred to as an \emph{environment}. The semantics of
+of values to names, commonly referred to as an \emph{environment}. The semantics of
 environments have a profound impact on how programming languages can be
 implemented. At a first approximation, restricted semantics greatly simplify the
 task of generating efficient machine code.
@@ -206,7 +206,7 @@ of view, it became much harder to generate efficient code. Environments were
 data structures that could at any time be inspected and the mapping between
 variables and values be observed.
 
-In this paper we focus on the R programming language created in 1993~\cite{r96}, as
+In this paper, we focus on the R programming language created in 1993~\cite{r96}, as
 a directed descendent to S whose origin dates to 1976~\cite{s88}. Inspired by Lisp,
 CLOS, and Scheme, the designers of R created a lazy functional language that
 supported various forms of object-oriented programming. One of the keys to
@@ -215,7 +215,7 @@ data structures that can be created and manipulated programmatically. One can,
 for example, write code that acquires the environment of the caller of the
 currently executing function, check if it contains a variable named \c{x}, and,
 if it does, rename that variable to \c{y}. Needless to say that this flexibility
-does limit what a compiler can do make R run fast~\cite{dls19}.
+does limit what a compiler can do to make R run fast~\cite{dls19}.
 
 Our goal with this paper is to document the interface that R exposes to
 environments. This interface evolved through the years, some of it dates back to
@@ -301,7 +301,7 @@ environment and the result is cached in the promise.
 vectorized. Vectors are homogeneous arrays of integer, double,
 character, logical, complex, or raw values.
 
-\paragraph{Lists} List are heterogeneous vectors with optionally named elements.
+\paragraph{Lists} Lists are heterogeneous vectors with optionally named elements.
 They can be indexed by position or name. Lists (and vectors) have a
 copy-on-write semantics, but the language maintains a reference count and allows
 mutation in place when a value is not aliased.
@@ -430,7 +430,7 @@ and validate the type of value bound to the variable being read (\code{mode =
 is returned if the variable is not present in the environment. \mget is a
 vectorized version of \get; it reads multiples variables supplied as a vector
 and returns a vector of values. \dynGet performs recursive lookups in caller
-frames, i.e., dynamic scopes, unlike the other functions which perform lookup in
+frames, i.e., dynamic scopes, unlike the other functions which perform lookups in
 lexical scopes.
 
 Writes can be performed in an environment using the \assign function. Operator
@@ -438,8 +438,8 @@ forms, \code{env$var <- val}, and \code{env[["var"]] <- val}, can also be used
 for mutating variable \code{var} in environment \code{env}. Bindings
 can be removed from an environment using the \rm and \remove function.
 
-An environment can be protected from addition or removal of bindings by locking
-it with \lockEnvironment. This does not protect existing bindings from
+An environment can be protected from the addition or removal of bindings by
+locking it with \lockEnvironment. This does not protect existing bindings from
 modification, which can be explicitly locked using \lockBinding. A locked
 binding can be removed if the environment is not locked. Bindings can be
 unlocked using \unlockBinding.
@@ -718,12 +718,12 @@ from a binary database.
 
 In the \textbf{User} class, environments are created by the packages in R and
 native code for a variety of purposes such as for use as hash tables, objects
-for custom OOP systems, sandboxing, etc.
+for custom object-oriented systems, sandboxing, etc.
 
 
 \section{Usage Patterns}
 
-In this section we study how the environments are used in our corpus. For this,
+In this section, we study how the environments are used in our corpus. For this,
 we divide the environments into three categories, presented in
 Table~\ref{table:env_category}. \textbf{Call} environments are created for
 evaluating function calls, \textbf{Explicit} environments are created for
@@ -837,15 +837,16 @@ followed by a long tail of event sets.
   extracts the environment using \code{parent.frame} for evaluation.
 
 
-Apart from these sequences, formula construction also stands out as a relatively
-frequent operation. These formulas extract the call environment in which they
-are created and carry them around as attributes for later lookup. We observed
-66.6K formulas constructed in call environments. The most common example is the
-\code{stats::formula} function, which results in the creation of 11.2K formulas.
-Apart from this, 2.8M call environments are used for evaluating code.
+  Apart from these sequences, formula construction also stands out as a
+  relatively frequent operation. These formulas extract the environment of the
+  call in which they are created and carry them around as attributes. We
+  observed 66.6K formulas constructed in call environments. The most common
+  example is the \code{stats::formula} function, which results in the creation
+  of 11.2K formulas. Apart from this, 2.8M call environments are used for
+  evaluating code.
 
 
-From this analysis we conclude that most call environments do not have to be
+From this analysis, we conclude that most call environments do not have to be
 explicit, since only 20.9M register any events. One would then expect an
 optimizing compiler to optimize away accesses for these cases. Unfortunately, as
 the event sets show, there are sufficient cases where environments are accessed
@@ -867,7 +868,7 @@ There are 9 packages responsible for all the explicit environments from
 environments they create. The \code{base} and \code{methods} packages alone
 contribute to 99\% of the environments. The \code{base} package exports the
 basic built-in functions of R and the \code{methods} package implements the S4
-OO system.
+object-oriented system.
 
 \begin{table}[!h]
   \small
@@ -945,7 +946,7 @@ sets. We observe three new events.
 functions' environments. The most common example is the \code{methods::new}
 function that is used for creating S4 objects. Another example is the
 \code{grid} package that uses explicit environments to create viewport objects
-and key child viewports by name. The \code{parallel::addClusterOptions} function
+and keys child viewports by name. The \code{parallel::addClusterOptions} function
 uses an environment to store options such as port number, timeout, and R path
 for the cluster used for parallel execution.
 
@@ -996,7 +997,7 @@ evaluation mechanism used by the ``tidyverse'' packages for building DSLs.
 \code{R6} implements a single-inheritance object-oriented system.
 \code{codetools} implements code analysis for the R compiler. \code{ggplot2} is
 a popular plotting library. \code{testthat} is widely used for testing R code.
-The \code{dplyr} implements a DSL for database style queries on data frames.
+The \code{dplyr} implements a DSL for SQL like queries on data frames.
 Lastly, the \code{magrittr} package implements the pipe operator for building
 function pipelines.
 
@@ -1099,7 +1100,7 @@ uses environments as dynamic state of iterator objects.
 \noindent
 \textbf{A, !:} This pattern represents environments that are set as parents of
 other environments or functions. This is dominated by \code{R.oo} and \code{R6}
-packages that implement object oriented systems. They create new environments
+packages that implement object-oriented systems. They create new environments
 and set them as lexical scopes of object methods. Another example is the
 \code{foreach} package which provides iteration constructs that can execute code
 sequentially or in parallel. The \code{foreach::\%do\%} function creates a new
@@ -1110,9 +1111,9 @@ sequentially.
 \noindent
 \textbf{A, @:} This pattern is used by packages to create custom objects, which
 can be used for dispatch based on the class attribute of the environments.
-\code{ggplot2} library implements \code{ggproto}, a prototype based OO system.
-The \code{ggproto} objects are explicit envivronments with the
-\code{"ggproto"} class attribute. The \code{XML} package creates an
+\code{ggplot2} library implements \code{ggproto}, a prototype based
+object-oriented system. The \code{ggproto} objects are explicit environments
+with the \code{"ggproto"} class attribute. The \code{XML} package creates an
 environment to store a tree of nodes and assigns it a class attribute. The
 \code{xts} package creates a plot environment with plotting configuration and
 sets a class attribute on it.
@@ -1122,19 +1123,19 @@ sets a class attribute on it.
 instantiation. The private method bindings are locked in the object environment
 to prevent any modification. Many calls to \code{lockBinding} also originate
 form \code{data.table} which uses a custom environment to store intermediate
-state for implementing dataframe indexing.
+state for implementing data frame indexing.
 
 \noindent
 \textbf{A, L, @:} These events occur on environments from the \code{later} and
 \code{R6} packages . The \code{later} package uses environments as handles for
 event loop objects. These objects contain the unique loop identifier, which is
-locked to prevent modifcation. The environments are then assigned the class
+locked to prevent modification. The environments are then assigned the class
 attribute, \code{"event_loop"}.
 
 \noindent
 \textbf{A, @, !:} This event pattern shows up on the environments from the
 \code{plyr} package. This package creates environments with attribute
-\code{``idf''} for representing immutable data frames. It also assigns getter
+\code{"idf"} for representing immutable data frames. It also assigns getter
 functions to these environments to access the columns of the data frame, and
 sets their lexical scope to be the environment itself. The same pattern occurs
 in \code{R6} when an environment representing a superclass object is set as the
@@ -1223,7 +1224,7 @@ environment could be implemented in a straightforward manner, there are
 sufficient number of cases where environments escape and are used in a
 reflective manner that it is not clear such optimizations can be widely applied.
 
-In our future work, we plan to dig deeper in the data we have gathered and
+In our future work, we plan to dig deeper into the data we have gathered and
 identify particular patterns of usage that can be used by a compiler to predict
 whether an environment will require full generality or if a more restricted
 semantics could be applicable. As of this writing we do not know if this will
