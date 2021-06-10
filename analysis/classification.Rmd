@@ -402,6 +402,8 @@ pmap_chr(function(event_seq, count, package_count, packages, cumperc) {
     sprintf("\\texttt{%s}&%s&%.1f\\%%", event_seq, count, cumperc)
 }) %>%
 as_tex_table()
+
+cat("Total user environment sequence: ", nrow(USER_EXPLICIT_ENV_EVENT_SEQ))
 ```
 
 
@@ -529,6 +531,7 @@ pmap_chr(function(event_seq, count, sources, cumperc) {
 as_tex_table()
 
 cat("Total Core environments: ", sum(CORE_EXPLICIT_ENV_EVENT_SEQ$count))
+cat("Total Core environment sequence: ", nrow(CORE_EXPLICIT_ENV_EVENT_SEQ))
 ```
 
 ### Packages

@@ -853,10 +853,11 @@ from user packages. We analyze the two environment categories below, separately.
 \subsubsection{Core Explicit Environments}
 
 There are 9 packages responsible for all the explicit environments from
-\emph{Core}. Table~\ref{table:core_explicit_pack} shows the number of
-environments created by them. \code{methods} and \code{base} alone contribute to
-99\% of the environments. The \code{methods} package implements the S4 OO system
-and the \code{base} package exports the basic builtin functions of R.
+\emph{Core}. Table~\ref{table:core_explicit_pack} shows the frequency of
+environments they create. The \code{base} and \code{methods} packages alone
+contribute to 99\% of the environments. The \code{base} package exports the
+basic built-in functions of R and the \code{methods} package implements the S4
+OO system.
 
 \begin{table}[!h]
   \vspace{-3mm}
@@ -883,7 +884,7 @@ and the \code{base} package exports the basic builtin functions of R.
 The explicit environments in these 9 packages originate from 60 functions.
 Table~\ref{table:core_explicit_fun} shows the top 6 functions. These functions
 alone contribute to 98\% of all the explicit environments in \emph{Core}. They
-belong to \code{methods} and \code{base} packages.
+all belong to \code{methods} and \code{base} packages.
 
 \begin{table}[!h]
   \vspace{-3mm}
@@ -904,14 +905,15 @@ belong to \code{methods} and \code{base} packages.
   \end{tabular}
 \end{table}
 
-\paragraph{Life-cycles}
-We can characterize the life-cycle of these environments by summarizing the set
-of events that affect them. Table~\ref{table:core_explicit_env_seq} shows the
-top 6 event sets. The events of interest are: \texttt{A} for read, write and
-remove, \texttt{V} for environments used for evaluating code, \texttt{L} for
-locking the environment or its bindings, \texttt{!} for setting this environment
-as the parent of another environment or lexical scope of a function, and
-\texttt{Z} for modifying this environment's parent environment.
+We now turn our attention to how these environments are used.
+Table~\ref{table:core_explicit_env_seq} shows the top 5 of the total 27 event
+sets. We observe three new events.
+\begin{itemize}
+\item \texttt{L} for locking the environment or its bindings
+\item \texttt{Z} for modifying this environment's parent environment.
+\item \texttt{!} for setting this environment as the parent of another
+  environment or lexical scope of a function.
+\end{itemize}
 
 \begin{table}[!h]
   \vspace{-3mm}
@@ -927,39 +929,47 @@ as the parent of another environment or lexical scope of a function, and
     \texttt{S}&145.8K&97.7\%\\
     \texttt{A, Z, !}&50.2K&99.2\%\\
     \texttt{A, L, !}&12.1K&99.6\%\\
-%    \texttt{A, @}&5.4K&99.7\%\\
     \bottomrule
   \end{tabular}
 \end{table}
 
-\begin{itemize}
-\item[\textbf{A}:] This is the most common pattern, and it occurs in many
-  functions. The most common example is the \code{new} function of the methods
-  object used for creating S4 objects. Another example is the grid package that
-  uses explicit environments to create viewport objects and key their children
-  by name. The \code{parallel::addClusterOptions} function uses an environment
-  to store options about the cluster for parallel execution such as port number,
-  timeout, and R path.
-\item[\textbf{A, V}:] This pattern represents environments created by the
-  \code{base::eval} and \code{base::evalq} functions. The default behavior of
-  these functions is to evaluate an expression in the supplied environment.
-  However, if a list of named elements is supplied instead of an environment, it
-  is internally converted into an environment.
-\item[\textbf{S}:] This pattern comes from the \code{base::substitute} function.
-  This function is used for substituting symbols with expressions in ASTs. The
-  substitutions are read either from an environment, or a list. If a list is
-  supplied, it is converted into an environment internally.
-\item[\textbf{A, Z, !}:] This patterns comes from the methods package's
-  \code{makeGeneric} function. In the process of converting a function
-  definition to a generic function, it creates a new environment, assigns the
-  field \code{".Generic"} to the name of the generic method, sets its parent as
-  the lexical scope of the function (\texttt{Z}), and finally, sets the new
-  environment as the lexical scope of the function (\texttt{!}).
-\item[\textbf{A, L, !}:] These event s happen in S4 objects. Their underlying
-  data object consists of an environment with a reference \code{self} to the
-  object itself. This binding is locked to prevent modification.
-\end{itemize}
+\noindent
+\textbf{A:} This is the most common pattern, and it occurs in many different
+functions' environments. The most common example is the \code{methods::new}
+function that is used for creating S4 objects. Another example is the
+\code{grid} package that uses explicit environments to create viewport objects
+and key child viewports by name. The \code{parallel::addClusterOptions} function
+uses an environment to store options such as port number, timeout, and R path
+for the cluster used for parallel execution.
 
+\noindent
+\textbf{A, V:} This pattern represents environments created by the
+\code{base::eval} and \code{base::evalq} functions. The default behavior of
+these functions is to evaluate an expression in the supplied environment.
+However, in these cases, a list of named elements is supplied instead of an
+environment, which is internally converted into an environment for evaluation.
+
+\noindent
+\textbf{S:} This pattern comes from the \code{base::substitute} function. This
+function is used for substituting symbols with expressions in ASTs. The
+substitutions are usually read from an environment. However, in these cases,
+lists are supplied instead; which are internally converted into environments.
+
+\noindent
+\textbf{A, Z, !:} This pattern comes from the methods package's
+\code{makeGeneric} function. In the process of converting a function definition
+to a generic function, it creates a new environment, assigns the field
+\code{".Generic"} to the name of the generic method, sets its parent as the
+lexical scope of the function (\texttt{Z}), and finally, sets the new
+environment as the lexical scope of the function (\texttt{!}).
+
+\noindent
+\textbf{A, L, !:} These events happen in S4 objects. Their underlying data store
+consists of an environment with a reference \code{self} to the object. This
+binding is locked to prevent modification.
+
+Overall, 168.6K environments are passed to eval and only 100 were used for
+formula construction.
 
 
 \subsubsection{User Explicit Environments}
