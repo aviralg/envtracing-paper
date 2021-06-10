@@ -1202,14 +1202,14 @@ packages.
 We observe 3.3M environments related to packages and namespaces. The package
 loading mechanism alone accounts for 2.9M of these environments. The remaining
 environments are used as package namespaces. 2.3M of these environments
-originate from a single function, \code{base::lazyLoadDBexec}, used only
-internally by R. This function is responsible for loading a package's code from
-a binary file and also for loading processed help file data. A few environments
-are created internally by the interpreter to store a package's native functions
-for use by other packages. The namespace APIs of R are private, and the internal
-structure of these environments is unspecified. It is also not recommended to
-modify these environments. Hence, we don't capture the events for these
-environments.
+originate from a single \code{base} package function, \code{lazyLoadDBexec},
+used only internally by R. This function is responsible for loading a package's
+code from a binary file and also for loading processed help file data. A few
+environments are created internally by the interpreter to store a package's
+native functions for use by other packages. The namespace APIs of R are private,
+and the internal structure of these environments is unspecified. It is also not
+recommended to modify these environments. Hence, we don't capture events for
+these environments.
 
 \section{Conclusion}
 
