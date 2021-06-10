@@ -642,6 +642,8 @@ CALL_ENV_EVENT_SEQ <-
     mutate(escaped = str_detect(event_seq, fixed("#")))
     
 cat("Total calls: ", sum(CALL_ENV$count))
+
+cat("Total number of sequences", nrow(CALL_ENV_EVENT_SEQ))
 ```
 
 ### Normal Calls
@@ -690,6 +692,41 @@ as_tex_table()
 
 cat("Escaped calls: ", sum(ESCAPED_CALL_ENV_EVENT_SEQ$count))
 ```
+
+
+### Formula
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+CALL_ENV_FORMULA <-
+    CALL_ENV %>%
+    filter(str_detect(event_seq, fixed("~"))) %>%
+    count(primary_source, wt = count, name = "count")
+    
+datatable(CALL_ENV_FORMULA)
+
+cat("Total formula environments: ", sum(CALL_ENV_FORMULA$count))
+```
+
+### Eval
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=TRUE}
+CALL_ENV_EVAL <-
+    CALL_ENV %>%
+    mutate(eval_kind = case_when(str_detect(event_seq, fixed("V")) & str_detect(event_seq, fixed("U")) ~ "both",
+                                 str_detect(event_seq, fixed("V")) ~ "direct",
+                                 str_detect(event_seq, fixed("U")) ~ "indirect",
+                                 TRUE ~ NA_character_)) %>%
+    filter(!is.na(eval_kind)) %>%
+    count(package, wt = count, name = "count") %>%
+    arrange(desc(count)) %>%
+    mutate(cumperc = round(100 * cumsum(count)/ sum(count), 2))
+    
+datatable(CALL_ENV_EVAL)
+
+cat("Total environments passed to eval: ", sum(CALL_ENV_EVAL$count))
+cat("% environments passed to eval: ", sum(CALL_ENV_EVAL$count) / sum(CALL_ENV$count))
+```
+
 
 ### Qualitative Examples
 
