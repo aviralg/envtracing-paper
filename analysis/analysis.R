@@ -106,6 +106,7 @@ read_lazy(native_env_second, "native_env_second.fst")
 read_lazy(native_env_third, "native_env_third.fst")
 read_lazy(new_env, "new_env.fst")
 read_lazy(call_event_seq, "call_event_seq.fst")
+read_lazy(call_stack, "call_stack.fst")
 
 sloc_script %<>%
     mutate(package2 = type) %>%

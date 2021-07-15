@@ -43,6 +43,9 @@ corpus:
 event_seq:
 	make analysis ANALYSIS=event_seq
 
+call-stack:
+	make analysis ANALYSIS=call-stack
+
 .PHONY: all open main.pdf clean analysis
 
 # Include auto-generated dependencies

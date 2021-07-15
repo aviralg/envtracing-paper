@@ -1,0 +1,122 @@
+---
+title: "Call Stack"
+output:
+    html_document:
+        toc: true
+        toc_depth: 3
+        toc_float: true
+        number_sections: true
+        theme: cerulean
+        highlight: pygments
+        code_folding: hide
+        fig_width: 9
+        fig_height: 3
+        css: style.css
+params:
+    datadir: "./data"
+    graphdir: "./graphs"
+    macrodir: "./macros"
+    tabledir: "./tables"
+---
+
+```{r echo = FALSE, warning=FALSE, message=FALSE}
+## https://bookdown.org/yihui/rmarkdown-cookbook/source-script.html
+source("analysis.R", local = knitr::knit_global())
+```
+
+## Table Structure
+
+
+```{r, eval = TRUE}
+str(call_stack)
+```
+
+
+## All functions
+
+```{r, eval = TRUE}
+call_stack %>% 
+count(fun_name, wt = count, name = "count") %>%
+arrange(desc(count))
+```
+
+
+## parent.frame
+
+```{r, eval = TRUE}
+PARENT_FRAME_SUMMARY <-
+    call_stack %>% 
+    filter(fun_name == "parent.frame") %>% 
+    mutate(aliased = qual_name_1 != "base*$#$*parent.frame") %>%
+    mutate(pack_name = map_chr(str_split(qual_name_2, fixed("*$#$*")), ~.[1])) %>%
+    mutate(result_pack_name = map_chr(str_split(result_env_qual_name, fixed("*$#$*")), ~.[1])) %>%
+    count(fun_name, n, aliased, pack_name, qual_name_2, result_pack_name, result_env_qual_name, wt = count, name = "count") %>%
+    arrange(desc(count))
+
+datatable(PARENT_FRAME_SUMMARY)
+
+str(PARENT_FRAME_SUMMARY)
+
+PARENT_FRAME_SUMMARY %>%
+group_by(fun_name, n, aliased, qual_name_2) %>%
+summarize(target_count = length(unique(result_env_qual_name)), count = sum(count)) %>%
+ungroup() %>%
+arrange(desc(count)) %>%
+mutate(cumperc = round(100 * cumsum(count)/sum(count), 2)) %>%
+datatable()
+
+PARENT_FRAME_SUMMARY %>%
+count(pack_name, result_pack_name, wt = count, name = "count") %>%
+arrange(desc(count)) %>%
+datatable()
+
+PARENT_FRAME_SUMMARY %>%
+filter(!is.na(pack_name) & !is.na(result_env_qual_name)) %>%
+mutate(same = (pack_name == result_pack_name)) %>%
+group_by(pack_name, same) %>%
+summarize(count = sum(count)) %>%
+ungroup() %>%
+arrange(desc(count)) %>%
+mutate(cumperc = round(100 * cumsum(count)/sum(count), 2)) %>%
+datatable()
+
+PARENT_FRAME_SUMMARY %>%
+filter(!(pack_name %in% c("base", "methods", "stats"))) %>%
+mutate(same = (pack_name == result_pack_name)) %>%
+count(same, wt = count, name = "count") %>%
+arrange(desc(count)) %>%
+datatable()
+
+length(unique(PARENT_FRAME_SUMMARY %>% pull(qual_name_2)))
+
+length(unique(PARENT_FRAME_SUMMARY %>% pull(result_env_qual_name)))
+```
+
+```
+webfakes/R/compat-defer.R::defer
+"<NA>*$#$*cf310b234c2e3737e11da7504a65762f00e467cc650620cff724d49ceeee713432d4b32e7bf899c9f41aa742c5b1cd7d3d4cd0fe6845a1faf1b7735a5fd7b047"
+
+
+testthat/R/reporter.R::Reporter::local_user_output
+"<NA>*$#$*75a26cb68832f85761c88ea36159a8aad1c3e5b7b0e721c0b4c6af88e38334fed3bd2b11276711e9ec24f3cbbc105248922632774c5e4bb25f72a71df6f63589"
+
+
+R6/R/r6_class.R/R6Class
+"<NA>*$#$*24a2bd9ef1d1d0bed806a984c395ea21bbe8f6c7e28034d5ab619490dfd2057496cb2893ea5f506ca61e31d3580e8e2ed220a9fc53ee5970cabc102f8fd241eb"
+```
+
+
+## parent.frame
+
+```{r, eval = TRUE}
+ENVIRONMENT_SUMMARY <-
+    call_stack %>% 
+    filter(fun_name == "environment") %>% 
+    mutate(aliased = qual_name_1 != "base*$#$*environment") %>%
+    mutate(pack_name = map_chr(str_split(qual_name_2, fixed("*$#$*")), ~.[1])) %>%
+    mutate(result_pack_name = map_chr(str_split(result_env_qual_name, fixed("*$#$*")), ~.[1])) %>%
+    count(fun_name, n, aliased, pack_name, qual_name_2, result_pack_name, result_env_qual_name, wt = count, name = "count") %>%
+    arrange(desc(count))
+    
+datatable(ENVIRONMENT_SUMMARY)
+```
