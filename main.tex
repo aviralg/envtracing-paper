@@ -458,6 +458,59 @@ can be implemented by accessing arbitrary caller environments. The lexical scope
 of a function can be changed, a technique often used for designing custom
 object-oriented systems.
 
+\begin{figure*}[h!]
+  \centering
+  \begin{tikzpicture}
+    \definecolor{installbg}{HTML}{D5A6BD}
+    \definecolor{extractbg}{HTML}{FFF2CC}
+    \definecolor{tracebg}{HTML}{DAE8FC}
+    \definecolor{reducebg}{HTML}{D5E8D4}
+    \definecolor{combinebg}{HTML}{FFE6CC}
+    \definecolor{summarizebg}{HTML}{F8CECC}
+    \definecolor{reportbg}{HTML}{E1D5E7}
+    \definecolor{groupbg}{HTML}{F5F5F5}
+
+    \newcommand{\nodesep}[0]{0.030 \textwidth}
+    \newcommand{\textsep}[0]{0.010 \textwidth}
+
+    \newcommand{\nodename}[1]{\large \begin{tabular}{c}#1\end{tabular}}
+    \newcommand{\nodedesc}[1]{\small \begin{tabular}{c}#1\end{tabular}}
+
+    \tikzstyle{block} = [rectangle, minimum width=.08 \textwidth, minimum height=35pt]
+    \tikzstyle{connector} = [line width=0.25mm, ->]
+
+    \node [block, fill = installbg]                                (install)   {\nodename{Install\\CRAN}};
+    \node [block, right = \nodesep of install, fill = extractbg]   (extract)   {\nodename{Extract\\Programs}};
+    \node [block, right = \nodesep of extract, fill = tracebg]     (trace)     {\nodename{Trace}};
+    \node [block, right = \nodesep of trace, fill = reducebg]      (reduce)    {\nodename{Reduce}};
+    \node [block, right = \nodesep of reduce, fill = combinebg]    (combine)   {\nodename{Combine}};
+    \node [block, right = \nodesep of combine, fill = summarizebg] (summarize) {\nodename{Summarize}};
+    \node [block, right = \nodesep of summarize, fill = reportbg]  (report)    {\nodename{Report}};
+
+    \draw [connector] (install)   edge (extract);
+    \draw [connector] (extract)   edge (trace);
+    \draw [connector] (trace)     edge (reduce);
+    \draw [connector] (reduce)    edge (combine);
+    \draw [connector] (combine)   edge (summarize);
+    \draw [connector] (summarize) edge (report);
+
+    \node [below = \textsep of install]   (installdesc)   {\nodedesc{XXs\\XX Packages}};
+    \node [below = \textsep of extract]   (extractdesc)   {\nodedesc{XXs\\XX Packages\\XX Files}};
+    \node [below = \textsep of trace]     (tracedesc)     {\nodedesc{XXs\\XX Files\\XX TB}};
+    \node [below = \textsep of reduce]    (reducedesc)    {\nodedesc{XXs\\XX Files\\XX TB}};
+    \node [below = \textsep of combine]   (combinedesc)   {\nodedesc{XXs\\XX Files\\XX TB}};
+    \node [below = \textsep of summarize] (summarizedesc) {\nodedesc{XXs\\XX Files\\XX TB}};
+    \node [below = \textsep of report]    (reportdesc)    {\nodedesc{XXs\\XX Files}};
+
+    \begin{scope}[on background layer]
+      \node[fit=(install) (extract), rectangle, fill=groupbg, fill opacity=0.8, label=above:\textbf{Corpus}]          (corpus) {};
+      \node[fit=(trace),             rectangle, fill=groupbg, fill opacity=0.8, label=above:\textbf{Tracing}]         (exectrace) {};
+      \node[fit=(reduce) (report),   rectangle, fill=groupbg, fill opacity=0.8, label=above:\textbf{Post-processing}] (postprocessing) {};
+    \end{scope}
+  \end{tikzpicture}
+  \caption{Analysis Pipeline}\label{fig:analysisPipeline}
+\end{figure*}
+
 \section{Analysis Infrastructure}
 
 In this section, we describe the infrastructure that will be used for dynamic
@@ -471,131 +524,6 @@ installed in a container, based on Debian 10.9, and executed on Docker.
 Figure~\ref{fig:analysisPipeline} illustrates the main stages of our pipeline
 along with their duration and results. The remainder of this section explains
 the various stages.
-
-\begin{figure*}[hbt!]
-\centering
-\begin{tikzpicture}
-
-  \definecolor{installbg}{HTML}{D5A6BD}
-  \definecolor{installol}{HTML}{666666}
-
-  \definecolor{extractbg}{HTML}{FFF2CC}
-  \definecolor{extractol}{HTML}{D6B656}
-  
-  \definecolor{tracebg}{HTML}{DAE8FC}
-  \definecolor{traceol}{HTML}{6C8EBF}
-
-  \definecolor{reducebg}{HTML}{D5E8D4}
-  \definecolor{reduceol}{HTML}{82B366}
-
-  \definecolor{combinebg}{HTML}{FFE6CC}
-  \definecolor{combineol}{HTML}{D79B00}
-
-  \definecolor{summarizebg}{HTML}{F8CECC}
-  \definecolor{summarizeol}{HTML}{B85450}
-
-  \definecolor{reportbg}{HTML}{E1D5E7}
-  \definecolor{reportol}{HTML}{9673A6}
-
-  \definecolor{groupbg}{HTML}{F5F5F5}
-
-  \newcommand{\fstdtpt}[5]{
-    \node [inner sep = 0, align = center, below right = 3mm of #5.south west, minimum width = 0.03 \textwidth] (#1) {
-      \includegraphics[height=0.02 \textwidth]{#2}
-    };
-    \node [inner sep = 0, right = 0mm of #1, minimum width = 0.07 \textwidth, text width = 0.07 \textwidth, align = right] (#3) {\scriptsize #4}
-  }
-
-  \newcommand{\rstdtpt}[5]{
-    \node [inner sep = 0, align = center, below = 3mm of #5, minimum width = 0.03 \textwidth] (#1) {
-      \includegraphics[height=0.02 \textwidth]{#2}
-    };
-    \node [inner sep = 0, right = 0mm of #1, minimum width = 0.07 \textwidth, text width = 0.07 \textwidth, align = right] (#3) {\scriptsize #4}
-  }
-
-  \newcommand{\rstdtpth}[5]{
-    \node [inner sep = 0, align = center, below = 3mm of #5, minimum width = 0.03 \textwidth] (#1) {
-      \includegraphics[width=0.02 \textwidth]{#2}
-    };
-    \node [inner sep = 0, right = 0mm of #1, minimum width = 0.07 \textwidth, text width = 0.07 \textwidth, align = right] (#3) {\scriptsize #4}
-  }
-
-  \newcommand{\connect}[2]{\draw [line width=0.25mm, ->] (#1) edge (#2);}
-  \tikzstyle{block} = [rectangle, minimum width=.08 \textwidth, minimum height=35pt]
-
-  \newcommand{\fststage}[4]{\node [block, fill = #3] (#1) {\large #2};} % , draw = #4
-  \newcommand{\rststage}[5]{\node [block, right = 0.030 \textwidth of #3, fill = #4] (#1) {\large #2};} % , draw = #5
-
-  %%\node [rectangle, minimum width=.230 \textwidth, minimum height=35pt, fill = installbg] (corpus) {\large Corpus};
-  %% Corpus
-  \fststage{install}{\begin{tabular}{c}Install\\CRAN\end{tabular}}{installbg}{installol}
-  %\fstdtpt{corpustimeicon}{clock-regular}{corpustimevalue}{\TimeTracingPipelineCorpus}{corpus};
-  %\rstdtpt{corpuspackageicon}{cubes-solid}{corpuspackagevalue}{\CountTracingPipelineCorpusPackage}{corpustimeicon};
-  %\rstdtpt{corpusscripticon}{r-project-brand}{corpusscriptvalue}{\CountTracingPipelineCorpusScript}{corpuspackageicon};
-
-  %% Extract
-  \rststage{extract}{\begin{tabular}{c}Extract\\Programs\end{tabular}}{install}{extractbg}{extractol}
-  \connect{install}{extract}
-  % \fstdtpt{mergetimeicon}{clock-regular}{mergetimevalue}{\TimeTracingPipelineMerge}{merge};
-  % \rstdtpt{mergefileicon}{copy-regular}{mergefilevalue}{\CountTracingPipelineMergeFile}{mergetimeicon};
-  % \rstdtpt{mergesizeicon}{database-solid}{mergesizevalue}{\SizeTracingPipelineMergeFile}{mergefileicon};
-
-  %\draw ([xshift=9mm] 0.2 \textwidth,) -- ([xshift=9mm] 0.2 \textwidth,1);
-    
-  %% Trace
-  \rststage{trace}{\begin{tabular}{c}Trace\end{tabular}}{extract}{tracebg}{traceol}
-  \connect{extract}{trace}
-  %\fstdtpt{tracetimeicon}{clock-regular}{tracetimevalue}{\TimeTracingPipelineTrace}{trace};
-  %\rstdtpt{tracefileicon}{copy-regular}{tracefilevalue}{\CountTracingPipelineTraceFile}{tracetimeicon};
-  %\rstdtpt{tracesizeicon}{database-solid}{tracesizevalue}{\SizeTracingPipelineTraceFile}{tracefileicon};
-
-  %% Reduce
-  \rststage{reduce}{\begin{tabular}{c}Reduce\end{tabular}}{trace}{reducebg}{reduceol}
-  \connect{trace}{reduce}
-  %\fstdtpt{reducetimeicon}{clock-regular}{reducetimevalue}{\TimeTracingPipelineReduce}{reduce};
-  %\rstdtpt{reducefileicon}{copy-regular}{reducefilevalue}{\CountTracingPipelineReduceFile}{reducetimeicon};
-  %\rstdtpt{reducesizeicon}{database-solid}{reducesizevalue}{\SizeTracingPipelineReduceFile}{reducefileicon};
-
-  %% Combine
-  \rststage{combine}{\begin{tabular}{c}Combine\end{tabular}}{reduce}{combinebg}{combineol}
-  \connect{reduce}{combine}
-  %\fstdtpt{combinetimeicon}{clock-regular}{combinetimevalue}{\TimeTracingPipelineCombine}{combine};
-  %\rstdtpt{combinefileicon}{copy-regular}{combinefilevalue}{\CountTracingPipelineCombineFile}{combinetimeicon};
-  %\rstdtpt{combinesizeicon}{database-solid}{combinesizevalue}{\SizeTracingPipelineCombineFile}{combinefileicon};
-
-  %% Summarize
-  \rststage{summarize}{\begin{tabular}{c}Summarize\end{tabular}}{combine}{summarizebg}{summarizeol}
-  \connect{combine}{summarize}
-  %\fstdtpt{summarizetimeicon}{clock-regular}{summarizetimevalue}{\TimeTracingPipelineSummarize}{summarize};
-  %\rstdtpt{summarizefileicon}{copy-regular}{summarizefilevalue}{\CountTracingPipelineSummarizeFile}{summarizetimeicon};
-  %\rstdtpt{summarizesizeicon}{database-solid}{summarizesizevalue}{\SizeTracingPipelineSummarizeFile}{summarizefileicon};
-
-  %% Report
-  \rststage{report}{\begin{tabular}{c}Report\end{tabular}}{summarize}{reportbg}{reportol}
-  \connect{summarize}{report}
-  %\fstdtpt{reporttimeicon}{clock-regular}{reporttimevalue}{\TimeTracingPipelineReport}{report};
-  %\rstdtpt{reportcharticon}{chart-bar-regular}{reportchartvalue}{\CountTracingPipelineReportGraph}{reporttimeicon};
-  % \rstdtpth{reportmacroicon}{latex-logo}{reportmacrovalue}{\CountTracingPipelineReportMacro}{reportcharticon};
-  %{
-  %  \node [inner sep = 0, align = center, below = 3.5mm of reportcharticon, minimum width = 0.03 \textwidth] (reportmacroicon) {
-  %    {\scriptsize \LaTeX}
-  %  };
-  %  \node [inner sep = 0, right = 0mm of reportmacroicon, below = 4.3mm of reportchartvalue, minimum width = 0.07 \textwidth, text width = 0.07 \textwidth, align = right] (reportmacrovalue) {\scriptsize \CountTracingPipelineReportMacro};
-  %};
-
-  \begin{scope}[on background layer]
-    \node[fit=(install) (extract), rectangle, fill=groupbg, draw=groupbg, fill opacity=0.8, label=above:\textbf{Corpus}] (corpus) {};
-    \node[fit=(trace), rectangle, fill=groupbg, draw=groupbg, fill opacity=0.8, label=above:\textbf{Tracing}] (exectrace) {};
-    \node[fit=(reduce) (report), rectangle, fill=groupbg, draw=groupbg, fill opacity=0.8, label=above:\textbf{Post-processing}] (mf) {};
-  \end{scope}
-  
-  %\draw (-0.05 \textwidth, -25pt) -- (0.89\textwidth, -25pt);
-  \draw (-0.05 \textwidth, -35pt) -- (0.87\textwidth, -35pt);
-
-  \draw [line width=0.3mm] (-0.05 \textwidth, -55pt) -- (0.87\textwidth, -55pt);
-\end{tikzpicture}
-\caption{Analysis Pipeline}\label{fig:analysisPipeline}
-\end{figure*}
 
 \subsection{Assembling a Corpus}
 
