@@ -461,31 +461,39 @@ object-oriented systems.
 \begin{figure*}[h!]
   \centering
   \begin{tikzpicture}
-    \definecolor{installbg}{HTML}{D5A6BD}
-    \definecolor{extractbg}{HTML}{FFF2CC}
-    \definecolor{tracebg}{HTML}{DAE8FC}
-    \definecolor{reducebg}{HTML}{D5E8D4}
-    \definecolor{combinebg}{HTML}{FFE6CC}
-    \definecolor{summarizebg}{HTML}{F8CECC}
-    \definecolor{reportbg}{HTML}{E1D5E7}
-    \definecolor{groupbg}{HTML}{F5F5F5}
+    \definecolor{maroon}{HTML}{D5A6BD}
+    \definecolor{darkmaroon}{HTML}{741B47}
+    \definecolor{yellow}{HTML}{FFF2CC}
+    \definecolor{darkyellow}{HTML}{D6B656}
+    \definecolor{blue}{HTML}{DAE8FC}
+    \definecolor{darkblue}{HTML}{6C8EBF}
+    \definecolor{green}{HTML}{D5E8D4}
+    \definecolor{darkgreen}{HTML}{82B366}
+    \definecolor{orange}{HTML}{FFE6CC}
+    \definecolor{darkorange}{HTML}{D79B00}
+    \definecolor{red}{HTML}{F8CECC}
+    \definecolor{darkred}{HTML}{B85450}
+    \definecolor{purple}{HTML}{E1D5E7}
+    \definecolor{darkpurple}{HTML}{9673A6}
+    \definecolor{gray}{HTML}{F5F5F5}
 
     \newcommand{\nodesep}[0]{0.030 \textwidth}
     \newcommand{\textsep}[0]{0.010 \textwidth}
+    \newcommand{\backopacity}[0]{0.9}
 
     \newcommand{\nodename}[1]{\large \begin{tabular}{c}#1\end{tabular}}
     \newcommand{\nodedesc}[1]{\small \begin{tabular}{c}#1\end{tabular}}
 
-    \tikzstyle{block} = [rectangle, minimum width=.08 \textwidth, minimum height=35pt]
+    \tikzstyle{block}     = [rectangle, rounded corners, minimum width=.08 \textwidth, minimum height=35pt]
     \tikzstyle{connector} = [line width=0.25mm, ->]
 
-    \node [block, fill = installbg]                                (install)   {\nodename{Install\\CRAN}};
-    \node [block, right = \nodesep of install, fill = extractbg]   (extract)   {\nodename{Extract\\Programs}};
-    \node [block, right = \nodesep of extract, fill = tracebg]     (trace)     {\nodename{Trace}};
-    \node [block, right = \nodesep of trace, fill = reducebg]      (reduce)    {\nodename{Reduce}};
-    \node [block, right = \nodesep of reduce, fill = combinebg]    (combine)   {\nodename{Combine}};
-    \node [block, right = \nodesep of combine, fill = summarizebg] (summarize) {\nodename{Summarize}};
-    \node [block, right = \nodesep of summarize, fill = reportbg]  (report)    {\nodename{Report}};
+    \node [block, draw = darkmaroon, very thick, fill = maroon]                                (install)   {\nodename{Install\\CRAN}};
+    \node [block, draw = darkyellow, very thick, fill = yellow, right = \nodesep of install  ] (extract)   {\nodename{Extract\\Programs}};
+    \node [block, draw = darkblue,   very thick, fill = blue  , right = \nodesep of extract  ] (trace)     {\nodename{Trace}};
+    \node [block, draw = darkgreen,  very thick, fill = green , right = \nodesep of trace    ] (reduce)    {\nodename{Reduce}};
+    \node [block, draw = darkorange, very thick, fill = orange, right = \nodesep of reduce   ] (combine)   {\nodename{Combine}};
+    \node [block, draw = darkred,    very thick, fill = red   , right = \nodesep of combine  ] (summarize) {\nodename{Summarize}};
+    \node [block, draw = darkpurple, very thick, fill = purple, right = \nodesep of summarize] (report)    {\nodename{Report}};
 
     \draw [connector] (install)   edge (extract);
     \draw [connector] (extract)   edge (trace);
@@ -503,9 +511,9 @@ object-oriented systems.
     \node [below = \textsep of report]    (reportdesc)    {\nodedesc{XXs\\XX Files}};
 
     \begin{scope}[on background layer]
-      \node[fit=(install) (extract), rectangle, fill=groupbg, fill opacity=0.8, label=above:\textbf{Corpus}]          (corpus) {};
-      \node[fit=(trace),             rectangle, fill=groupbg, fill opacity=0.8, label=above:\textbf{Tracing}]         (exectrace) {};
-      \node[fit=(reduce) (report),   rectangle, fill=groupbg, fill opacity=0.8, label=above:\textbf{Post-processing}] (postprocessing) {};
+      \node[fit=(install) (extract), rectangle, rounded corners, fill=gray, fill opacity=\backopacity, label=above:\textbf{Corpus}]          (corpus) {};
+      \node[fit=(trace),             rectangle, rounded corners, fill=gray, fill opacity=\backopacity, label=above:\textbf{Tracing}]         (exectrace) {};
+      \node[fit=(reduce) (report),   rectangle, rounded corners, fill=gray, fill opacity=\backopacity, label=above:\textbf{Post-processing}] (postprocessing) {};
     \end{scope}
   \end{tikzpicture}
   \caption{Analysis Pipeline}\label{fig:analysisPipeline}
