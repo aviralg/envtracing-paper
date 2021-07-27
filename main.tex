@@ -23,6 +23,8 @@
 \definecolor{Gray}{rgb}{.3,.3,.3}
 \definecolor{DarkGray}{rgb}{.5,.5,.5}
 
+\input{macros.tex}
+
 %% https://www.davehofmann.de/defining-custom-language-templates-for-latex-listings/
 % Define Language
 \lstdefinelanguage{smalleR} {
@@ -487,7 +489,7 @@ object-oriented systems.
     \tikzstyle{block}     = [rectangle, rounded corners, minimum width=.08 \textwidth, minimum height=35pt]
     \tikzstyle{connector} = [line width=0.25mm, ->]
 
-    \node [block, draw = darkmaroon, very thick, fill = maroon]                                (install)   {\nodename{Install\\CRAN}};
+    \node [block, draw = darkmaroon, very thick, fill = maroon]                                (install)   {\nodename{Setup\\CRAN}};
     \node [block, draw = darkyellow, very thick, fill = yellow, right = \nodesep of install  ] (extract)   {\nodename{Extract\\Programs}};
     \node [block, draw = darkblue,   very thick, fill = blue  , right = \nodesep of extract  ] (trace)     {\nodename{Trace}};
     \node [block, draw = darkgreen,  very thick, fill = green , right = \nodesep of trace    ] (reduce)    {\nodename{Reduce}};
@@ -502,13 +504,13 @@ object-oriented systems.
     \draw [connector] (combine)   edge (summarize);
     \draw [connector] (summarize) edge (report);
 
-    \node [below = \textsep of install]   (installdesc)   {\nodedesc{XXs\\XX Packages}};
-    \node [below = \textsep of extract]   (extractdesc)   {\nodedesc{XXs\\XX Packages\\XX Files}};
-    \node [below = \textsep of trace]     (tracedesc)     {\nodedesc{XXs\\XX Files\\XX TB}};
+    \node [below = \textsep of install]   (installdesc)   {\nodedesc{10 Hours\\17.1 K Packages\\83 GB}};
+    \node [below = \textsep of extract]   (extractdesc)   {\nodedesc{5 Minutes\\100 Packages\\6.7 K Files}};
+    \node [below = \textsep of trace]     (tracedesc)     {\nodedesc{XXs\\72.5 K Files\\732 GB}};
     \node [below = \textsep of reduce]    (reducedesc)    {\nodedesc{XXs\\XX Files\\XX TB}};
-    \node [below = \textsep of combine]   (combinedesc)   {\nodedesc{XXs\\XX Files\\XX TB}};
-    \node [below = \textsep of summarize] (summarizedesc) {\nodedesc{XXs\\XX Files\\XX TB}};
-    \node [below = \textsep of report]    (reportdesc)    {\nodedesc{XXs\\XX Files}};
+    \node [below = \textsep of combine]   (combinedesc)   {\nodedesc{XXs\\11 Files\\9.8 GB}};
+    \node [below = \textsep of summarize] (summarizedesc) {\nodedesc{XXs\\14 Files\\1.2 GB}};
+    \node [below = \textsep of report]    (reportdesc)    {\nodedesc{XXs\\7 Reports}};
 
     \begin{scope}[on background layer]
       \node[fit=(install) (extract), rectangle, rounded corners, fill=gray, fill opacity=\backopacity, label=above:\textbf{Corpus}]          (corpus) {};
@@ -543,13 +545,15 @@ packages. These programs are then prepared for tracing by wrapping them in a
 call to the tracer. Another set of scripts computes metadata such as lines of
 code from the installed packages and extracted corpus.
 
-For this study, we assembled a corpus of the top 100 CRAN packages with highest
-number of client packages. These 100 packages together have 11,786 clients.
-Package \ggplot has the highest number of clients, 2,320, and package \vctrs has
-the fewest, 108. These packages contribute 481.5K lines of R code and 1M lines
-of native code. During execution, these 100 packages call functions from 186
-other packages, so our evaluation also includes them. These extra packages have
-478.2K lines of R code and 1.1M lines of native code.
+For this study, we downloaded and installed 17,133 CRAN packages\footnote{CRAN
+  snapshot was taken on 29 May 2021, 8:16 PM UTC}. From these packages, we
+assembled a corpus of the top 100 CRAN packages with highest number of client
+packages. These 100 packages together have 11,786 clients. Package \ggplot has
+the highest number of clients, 2,320, and package \vctrs has the fewest, 108.
+These packages contribute 481.5K lines of R code and 1M lines of native code.
+During execution, these 100 packages call functions from 186 other packages, so
+our evaluation also includes them. These extra packages have 478.2K lines of R
+code and 1.1M lines of native code.
 
 CRAN packages come equipped with runnable code in the form of tests, examples,
 and long-form examples called vignettes. These programs are extracted as
@@ -615,7 +619,6 @@ tables. Finally, in the \textit{report} phase, graphs and tables are generated
 from these summaries using R Markdown notebooks~\cite{rmdpkg}.
 
 \section{Usage Metrics}
-
 
 The 286 corpus packages have 44.3K top-level functions, of which, 18.7K
 functions are exercised by the extracted scripts. From the un-exercised 25.6K
@@ -684,14 +687,14 @@ functions with over 50 parameters that come from 3 packages. Of those,
   \label{fig:paramdist}
 \end{figure}
 
-In our corpus, we observed 1.2B environments, which makes them the second most
-widely allocated values. Table~\ref{table:object_count_dist} shows the frequency
-of other values for comparison. Promises are the most widely allocated values,
-which is expected~\cite{oopsla19b}. Vectors of logicals and characters are more
-frequent than integers, reals, and raw. Language objects, i.e, first-class
-expressions, are used for metaprogramming. Lists are heterogeneous vectors.
-Other objects such as S4 or externalptr are rare, and are presented together in
-the \emph{Other} category.
+In our corpus, we observed \ObjCntEnvironment environments, which makes them the
+second most widely allocated values. Table~\ref{table:object_count_dist} shows
+the frequency of other values for comparison. Promises are the most widely
+allocated values, which is expected~\cite{oopsla19b}. Vectors of logicals and
+characters are more frequent than integers, reals, and raw. Language objects,
+i.e, first-class expressions, are used for metaprogramming. Lists are
+heterogeneous vectors. Other objects such as S4 or externalptr are rare, and are
+presented together in the \emph{Other} category.
 
 \begin{table}[!h]
   \vspace{-3mm}
@@ -702,27 +705,102 @@ the \emph{Other} category.
     \toprule
     \textbf{Type}&\textbf{Count}\\
     \midrule
-    Promise&2.8B\\
-    Environment&1.2B\\
-    Logical&1.0B\\
-    Character&929.9M\\
-    Language&483.9M\\
-    Integer&453.5M\\
+    Promise&\ObjCntPromise\\
+    Environment&\ObjCntEnvironment\\
+    Logical&\ObjCntLogical\\
+    Character&\ObjCntCharacter\\
+    Language&\ObjCntLanguage\\
+    Integer&\ObjCntInteger\\
     \bottomrule
   \end{tabular}
   \begin{tabular}{lr}
     \toprule
     \textbf{Type}&\textbf{Count}\\
     \midrule
-    List&159.3M\\
-    Closure&114.0M\\
-    Real&113.4M\\
-    Symbol&73.5M\\
-    Raw&46.4M\\
-    Other&15.2M\\
+    List&\ObjCntList\\
+    Closure&\ObjCntClosure\\
+    Real&\ObjCntReal\\
+    Symbol&\ObjCntSymbol\\
+    Raw&\ObjCntRaw\\
+    Other&\ObjCntOther\\
     \bottomrule
   \end{tabular}
 \end{table}
+
+Table~\ref{table:api_calls} gives the number of calls made to the various
+environment APIs.
+
+\begin{table*}[!h]
+  \vspace{-3mm}
+  \small
+  \caption{API Calls} \label{table:api_calls}
+  \centering
+  \begin{tabular}{lr}
+    \toprule
+    \textbf{Function}&\textbf{Calls}\\
+    \midrule
+    \texttt{substitute}&\CallCntSubstitute\\
+    \texttt{environment}&\CallCntEnvironment\\
+    \texttt{baseenv}&\CallCntBaseenv\\
+    \texttt{as.environment}&\CallCntAsDotenvironment\\
+    \texttt{parent.frame}&\CallCntParentDotframe\\
+    \texttt{getNamespace}&\CallCntGetnamespace\\
+    \texttt{get0}&\CallCntGetZero\\
+    \texttt{sys.frame}&\CallCntSysDotframe\\
+    \texttt{get}&\CallCntGet\\
+    \texttt{sys.parent}&\CallCntSysDotparent\\
+    \bottomrule
+  \end{tabular}
+  \begin{tabular}{lr}
+    \toprule
+    \textbf{Function}&\textbf{Calls}\\
+    \midrule
+    \texttt{[[}&\CallCntDBrack\\
+    \texttt{new.env}&\CallCntNewDotenv\\
+    \texttt{list2env}&\CallCntListTwoenv\\
+    \texttt{parent.env<-}&\CallCntParentDotenvAssign\\
+    \texttt{parent.env}&\CallCntParentDotenv\\
+    \texttt{\$}&\CallCntDollar\\
+    \texttt{.subset2}&\CallCntDotSubsetTwo\\
+    \texttt{sys.nframe}&\CallCntSysDotnframe\\
+    \texttt{environment<-}&\CallCntEnvironmentAssign\\
+    \texttt{\$<-}&\CallCntDollarAssign\\
+    \bottomrule
+  \end{tabular}
+  \begin{tabular}{lr}
+    \toprule
+    \textbf{Function}&\textbf{Calls}\\
+    \midrule
+    \texttt{exists}&\CallCntExists\\
+    \texttt{assign}&\CallCntAssign\\
+    \texttt{lockBinding}&\CallCntLockbinding\\
+    \texttt{mget}&\CallCntMget\\
+    \texttt{emptyenv}&\CallCntEmptyenv\\
+    \texttt{as.list}&\CallCntAsDotlist\\
+    \texttt{lockEnvironment}&\CallCntLockenvironment\\
+    \texttt{globalenv}&\CallCntGlobalenv\\
+    \texttt{\~}&\CallCntTilde\\
+    \texttt{[[<-}&\CallCntDBrackAssign\\
+    \bottomrule
+  \end{tabular}
+  \begin{tabular}{lr}
+    \toprule
+    \textbf{Function}&\textbf{Calls}\\
+    \midrule
+    \texttt{sys.parents}&\CallCntSysDotparents\\
+    \texttt{sys.frames}&\CallCntSysDotframes\\
+    \texttt{dynGet}&\CallCntDynget\\
+    \texttt{unlockBinding}&\CallCntUnlockbinding\\
+    \texttt{length}&\CallCntLength\\
+    \texttt{pos.to.env}&\CallCntPosDottoDotenv\\
+    \texttt{ls}&\CallCntLs\\
+    \texttt{objects}&\CallCntObjects\\
+    \\
+    \\
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
 
 \section{Provenance}
 
