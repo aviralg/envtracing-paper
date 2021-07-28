@@ -1351,6 +1351,127 @@ and the internal structure of these environments is unspecified. It is also not
 recommended to modify these environments. Hence, we don't capture events for
 these environments.
 
+
+\section{Locking and Unlocking}
+
+In this section, we analyze the use of environment locking and unlocking APIs.
+Locking an environment using \c{lockEnvironment} prevents the introduction of
+new bindings. Locking individual bindings using \c{lockBinding} prevents their
+mutation. An optional boolean argument to \c{lockEnvironment} also locks all the
+existing bindings in the environment. Locked bindings can be unlocked for
+mutation using \c{unlockEnvironment}. The use of this function triggers a
+warning from the automated package checker (\c{R CMD check}), used by CRAN for
+package submission. Table~\ref{lock_unlock_dist} presents the distribution of
+calls to these three functions. For this discussion, we ignore the two
+functions, \c{environmentIsLocked(env)} and \c{bindingIsLocked(sym, env)} used
+for querying if the environment and binding are locked respectively.
+
+\begin{table}[!h]
+  \small
+  \centering
+  \caption{Locking and Unlocking API}\label{table:lock_unlock_dist}
+  \vspace{-3mm}
+  \begin{tabular}{llrrrr}
+    \toprule &\textbf{Category}&\textbf{P\#}&\textbf{F\#}&\textbf{C\#}&\textbf{C\%}\\
+    \midrule \multirow{2}{*}{\textbf{lockEnvironment}}
+             & \multicolumn{1}{l}{\emph{Core}} & \multicolumn{1}{r}{\LockEnvironmentCorePackCnt} & \multicolumn{1}{r}{\LockEnvironmentCoreFunCnt} & \multicolumn{1}{r}{\LockEnvironmentCoreCallCnt} & \multicolumn{1}{r}{\LockEnvironmentCoreCallPerc}\\
+             & \multicolumn{1}{l}{\emph{User}} & \multicolumn{1}{r}{\LockEnvironmentUserPackCnt} & \multicolumn{1}{r}{\LockEnvironmentUserFunCnt} & \multicolumn{1}{r}{\LockEnvironmentUserCallCnt} & \multicolumn{1}{r}{\LockEnvironmentUserCallPerc}\\
+    \midrule \multirow{2}{*}{\textbf{lockBinding}}
+             & \multicolumn{1}{l}{\emph{Core}} & \multicolumn{1}{r}{\LockBindingCorePackCnt} & \multicolumn{1}{r}{\LockBindingCoreFunCnt} & \multicolumn{1}{r}{\LockBindingCoreCallCnt} & \multicolumn{1}{r}{\LockBindingCoreCallPerc}\\
+             & \multicolumn{1}{l}{\emph{User}} & \multicolumn{1}{r}{\LockBindingUserPackCnt} & \multicolumn{1}{r}{\LockBindingUserFunCnt} & \multicolumn{1}{r}{\LockBindingUserCallCnt} & \multicolumn{1}{r}{\LockBindingUserCallPerc}\\
+    \midrule \multirow{2}{*}{\textbf{unlockBinding}}
+             & \multicolumn{1}{l}{\emph{Core}} & \multicolumn{1}{r}{\UnlockBindingCorePackCnt} & \multicolumn{1}{r}{\UnlockBindingCoreFunCnt} & \multicolumn{1}{r}{\UnlockBindingCoreCallCnt} & \multicolumn{1}{r}{\UnlockBindingCoreCallPerc}\\
+             & \multicolumn{1}{l}{\emph{User}} & \multicolumn{1}{r}{\UnlockBindingUserPackCnt} & \multicolumn{1}{r}{\UnlockBindingUserFunCnt} & \multicolumn{1}{r}{\UnlockBindingUserCallCnt} & \multicolumn{1}{r}{\UnlockBindingUserCallPerc}\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+
+The \c{lockEnvironment} function is called \LockEnvironmentCoreCallPerc of the
+times by three \c{base} package functions,
+\c{base::loadNamespace::sealNamespace}, \c{base::attachNamespace}, and
+\c{base::lazyLoadDBexec::envhook}. The first two functions are responsible for
+initializing package and namespace environments. They are called with the
+optional boolean argument set to \c{TRUE} to lock all the bindings in these
+environments. \c{base::lazyLoadDBexec::envhook} function is used for loading
+package code from a database.
+
+On the \emph{User} side, only three functions from two packages, \c{R6} and
+\c{rlang}, call \c{lockEnvironment}. The \c{rlang} package provides \c{env_lock}
+function which is a wrapper for \c{lockEnvironment}. It was only called
+\LockEnvironmentRlangCallCount times and all invocations were from test and
+example scripts. The majority of calls originate from \c{R6}. The \c{R6::new}
+functions calls \c{lockEnvironment} when creating new R6 class objects to lock
+the environments used for public and private method bindings of the object.
+\c{R6::clone} function calls \c{lockEnvironment} to lock the public and private
+method environments of R6 object clones.
+
+The \c{methods} package is responsible for all calls to \c{lockBinding} and
+\c{unlockBinding} on the \emph{Core} side. These calls originate from private
+methods, mostly to set fields in object environments.
+
+On the \emph{User} side, the use of these functions is quite varied. Most
+package functions call them in a matched pair. We discuss some interesting uses
+below.
+
+The \c{rJava} package uses JNI to implements a bridge between R and Java to
+enable the creation and manipulation of Java objects from R. Its \c{.jinit}
+method initializes the JVM upon invocation and caches references to basic Java
+classes such as \c{Integer}, \c{Double}, etc. in its own namespace. Since all
+the namespace bindings are locked by default, it unlocks the required bindings
+using \c{unlockBinding}, updates them, and locks them again using
+\c{lockBinding}.
+
+The \c{gtools} package uses \c{lockBinding} and \c{unlockBinding} to circumvent
+an
+issue\footnote{\url{https://bugs.r-project.org/bugzilla/show_bug.cgi?id=15215}}
+in the R VM. The R VM compiles package functions to bytecode during
+installation, which is then interpreted using a bytecode interpreter. Calling
+some functions in the \c{gtools} package causes the bytecode interpreter to run
+out of stack space. To circumvent this problem, the package developers provide a
+function, \c{unByteCodeAssign}, that updates the function binding in the package
+namespace (by locking and unlocking the bindings) to an equivalent non-bytecode
+version. The absence of bytecode forces the R VM to use an AST interpreter for
+evaluation. The non-bytecode version of the function is obtained by reflectively
+accessing the function's definition text and evaluating it to generate a new
+function object with the same code and scope but without the bytecode.
+
+The \c{[.data.table} implements subsetting for \c{data.table} objects. It
+assigns the result of intermediate computation to a variable \c{.N} in caller's
+environment, after copying its original value. It unlocks the binding first, if
+needed, and locks it after restoring the original value of the variable. To
+avoid warnings from automated package checker, this function calls
+\c{unlockBinding} by passing it to \c{eval} as follows,
+\c{eval(call("unlockBinding", ".N", parent.frame()))}.
+
+The \c{igraph} package provides a progress bar for visualizing the progress of
+its network analysis functions. It has a global progress bar object initialized
+to \c{NULL} in the namespace environment. After package loading, the \c{igraph}
+package uses \c{unlockBinding} to enable this binding to be mutated by its APIs
+for updating their status.
+
+The \c{rlang} package provides wrapper functions \c{env_binding_lock} and
+\c{env_binding_unlock} for locking and unlocking environments. These functions
+were only called from testing and example scripts in our corpus.
+
+Finally, two \c{R6} functions, \c{new} and \c{clone} account for
+\LockBindingRSixCallPerc of all calls to \c{lockBinding}. The \c{new} function
+locks the methods in the private and public environments of the object. The
+\c{generator_funs::clone_method} does the same to the object's clone. These
+functions do not call \c{unlockBinding}.
+
+
+We conclude that \c{R6} is the biggest user of the APIs discussed in this
+section. Environment bindings are unlocked by very few functions, and they are
+never used to inject new bindings or modify functions in other packages. We
+found one instance of the use of \c{unlockBinding} to update the definitions of
+\code{cbind} and \code{rbind} functions in the \code{base} package by
+\code{data.table} prior to R version \texttt{4.0.0}. The dispatch behavior of
+these functions prevented the correct overloaded method to be chosen when they
+were called with two arguments of type \c{data.table} and \c{data.frame}
+respectively. The \c{data.table} package modified these functions to address
+this issue.
+
 \section{Conclusion}
 
 This paper looked at first-class environments in R. We introduced the main
