@@ -507,9 +507,9 @@ object-oriented systems.
     \node [below = \textsep of install]   (installdesc)   {\nodedesc{10 Hours\\17.1 K Packages\\83 GB}};
     \node [below = \textsep of extract]   (extractdesc)   {\nodedesc{5 Minutes\\100 Packages\\6.7 K Files}};
     \node [below = \textsep of trace]     (tracedesc)     {\nodedesc{8 Hours\\72.5 K Files\\732 GB}};
-    \node [below = \textsep of reduce]    (reducedesc)    {\nodedesc{3 Hours\\XX Files\\XX TB}};
-    \node [below = \textsep of combine]   (combinedesc)   {\nodedesc{XXs\\11 Files\\9.8 GB}};
-    \node [below = \textsep of summarize] (summarizedesc) {\nodedesc{XXs\\14 Files\\1.2 GB}};
+    \node [below = \textsep of reduce]    (reducedesc)    {\nodedesc{2.5 Hours\\XX Files\\XX TB}};
+    \node [below = \textsep of combine]   (combinedesc)   {\nodedesc{14 Minutes\\11 Files\\9.8 GB}};
+    \node [below = \textsep of summarize] (summarizedesc) {\nodedesc{28 Minutes\\14 Files\\1.2 GB}};
     \node [below = \textsep of report]    (reportdesc)    {\nodedesc{XXs\\7 Reports}};
 
     \begin{scope}[on background layer]
@@ -1351,6 +1351,157 @@ and the internal structure of these environments is unspecified. It is also not
 recommended to modify these environments. Hence, we don't capture events for
 these environments.
 
+\section{Enclosing Scope Manipulation}
+
+A closure's enclosing scope can be accessed using \c{environment(fun)} and
+modified using \c{environment(fun) <- env}. In this section, we look at the use
+of these two APIs. Table~\ref{table:encl_scope_api} gives the calls to these two
+functions. The table is missing \EnvAsnUnclassifiedCallPerc calls to
+\c{environment<-} which could not be classified because of higher-order
+functions, and dynamic behavior which prevented accurate name inference.
+
+\begin{table}[!h]
+  \small
+  \centering
+  \caption{Enclosing Scope API}\label{table:encl_scope_api}
+  \vspace{-3mm}
+  \begin{tabular}{llrrrr}
+    \toprule &&\textbf{P\#}&\textbf{F\#}&\textbf{C\#}&\textbf{C\%}\\
+    \midrule \multirow{2}{*}{\textbf{environment}}
+             & \multicolumn{1}{l}{\emph{Core}} & \multicolumn{1}{r}{\EnvironmentCorePackCnt} & \multicolumn{1}{r}{\EnvironmentCoreFunCnt} & \multicolumn{1}{r}{\EnvironmentCoreCallCnt} & \multicolumn{1}{r}{\EnvironmentCoreCallPerc}\\
+             & \multicolumn{1}{l}{\emph{User}} & \multicolumn{1}{r}{\EnvironmentUserPackCnt} & \multicolumn{1}{r}{\EnvironmentUserFunCnt} & \multicolumn{1}{r}{\EnvironmentUserCallCnt} & \multicolumn{1}{r}{\EnvironmentUserCallPerc}\\
+    \midrule \multirow{2}{*}{\textbf{environment<-}}
+             & \multicolumn{1}{l}{\emph{Core}} & \multicolumn{1}{r}{\EnvAsnCorePackCnt} & \multicolumn{1}{r}{\EnvAsnCoreFunCnt} & \multicolumn{1}{r}{\EnvAsnCoreCallCnt} & \multicolumn{1}{r}{\EnvAsnCoreCallPerc}\\
+             & \multicolumn{1}{l}{\emph{User}} & \multicolumn{1}{r}{\EnvAsnUserPackCnt} & \multicolumn{1}{r}{\EnvAsnUserFunCnt} & \multicolumn{1}{r}{\EnvAsnUserCallCnt} & \multicolumn{1}{r}{\EnvAsnUserCallPerc}\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+First, we look at the \c{environment} function. We observe that
+\EnvironmentCoreCallPerc of the calls to \c{environment} originate from
+\emph{Core}.
+
+The \c{base::registerS3methods} is responsible for
+\EnvironmentBaseRegisterMethodCallPerc calls to
+\c{environment}. This function registers S3 methods for dispatch. It extracts
+the enclosing environment of the method using \c{environment} (which is expected
+to be the namespace environment) and updates the method information in its
+\c{S3MethodsTable}.
+
+The \c{methods} package functions are responsible for
+\EnvironmentMethodsCallPerc calls. These functions perform introspection and
+manipulation on the method environment as part of the object system
+implementation.
+
+The \c{compiler::cmpfun} function, used for byte code compilation of R
+functions, is another client of \c{environment} function. It extracts the body,
+formal parameter list, and the enclosing scope of the function to be compiled
+(using \c{environment}) and passes them to a native function. Even though we
+disable the byte code compiler for this study, we observe a few calls to this
+function because it is explicitly called by testing scripts from the \c{rlang}
+package.
+
+The \c{utils::.defenv_for_S3_registry} function returns the top-level enclosing
+scope of a function. It extracts the enclosing scope and walks over the parent
+chain until it finds the package namespace in which the function was defined.
+
+The \c{stats::ecdf} function computes an empirical cumulative distribution from
+a numeric vector of observations. For this, it computes an approximation
+function and assigns the number of observations in its environment (obtained
+using \c{environment}) using the \c{assign} function.
+
+Only, \EnvironmentUserCallPerc of the calls to \c{environment} originate from
+\emph{User}. We discuss some of the patterns of usage below.
+
+The \c{R.oo} package implements an Object-Oriented system. Its
+\c{getStaticInstance.Class} function creates a static instance whose environment
+is set to be the environment of the constructor function, obtained by calling
+\c{environment}.
+
+The \c{rlang} package implements \c{fn_env} function, which is a wrapper over
+\c{environment}.
+
+The \c{robustbase::mm} method takes a function as an argument and uses
+c{environment} to extract its enclosing scope to look up a variable.
+
+The \c{mgcv::fix.family.var} function returns a family of functions related to a
+distribution. It retrieves the enclosing scope of the main function and sets it
+as the enclosing scope of the other functions.
+
+We observe that \c{environment<-} is called almost equally by both \emph{Core}
+and \emph{User} packages. Table~\ref{table:env_asn_callers} gives the top five
+callers of \c{environment<-}, which account for \EnvAsnTopFiveCallPerc calls.
+
+\begin{table}[!h]
+  \small
+  \centering
+  \caption{Top \c{environment<-} Callers}\label{table:env_asn_callers}
+  \vspace{-3mm}
+  \begin{tabular}{lr}
+    \toprule \textbf{Function}&\textbf{Call \%}\\
+    \midrule
+    \EnvAsnOneCallerName&\EnvAsnOneCallPerc\\
+    \EnvAsnTwoCallerName&\EnvAsnTwoCallPerc\\
+    \EnvAsnThreeCallerName&\EnvAsnThreeCallPerc\\
+    \EnvAsnFourCallerName&\EnvAsnFourCallPerc\\
+    \EnvAsnFiveCallerName&\EnvAsnFiveCallPerc\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+On the \c{Core} side, \c{methods}, and \c{stats} are responsible for all calls
+to \c{environment<-}. 
+
+Two two functions of the \c{methods} package, \c{.makeDefaultBinding} and
+\c{installClassMethod}, are responsible for \EnvAsnMethodsCallPerc of all
+\c{Core} calls. These functions are used in the implementation of OOP-style
+classes with reference semantics. The \c{.makeDefaultBinding} sets the
+environment of a class method and \c{installClassMethod} sets a new environment
+containing a reference to the superclass method as the environment of a method.
+
+The \c{stats::make.link} function returns a list of functions related to a
+model. These functions are defined as its inner functions which don't use any of
+the parent scope bindings. Before returning, it modifies their definition
+environment to be the \c{stats} package namespace.
+
+On the \c{User} side, the \c{R6} package dominates the use of \c{environment<-}.
+\EnvAsnOneCallerName is the most frequent caller, accounting for
+\EnvAsnOneCallPerc of all calls. It uses \c{environment<-} to change the
+enclosing scope of object methods.
+
+A very common pattern for the use of \c{environment<-} is modifying the
+environment of inner functions before returning them, similar to the
+\c{stats::make.link} function, as shown below in the simplified definition of
+\c{MASS::negative.binomial} function.
+
+\begin{lstlisting}
+negative.binomial <- function(theta) {
+    env <- new.env(parent=.GlobalEnv);
+    assign(".Theta", theta, envir=env);
+    variance <- function(mu) mu + mu^2/.Theta
+    environment(variance) <- env
+    list(variance = variance, ...)
+}
+
+\end{lstlisting}
+
+This pattern is exhibited by \EnvAsnUserInnerFunFunCnt functions from
+\EnvAsnUserInnerFunPackCnt \emph{User} packages. Excluding \c{R6}, they make up
+for \EnvAsnUserInnerFunCallPerc of the remaining \emph{User} calls to
+\c{environment<-}. These functions are typically used for mathematical modeling.
+They return a family of inner functions sharing common variables. To prevent
+their own large environments from escaping, these functions create new
+environments with the required bindings and set them as the scope of the
+returned inner functions.
+
+The \c{rlang::set_env} function implements a wrapper over \c{environment<-}.
+This is only invoked from example programs in our corpus.
+
+Another user of \c{environment<-} is the \c{foreach::\%do\%} function. It
+modifies the environment of the currently registered parallel backend for
+iteration. It inserts a new environment to the chain of parent environments of
+the backend function containing a marker indicating whether the backend function
+is called from \c{\%do\%}, or \c{\%dopar\%}.
 
 \section{Locking and Unlocking}
 
@@ -1372,7 +1523,7 @@ for querying if the environment and binding are locked respectively.
   \caption{Locking and Unlocking API}\label{table:lock_unlock_dist}
   \vspace{-3mm}
   \begin{tabular}{llrrrr}
-    \toprule &\textbf{Category}&\textbf{P\#}&\textbf{F\#}&\textbf{C\#}&\textbf{C\%}\\
+    \toprule &&\textbf{P\#}&\textbf{F\#}&\textbf{C\#}&\textbf{C\%}\\
     \midrule \multirow{2}{*}{\textbf{lockEnvironment}}
              & \multicolumn{1}{l}{\emph{Core}} & \multicolumn{1}{r}{\LockEnvironmentCorePackCnt} & \multicolumn{1}{r}{\LockEnvironmentCoreFunCnt} & \multicolumn{1}{r}{\LockEnvironmentCoreCallCnt} & \multicolumn{1}{r}{\LockEnvironmentCoreCallPerc}\\
              & \multicolumn{1}{l}{\emph{User}} & \multicolumn{1}{r}{\LockEnvironmentUserPackCnt} & \multicolumn{1}{r}{\LockEnvironmentUserFunCnt} & \multicolumn{1}{r}{\LockEnvironmentUserCallCnt} & \multicolumn{1}{r}{\LockEnvironmentUserCallPerc}\\
@@ -1385,7 +1536,6 @@ for querying if the environment and binding are locked respectively.
     \bottomrule
   \end{tabular}
 \end{table}
-
 
 The \c{lockEnvironment} function is called \LockEnvironmentCoreCallPerc of the
 times by three \c{base} package functions,
