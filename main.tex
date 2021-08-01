@@ -1622,6 +1622,148 @@ were called with two arguments of type \c{data.table} and \c{data.frame}
 respectively. The \c{data.table} package modified these functions to address
 this issue.
 
+
+\section{Call Stack Reflection}
+
+In this section, we analyze the use of APIs that enable reflective access to the
+call-stack environments. Table~\ref{call_stack_ref} gives the distribution of
+calls to these functions. \emph{Core} packages are the major users of
+\c{parent.frame}, contributing to \ParentFrameCoreCallPerc calls. Though,
+\emph{User} contributes to only \ParentFrameUserCallPerc calls, there are
+\ParentFrameUserFunCnt clients of \c{parent.frame} from
+\ParentFrameUserPackCnt packages.
+
+\begin{table}[!h]
+  \small
+  \centering
+  \caption{Call Stack Reflection API}\label{table:call_stack_ref}
+  \vspace{-3mm}
+  \begin{tabular}{llrrrr}
+    \toprule &&\textbf{P\#}&\textbf{F\#}&\textbf{C\#}&\textbf{C\%}\\
+    \midrule \multirow{2}{*}{\textbf{parent.frame}}
+             & \multicolumn{1}{l}{\emph{Core}} & \multicolumn{1}{r}{\ParentFrameCorePackCnt} & \multicolumn{1}{r}{\ParentFrameCoreFunCnt} & \multicolumn{1}{r}{\ParentFrameCoreCallCnt} & \multicolumn{1}{r}{\ParentFrameCoreCallPerc}\\
+             & \multicolumn{1}{l}{\emph{User}} & \multicolumn{1}{r}{\ParentFrameUserPackCnt} & \multicolumn{1}{r}{\ParentFrameUserFunCnt} & \multicolumn{1}{r}{\ParentFrameUserCallCnt} & \multicolumn{1}{r}{\ParentFrameUserCallPerc}\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Table~\ref{table:par_frm_top_core_callers} gives the list of top ten \c{Core} callers of
+\c{parent.frame}. These callers make up for
+\ParentFrameCoreTopTenCallPerc of all \emph{Core}.
+
+\begin{table}[!h]
+  \small
+  \centering
+  \caption{Top \c{parent.frame} \emph{Core} Callers}\label{table:par_frm_top_core_callers}
+  \vspace{-3mm}
+  \begin{tabular}{lr}
+    \toprule \textbf{Function}&\textbf{Call \%}\\
+    \midrule
+    \ParentFrameCoreOneCallerName&\ParentFrameCoreOneCallPerc\\
+    \ParentFrameCoreTwoCallerName&\ParentFrameCoreTwoCallPerc\\
+    \ParentFrameCoreThreeCallerName&\ParentFrameCoreThreeCallPerc\\
+    \ParentFrameCoreFourCallerName&\ParentFrameCoreFourCallPerc\\
+    \ParentFrameCoreFiveCallerName&\ParentFrameCoreFiveCallPerc\\
+    \ParentFrameCoreSixCallerName&\ParentFrameCoreSixCallPerc\\
+    \ParentFrameCoreSevenCallerName&\ParentFrameCoreSevenCallPerc\\
+    \ParentFrameCoreEightCallerName&\ParentFrameCoreEightCallPerc\\
+    \ParentFrameCoreNineCallerName&\ParentFrameCoreNineCallPerc\\
+    \ParentFrameCoreTenCallerName&\ParentFrameCoreTenCallPerc\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The \c{base::delayedAssign} function is the largest user of \c{parent.frame}.
+This function is used to create a Promise from an unevaluated expression and
+bind it to the specified variable. By default, it uses caller's environment
+(extracted using \c{parent.frame}) as the evaluation environment for the
+Promise's expression and the binding environment for the Promise object.
+
+The \c{base::tryCatch} function evaluates the expression passed as argument in
+caller's environment with handlers for catching exceptions.
+
+The \c{base::match.call} function is used to reflectively access the call
+expression with all argument names fully expanded (names of arguments can be
+prefixes as long as they are not ambiguous). It uses \c{parent.frame(2} as the
+environment to expand \c{...} (varargs) in the call expression.
+
+The \c{base::match.fun} function is used for.
+
+The \c{base::do.call} function constructs a call expression from a function name
+and a list of arguments and evaluates it in the caller's environment unless a
+different environment is explicitly specified.
+
+The \c{base::eval} and \c{base::eval.parent} functions use \c{parent.frame} to
+access the caller's and caller's caller's environments respectively for
+evaluating expressions.
+
+The \c{base::new.env} function creates a new environment and sets the caller's
+environment as its parent environment.
+
+Table~\ref{table:par_frm_top_user_callers} gives the list of top ten \c{User}
+callers of \c{parent.frame}. These callers make up for
+\ParentFrameUserTopTenCallPerc of all \emph{User} calls.
+
+\begin{table}[!h]
+  \small
+  \centering
+  \caption{Top \c{parent.frame} \emph{User} Callers}\label{table:par_frm_top_user_callers}
+  \vspace{-3mm}
+  \begin{tabular}{lr}
+    \toprule \textbf{Function}&\textbf{Call \%}\\
+    \midrule
+    \ParentFrameUserOneCallerName&\ParentFrameUserOneCallPerc\\
+    \ParentFrameUserTwoCallerName&\ParentFrameUserTwoCallPerc\\
+    \ParentFrameUserThreeCallerName&\ParentFrameUserThreeCallPerc\\
+    \ParentFrameUserFourCallerName&\ParentFrameUserFourCallPerc\\
+    \ParentFrameUserFiveCallerName&\ParentFrameUserFiveCallPerc\\
+    \ParentFrameUserSixCallerName&\ParentFrameUserSixCallPerc\\
+    \ParentFrameUserSevenCallerName&\ParentFrameUserSevenCallPerc\\
+    \ParentFrameUserEightCallerName&\ParentFrameUserEightCallPerc\\
+    \ParentFrameUserNineCallerName&\ParentFrameUserNineCallPerc\\
+    \ParentFrameUserTenCallerName&\ParentFrameUserTenCallPerc\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The \c{withr::defer} function allows attaching an expression to be evaluated
+when exiting an active frame on the stack. It takes the frame environment as an
+argument, which defaults to \c{parent.frame}. The \c{rlang::defer} function is a
+copy of the \c{withr::defer}.
+
+The \c{rlang::captureArgInfo} function is used for introspection of a binding in
+an environment, which default to \c{parent.frame()}.
+
+The \c{glue::glue} function 
+
+
+The argument \c{n} to \c{parent.frame} controls the number of frames to go back
+in the call stack.
+
+Passing \c{1} for \c{n} returns the environment of the caller. In our corpus,
+\c{parent.frame} was called \ParentFrameDepthOneCallPerc of the times with \c{n}
+as \c{1} by \ParentFrameDepthOneFunCnt functions. The top two callers are
+\ParentFrameDepthOneCallerOneCallerName and
+\ParentFrameDepthOneCallerTwoCallerName which account for
+\ParentFrameDepthOneCallerOneCallPerc and \ParentFrameDepthOneCallerTwoCallPerc
+of the calls in this category.
+
+Next, \c{parent.frame} is invoked with the argument \c{2} by
+\ParentFrameDepthTwoFunCnt functions which account for
+\ParentFrameDepthTwoCallPerc of the calls. The top two callers are
+\ParentFrameDepthTwoCallerOneCallerName and
+\ParentFrameDepthTwoCallerTwoCallerName which account for
+\ParentFrameDepthTwoCallerOneCallPerc and \ParentFrameDepthTwoCallerTwoCallPerc
+of the calls in this category.
+
+Finally, \ParentFrameDepthThreeCallPerc of the calls to \c{parent.frame}, made
+from \ParentFrameDepthThreeFunCnt functions receive the argument \c{3}. The
+first caller is \ParentFrameDepthThreeCallerOneCallerName which accounts for
+\ParentFrameDepthThreeCallerOneCallPerc of the calls followed by
+\ParentFrameDepthThreeCallerTwoCallerName which accounts for
+\ParentFrameDepthThreeCallerTwoCallPerc of the calls.
+
+
 \section{Conclusion}
 
 This paper looked at first-class environments in R. We introduced the main
