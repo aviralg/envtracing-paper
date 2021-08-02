@@ -489,6 +489,7 @@ environment. R does not provide any function to query the representation used
 for an environment. The \code{length} function returns the number of bindings in
 an environment. \parentEnv yields the enclosing environment and
 \code{parent.env(e)<-p} sets the enclosing environment of \code{e} to \code{p}.
+The code snippet below demonstrates the use of these functions.
 
 \begin{lstlisting}
   e <- new.env(parent=emptyenv())
@@ -505,6 +506,7 @@ an environment. \parentEnv yields the enclosing environment and
 elements. \listToEnv copies the elements of a list to an environment. If the
 environment is not supplied, it creates one using \newEnv. The variables of an
 environment can be retrieved as a vector using the \ls and \objects functions.
+The use of these functions is demonstrated by the code snippet below.
 
 \begin{lstlisting}
   l <- list(x=1, y=2); e <- list2env(l)
