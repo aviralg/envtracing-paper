@@ -277,6 +277,15 @@ first-class environments. Their language has \c{the-environment} function for
 reifying the current environment and \c{eval} for evaluating an expression in an
 environment.
 
+R provides allows modification of enclosing scope of closures. This is related
+to the idea of \c{map-closure} introduced by \citet{Siskind07}. \c{map-closure}
+is a non-referentially-transparent construct that can can be used to examine the
+contents of a closure environment and to construct a new closure with a modified
+environment. By design, this construct does not expose the implementation
+details of environments to the user. Unlike R's environment APIs \c{map-closure}
+does not allow the addition, removal, or renaming of variables and changing the
+lexical scoping of variables at run time.
+
 \citet{ecoop12} discussed the design of R, providing a comprehensive explanation
 of R's scoping and evaluation mechanism. They present many aspects of
 environments in the context of laziness, metaprogramming, dynamic evaluation,
@@ -1713,6 +1722,10 @@ While in the vast majority of cases environment access could be optimized and
 environment could be implemented in a straightforward manner, there are
 sufficient number of cases where environments escape and are used in a
 reflective manner that it is not clear such optimizations can be widely applied.
+
+We also expect the results of this study to further guide the development of
+CoqR\cite{bodin18}, a big-step operational semantics of R, written in the Coq
+proof assistant.
 
 In our future work, we plan to dig deeper into the data we have gathered and
 identify particular patterns of usage that can be used by a compiler to predict
