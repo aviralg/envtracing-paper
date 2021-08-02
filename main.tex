@@ -300,23 +300,21 @@ be brief, interested readers should consult~\cite{AdvancedR}.
 
 \paragraph{Functions} Functions are first-class, anonymous, lexically-scoped values
 with optional parameters and default values. R is ``functional'' in the sense
-that values have a copy-on-write semantics, so that side-effects to arguments
-inside a function are not reflected to the caller.
+that values have a copy-on-write semantics, so side-effects to arguments inside
+a function are not reflected to the caller.
 
-\paragraph{Promises} R is a mostly lazy language.  Arguments to functions are
+\paragraph{Promises} R is a mostly lazy language. Arguments to functions are
 packaged into promises which bundle an expression and its environment. When the
 value of a promise is needed, the expression is evaluated in the adjoined
 environment and the result is cached in the promise.
 
 \paragraph{Vectors}  Most values in R are vectors, and most operations are
-vectorized. Vectors are homogeneous arrays of integer, double,
-character, logical, complex, or raw values.
+vectorized. Vectors are homogeneous arrays of integer, double, character,
+logical, complex, or raw values.
 
 \paragraph{Lists} Lists are heterogeneous vectors with optionally named elements.
 They can be indexed by position or name. Lists (and vectors) have a
-copy-on-write semantics, but the language maintains a reference count and allows
-mutation in place when a value is not aliased.
-
+copy-on-write semantics.
 
 \paragraph{Attributes}
 Values can be tagged with user-defined attributes which are a map from string to
@@ -328,7 +326,7 @@ value. Consider the following code which sets the attributes \code{dim} and
   attr(x, dim) <- c(2,2)
   class(x) <- c("cat")
 \end{lstlisting}
-
+\noindent
 Setting the \code{dim} attribute causes the vector to be subsequently treated as
 a 2$\times$2 matrix. Similarly, the class attribute is used for method dispatch
 in an object-oriented style.
@@ -339,45 +337,64 @@ specifies a line through the origin. Each formula contains a reference to the
 environment in which it is defined to refer to the variables, if they are not
 otherwise provided during model fitting.
 
-
-
 \section{Environments in R}
 
-The evolution of R has been gradual, rather than offering clearly delineated
-abstractions, the language designer opened up the internals of the interpreter
-for all to see, and packaged some commonly needed functionality into functions
-bundled with the core of the language. Thus, the task of describing the
-``interface'' of environments as seen by developers and end-users involves quite
-a lot of sleuthing. As we prepared this paper, we kept discovering new functions
-that accessed environments from native code. This section is not meant to be an
-exhaustive description, but it gives an overview of the most commonly used
-functions that manipulate environments.
+The evolution of R has been gradual, rather a panoply of abstractions, the
+language designer opened up the internals of the interpreter for all to see, and
+packaged some commonly needed functionality with the core of the language. Thus,
+the task of describing the ``interface'' of environments as seen by developers
+and end-users involves some sleuthing. As we prepared this paper, we kept
+discovering new functions that accessed environments from native code. This
+section is not meant to be an exhaustive, but it gives an overview of the most
+commonly used functions.
 
-Environments bind names to values, implemented by an association list or a
-hashmap, chosen at construction. Each environment also has a parent, forming an
-acyclic chain terminated by the empty environment. That environment is returned
-by \code{emptyenv()}. Unlike other values, environments are mutable.
+Environments are implemented either by an association list or a hashmap, as
+specified by construction parameter. Each environment also has a parent, forming
+an acyclic chain terminated by the empty environment. That environment is
+returned by \code{emptyenv()}. Unlike other values, environments are mutable.
 
 \subsection{Environments as Packages}
 
-Packages loaded by calls to \code{library()} are represented as environments;
-their names are added to a global search path (returned by \code{search()}). The
-\emph{n}-th package environment can be retrieved using \code{pos.to.env(n)}, or
-\code{as.environment(n)}. \asEnvironment also accepts the package name as its
-argument. Every package has a corresponding namespace environment which also
-contains its private bindings and implementation specific metadata. The
-namespace environment for a package \code{P} can be obtained by calling
-\code{getNamespace(P)}. An R session starts with the base package preloaded,
-which contains the default R APIs. \code{baseenv()} returns the base package
-environment and binds \code{.BaseNamespaceEnv} to that environment.
+Packages are loaded by calls to the \code{library()} function, and are
+represented by environments; their names are added to a global search path.
+Package can be retrieved by position, the \emph{n}-th package is
+\code{as.environment(n)} or by name. Every package has a corresponding namespace
+which contains its private bindings and implementation specific metadata. A
+namespace can be obtained by calling \code{getNamespace(p)}. \code{baseenv()}
+returns the base package environment that is pre-loaded witih R and binds
+\code{.BaseNamespaceEnv} to it.
 
-\subsection{Environments as Scopes}
-The top-level scope is the \code{global} environment, referred by the variable
-\code{.GlobalEnv}, or returned by \code{globalenv()}. The \code{environment()}
-call returns the current evaluation environment which is either the
-\code{global} environment or the current function's environment. When supplied
-with a function argument, it returns the function's definition environment.
-\code{environment(f)<-e} sets \code{e} as the environment of \code{f}.
+
+\subsection{Environments as Lexical Scopes}
+
+In R, each function has a lexical scope. Furthermore each nested function
+introduces a nested scope. When a function begins executing, its scope is
+initialized with parameters, and, as it runs, new variables are introduced
+implicitly each time an undefined symbol is assigned to. R allows to obtain the
+current scope with a call to \code{environment()}. From there it is possible to
+read and update the environment through the reference returned by that function.
+
+R provides access to the call stack. Frames starts from 0 and increases by one
+for each nested call. Function \code{sys.nframe} returns the current frame
+number, and \code{sys.parent(n)} returns the number of the \code{n}th parent.
+The function \code{sys.frame(n)} returns environment at that position (counting
+backwards if \code{n} is negative); \code{parent.frame(n)} optimises calls to
+\code{sys.frame(sys.parent(n))}. Lastly, \code{sys.frames()} returns a list of
+active environments.
+
+\begin{lstlisting}
+ f <- function() { print(environment())
+ g <- function() { parent.frame(1); g() }  ???????????????????????????????????
+ f()
+ # <env: 0x7f2> <env: 0x7f2>
+\end{lstlisting}
+
+\noindent
+In the above ???
+
+The global environment , referred by the variable \code{.GlobalEnv} (at offset
+0), is returned by \code{globalenv()}. One can rebind the enclosing environment
+of a function with \code{environment(f)<-e}.
 
 \begin{lstlisting}
  f <- function() print(environment())
@@ -391,22 +408,8 @@ with a function argument, it returns the function's definition environment.
  # <env: 0x7f1>
 \end{lstlisting}
 
-\noindent
-R provides a call stack reflection interface. Frame number starts from 0, for
-\code{global} environment (top level), and increases by 1 for each nested call.
-\code{sys.nframe()} returns the current frame number. \code{sys.parent(n)}
-returns the frame number of the \code{n}th parent. The function
-\code{sys.frame(n)} returns the environment of the frame at position \code{n}
-(counting backwards if \code{n} is negative). Function \code{parent.frame(n)} is
-an optimized implementation of \code{sys.frame(sys.parent(n))}. Lastly,
-\code{sys.frames()} returns a list of all active frames' environments.
+???? Lots of stuff, what does it mean??????
 
-\begin{lstlisting}
- f <- function() { print(environment())
- g <- function() { parent.frame(1); g() }
- f()
- # <env: 0x7f2> <env: 0x7f2>
-\end{lstlisting}
 
 \subsection{Environments as Data Structures}
 
