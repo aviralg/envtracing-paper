@@ -787,19 +787,18 @@ environment APIs.
 Table~\ref{table:env_source} presents the distribution of environments by
 origin. The \emph{Core} row is for environments created by the language
 implementation and the core 16 packages that ship with it.\footnote{They are
-\code{base}, \code{compiler}, \code{datasets}, \code{grDevices},
-\code{graphics}, \code{grid}, \code{methods}, \code{parallel}, \code{profile},
-\code{splines}, \code{stats}, \code{stats4}, \code{tcltk}, \code{tools},
-\code{translations}, and \code{utils.}} The \emph{User} row is for environments
-that come from user-defined packages. We further differentiate between package
-created in \emph{native} code and \emph{R} code. Native environments are created
-using C APIs: \code{allocSExp}, \\\code{Rf_NewEnvironment}, and
-\code{R_NewHashedEnv}. R environments come from calls to the \newEnv function.
-Core is responsible for over 99\% of environments and this, mostly from C code.
-Whereas the 0.03\% of User environment are twice as like to originate in R. We
-encountered 904K environments which were unrelated to the code being traced.
-They were created during the initialization of R session and were ignored from
-the rest of the discussion.
+base, compiler, {datasets}, {grDevices}, {graphics}, {grid}, {methods},
+{parallel}, {profile}, {splines}, {stats}, {stats4}, {tcltk}, {tools},
+{translations}, and {utils.}} The \emph{User} row is for environments that come
+from user-defined packages. We further differentiate between package created in
+\emph{native} code and \emph{R} code. Native environments are created using C
+APIs: \code{allocSExp}, \\\code{Rf_NewEnvironment}, and \code{R_NewHashedEnv}. R
+environments come from calls to the \newEnv function. Core is responsible for
+over 99\% of environments and this, mostly from C code. Whereas the 0.03\% of
+User environment are twice as like to originate in R. We encountered 904K
+environments which were unrelated to the code being traced. They were created
+during the initialization of R session and were ignored from the rest of the
+discussion.
 
 \begin{table}[!h]\small\centering
   \caption{Environment Source}\label{table:env_source}
