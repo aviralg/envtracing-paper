@@ -766,10 +766,8 @@ environment APIs.
     \texttt{rm}&\CallCntRm\\
     \bottomrule
   \end{tabular}
-  \begin{tabular}{lr}
-    \toprule
-    \textbf{Function}&\textbf{Calls}\\
-    \midrule
+  \begin{tabular}{lr}\toprule
+    \textbf{Function}&\textbf{Calls}\\\midrule
     \texttt{[[<-}&\CallCntDBrackAssign\\
     \texttt{remove}&\CallCntRemove\\
     \texttt{sys.parents}&\CallCntSysDotparents\\
@@ -777,11 +775,9 @@ environment APIs.
     \texttt{dynGet}&\CallCntDynget\\
     \texttt{ls}&\CallCntLs\\
     \texttt{unlockBinding}&\CallCntUnlockbinding\\
-    \texttt{length}&\CallCntLength\\
-    \texttt{objects}&\CallCntObjects\\
-    \texttt{pos.to.env}&\CallCntPosDottoDotenv\\
-    \\
-    \bottomrule
+    \texttt{length}&375\\
+    \texttt{objects}& 119\\
+    \texttt{pos.to.env}& 7\\    \\\bottomrule
   \end{tabular}
 \end{table*}
 
@@ -805,21 +801,14 @@ encountered 904K environments which were unrelated to the code being traced.
 They were created during the initialization of R session and were ignored from
 the rest of the discussion.
 
-\begin{table}[!h]
-  \small
-  \centering
+\begin{table}[!h]\small\centering
   \caption{Environment Source}\label{table:env_source}
-  \vspace{-3mm}
-  \begin{tabular}{llrr}
-    \toprule
-    &\textbf{Source}&\textbf{\#}&\textbf{\%}\\
-    \midrule
-    \multirow{2}{*}{\textbf{Core}}  & \multicolumn{1}{l}{\emph{Native}} & \multicolumn{1}{r}{1.2B} & \multicolumn{1}{r}{99.62\%}\\
-                                    & \multicolumn{1}{l}{\emph{R}}      & \multicolumn{1}{r}{3.1M} & \multicolumn{1}{r}{0.27\%}\\
-    \midrule
-    \multirow{2}{*}{\textbf{User}}  & \multicolumn{1}{l}{\emph{Native}} & \multicolumn{1}{r}{154.9K} & \multicolumn{1}{r}{0.01\%}\\
-                                    & \multicolumn{1}{l}{\emph{R}}      & \multicolumn{1}{r}{240.4K} & \multicolumn{1}{r}{0.02\%}\\
-    \bottomrule
+  \begin{tabular}{llrr}\toprule
+  &\textbf{Source}&\textbf{\#}&\textbf{\%}\\\midrule
+\multirow{2}{*}{\textbf{Core}}&\multicolumn{1}{l}{\emph{Native}}&\multicolumn{1}{r}{1.2B}&\multicolumn{1}{r}{99.62\%}\\
+                               & \multicolumn{1}{l}{\emph{R}}     & \multicolumn{1}{r}{3.1M} & \multicolumn{1}{r}{0.27\%}\\\midrule
+\multirow{2}{*}{\textbf{User}}  & \multicolumn{1}{l}{\emph{Native}} & \multicolumn{1}{r}{154.9K} & \multicolumn{1}{r}{0.01\%}\\
+                                & \multicolumn{1}{l}{\emph{R}}      & \multicolumn{1}{r}{240.4K} & \multicolumn{1}{r}{0.02\%}\\\bottomrule
   \end{tabular}
 \end{table}
 
