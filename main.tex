@@ -843,9 +843,10 @@ purposes, and \textbf{Packages} are needed for package loading.
 
 \subsection{Call Environments}
 
-Of the 1.2B calls, only 20M environments register any events. To understand how
-these environments are used, we look at these events. The events of interest are
-described below.
+Of the 1.2B calls, only 20M environments are explicitly used by the functions in
+Table~\ref{table:api_calls} The remaining environments are used implicitly for
+reads and writes. To understand how the 20M environments are used, we look at
+these events. The events of interest are described below.
 \begin{itemize}
 \item \texttt{A} for read, write and remove.
 \item \texttt{V} for evaluating code in the environment using  \eval.
