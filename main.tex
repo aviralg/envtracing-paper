@@ -540,8 +540,18 @@ unlocked using \unlockBinding.
 Expressions can be evaluated explicitly in an environment using the \eval
 function. To support metaprogramming, R provides the \substitute function. This
 function extracts the unevaluated argument text from the promise bound to the
-argument in the supplied environment.
+argument in the supplied environment. The following example demonstrates how
+\substitute constructs an AST by replacing parameters \c{x} and \c{y} with the
+argument expressions \c{a + b} and \c{c * d} respectively.
 
+
+\begin{lstlisting}
+  f <- function(x, y) {
+      substitute((x) + y)
+  }
+  f(a + b, c * d)
+  # (a + b) + c * d
+\end{lstlisting}
 
 \section{Infrastructure and Corpus}
 
