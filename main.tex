@@ -252,23 +252,22 @@ More dynamic languages must retain more information at run-time. For example, to
 support dynamic code generation through the \c{eval} function, it is necessary
 to retain the mapping between symbols and locations. When the language allows to
 programmatically add and remove variables, most hope for an efficient
-compilation strategy dies.  Different languages make various choices....
-
-The Scheme Standard specifies that the \code{eval} function takes an
-environment-specifier, this need not be a first-class
-environment~\cite{SchemeR5RS}. The effect of assignment to variables in this
-environment is unspecified, leaving open the possibility of it being immutable.
-Scheme supports first-class environments and, as a consequence, its \code{eval}
-takes an explicit environment. It provides functions to create new environments,
-read and write bindings, examine parent environments, and obtain the current
-environment as a reified value. Python provides the \code{locals} function that
-returns the local bindings as a dictionary, attached to the current frame as an
-attribute. Updates to this dictionary are not reflected in the function's scope.
-Caller's bindings can be accessed from their frame obtained by calling
-\code{inspect.stack}. Calling \code{locals} outside of a function returns the
-namespace as a dictionary at the point and changes to this dictionary are
-reflected in the namespace. Python's \code{globals} returns a dictionary of the
-global namespace whose updates are also reflected in the namespace.
+compilation strategy dies. Different languages make various choices. The Scheme
+Standard specifies that \code{eval} takes an environment-specifier, which needs
+not be a first-class environment~\cite{SchemeR5RS}. The effect of assignment to
+variables in this environment is unspecified, leaving open the possibility of it
+being immutable. Scheme supports first-class environments and, as a consequence,
+its \code{eval} takes an explicit environment. It provides functions to create
+new environments, read and write bindings, examine parent environments, and
+obtain the current environment as a reified value. Python provides the
+\code{locals} function that returns the local bindings as a dictionary, attached
+to the current frame as an attribute. Updates to this dictionary are not
+reflected in the function's scope. Caller's bindings can be accessed from their
+frame obtained by calling \code{inspect.stack}. Calling \code{locals} outside of
+a function returns the namespace as a dictionary at the point and changes to
+this dictionary are reflected in the namespace. Python's \code{globals} returns
+a dictionary of the global namespace whose updates are also reflected in the
+namespace~\cite{}.
 
 \citet{NishizakiSTLC94} introduced a simply typed lambda calculus with
 first-class environments, proved that it is strongly normalizing, and proposed a
