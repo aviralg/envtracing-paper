@@ -1,0 +1,228 @@
+---
+title: "Environment Locking & Unlocking"
+output:
+    html_document:
+        toc: true
+        toc_depth: 3
+        toc_float: true
+        number_sections: true
+        theme: cerulean
+        highlight: pygments
+        code_folding: hide
+        fig_width: 9
+        fig_height: 3
+        css: style.css
+params:
+    datadir: "./data"
+    graphdir: "./graphs"
+    macrodir: "./macros"
+    tabledir: "./tables"
+---
+
+```{r echo = FALSE, warning=FALSE, message=FALSE}
+## https://bookdown.org/yihui/rmarkdown-cookbook/source-script.html
+source("analysis.R", local = knitr::knit_global())
+MacGen <- LatexMacroGenerator$new(params$macrodir)
+```
+
+## Table Structure
+
+
+```{r, eval = TRUE}
+LOCK_UNLOCK_RAW <-
+    call_stack %>%
+    filter(fun_name %in% c("lockEnvironment", "lockBinding", "unlockBinding"))
+    
+str(LOCK_UNLOCK_RAW)
+```
+
+
+## Summary
+
+```{r, eval = TRUE}
+LOCK_UNLOCK_SUMMARY <-
+    LOCK_UNLOCK_RAW %>% 
+    count(fun_name, wt = count, name = "count") %>%
+    arrange(desc(count))
+```
+
+## lockEnvironment
+
+
+### Raw
+
+```{r, eval = TRUE}
+LOCK_ENV_TABLE <-
+    LOCK_UNLOCK_RAW %>%
+    filter(fun_name == "lockEnvironment") %>%
+    mutate(source = paste0(package, "*$#$*", type, "/", filename)) %>%
+    mutate(qual_name_2 = case_when(str_starts(qual_name_2, fixed("base*$#$*loadNamespace*$#$*")) & qual_name_2 != "base*$#$*loadNamespace*$#$*sealNamespace" ~ "base*$#$*loadNamespace*$#$*sealNamespace",
+                                   qual_name_2 == "<NA>*$#$*2ae04899b56d2a4922d9088b16dca9f5493c3ceb37dabbfb0d6625d23af95e73e9e212ac86b83f1445eacfdbd3fa81b3a661bb7f3c5da3fa04debfa085395681" ~ "R6*$#$*clone_method",
+                                   qual_name_2 == "<NA>*$#$*new" ~ "R6*$#$*new",
+                                   TRUE ~ qual_name_2)) %>%
+    mutate(pack_name = map_chr(str_split(qual_name_2, fixed("*$#$*")), ~.[1])) %>%
+    mutate(arg_env_pack_name = map_chr(str_split(arg_env_qual_name_1, fixed("*$#$*")), ~.[1])) %>%
+    mutate(category = case_when(str_detect(qual_name_2, fixed("/")) ~ "Top-Level",
+                                pack_name %in% CORE_PACKAGES ~ "Core",
+                                TRUE ~ "User")) %>%
+    count(fun_name, source, call_expr, category, pack_name, qual_name_2, qual_name_3, qual_name_4, arg_env_pack_name, arg_env_qual_name = arg_env_qual_name_1, wt = count, name = "calls") %>%
+    arrange(desc(calls))
+    
+datatable(LOCK_ENV_TABLE)
+```
+
+## Summary
+
+```{r, eval = TRUE}
+LOCK_ENV_SUMMARY <-
+    LOCK_ENV_TABLE %>%
+    group_by(fun_name, category) %>%
+    summarize(calls = sum(calls),
+              packages = length(unique(pack_name)),
+              functions = length(unique(qual_name_2)),
+              pack_names = paste(unique(pack_name), collapse = ", "),
+              fun_names = paste(unique(qual_name_2), collapse = ", ")) %>%
+    ungroup() %>%
+    mutate(call_perc = round(100* calls / sum(calls), 2)) %>%
+    arrange(desc(calls))
+
+datatable(LOCK_ENV_SUMMARY)
+
+
+
+
+LockEnvironmentRlangCallCount <- 
+LOCK_ENV_TABLE %>%
+filter(pack_name == "rlang") %>%
+pull(calls) %>%
+sum() %>%
+print()
+
+MacGen$from_vectors("LockEnvironmentRlangCallCount", LockEnvironmentRlangCallCount)
+```
+
+## lockBinding
+
+
+### Raw
+
+```{r, eval = TRUE}
+LOCK_BINDING_TABLE <-
+    LOCK_UNLOCK_RAW %>%
+    filter(fun_name == "lockBinding") %>%
+    mutate(source = paste0(package, "*$#$*", type, "/", filename)) %>%
+    mutate(qual_name_2 = case_when(str_starts(qual_name_2, fixed("methods*$#$*")) & !(qual_name_2 %in% c("methods*$#$*.assignOverBinding", "methods*$#$*.setDummyField")) ~ "methods*$#$*.initForEnvRefClass",
+                                   qual_name_2 == "<NA>*$#$*2ae04899b56d2a4922d9088b16dca9f5493c3ceb37dabbfb0d6625d23af95e73e9e212ac86b83f1445eacfdbd3fa81b3a661bb7f3c5da3fa04debfa085395681*$#$*copy_slice"~ "R6*$#$*generator_funs*$#$*clone_method",
+                                   qual_name_2 == "<NA>*$#$*new" ~ "R6*$#$*new",
+                                   qual_name_2 == "base*$#$*lapply" ~ "rlang*$#$*env_binding_lock",
+                                   TRUE ~ qual_name_2)) %>%
+    mutate(pack_name = map_chr(str_split(qual_name_2, fixed("*$#$*")), ~.[1])) %>%
+    mutate(arg_env_pack_name = map_chr(str_split(arg_env_qual_name_1, fixed("*$#$*")), ~.[1])) %>%
+    mutate(category = case_when(str_detect(qual_name_2, fixed("/")) ~ "Top-Level",
+                                pack_name %in% CORE_PACKAGES ~ "Core",
+                                TRUE ~ "User")) %>%
+    count(fun_name, source, call_expr, category, pack_name, qual_name_2, qual_name_3, qual_name_4, arg_env_pack_name, arg_env_qual_name = arg_env_qual_name_1, wt = count, name = "calls") %>%
+    arrange(desc(calls))
+    
+datatable(LOCK_BINDING_TABLE)
+```
+
+## Summary
+
+```{r, eval = TRUE}
+LOCK_BINDING_SUMMARY <-
+    LOCK_BINDING_TABLE %>%
+    group_by(fun_name, category) %>%
+    summarize(calls = sum(calls),
+              packages = length(unique(pack_name)),
+              functions = length(unique(qual_name_2)),
+              pack_names = paste(unique(pack_name), collapse = ", "),
+              fun_names = paste(unique(qual_name_2), collapse = ", ")) %>%
+    ungroup() %>%
+    mutate(call_perc = round(100* calls / sum(calls), 2)) %>%
+    arrange(desc(calls))
+
+datatable(LOCK_BINDING_SUMMARY)
+
+LockBindingRSixCallCount <- 
+LOCK_BINDING_TABLE %>%
+filter(pack_name == "R6") %>%
+pull(calls) %>%
+sum() %>%
+print()
+
+MacGen$from_vectors("LockBindingRSixCallPerc",
+                     latex_sanitize(label_percent()(LockBindingRSixCallCount / sum(LOCK_BINDING_SUMMARY$calls))))
+```
+
+## unlockBinding
+
+
+### Raw
+
+```{r, eval = TRUE}
+UNLOCK_BINDING_TABLE <-
+    LOCK_UNLOCK_RAW %>%
+    filter(fun_name == "unlockBinding") %>%
+    mutate(source = paste0(package, "*$#$*", type, "/", filename)) %>%
+    mutate(qual_name_2 = case_when(qual_name_2 == "base*$#$*lapply" ~ "rlang*$#$*env_binding_unlock",
+                                   qual_name_2 == "base*$#$*eval" ~ qual_name_3,
+                                   TRUE ~ qual_name_2)) %>%
+    mutate(pack_name = map_chr(str_split(qual_name_2, fixed("*$#$*")), ~.[1])) %>%
+    mutate(arg_env_pack_name = map_chr(str_split(arg_env_qual_name_1, fixed("*$#$*")), ~.[1])) %>%
+    mutate(category = case_when(str_detect(qual_name_2, fixed("/")) ~ "Top-Level",
+                                pack_name %in% CORE_PACKAGES ~ "Core",
+                                TRUE ~ "User")) %>%
+    count(fun_name, source, call_expr, category, pack_name, qual_name_2, qual_name_3, qual_name_4, arg_env_pack_name, arg_env_qual_name = arg_env_qual_name_1, wt = count, name = "calls") %>%
+    arrange(desc(calls))
+    
+datatable(UNLOCK_BINDING_TABLE)
+```
+
+## Summary
+
+```{r, eval = TRUE}
+UNLOCK_BINDING_SUMMARY <-
+    UNLOCK_BINDING_TABLE %>%
+    group_by(fun_name, category) %>%
+    summarize(calls = sum(calls),
+              packages = length(unique(pack_name)),
+              functions = length(unique(qual_name_2)),
+              pack_names = paste(unique(pack_name), collapse = ", "),
+              fun_names = paste(unique(qual_name_2), collapse = ", ")) %>%
+    ungroup() %>%
+    mutate(call_perc = round(100* calls / sum(calls), 2)) %>%
+    arrange(desc(calls))
+
+datatable(UNLOCK_BINDING_SUMMARY)
+```
+
+## Results
+
+### Combined Table
+
+```{r, eval = TRUE}
+ALL_SUMMARY <- 
+    bind_rows(LOCK_ENV_SUMMARY, LOCK_BINDING_SUMMARY, UNLOCK_BINDING_SUMMARY) %>%
+    summarize(fun_name, category, packages, functions, calls, call_perc) %>%
+    arrange(fun_name, category) %>%
+    rename(PackCnt = packages, FunCnt = functions, CallCnt = calls, CallPerc = call_perc) %>%
+    mutate(CallCnt = label_number_si(accuracy = 0.1)(CallCnt),
+           CallPerc = latex_sanitize(label_percent()(CallPerc / 100)))
+    
+    
+capitalize_first <- function(x) {
+  substr(x, 1, 1) <- toupper(substr(x, 1, 1))
+  x
+}
+
+datatable(ALL_SUMMARY)
+
+prefix <- str_to_title(ALL_SUMMARY$fun_name)
+MacGen$from_df(ALL_SUMMARY,
+               PackCnt,
+               FunCnt,
+               CallCnt,
+               CallPerc,
+               prefix = paste0(capitalize_first(ALL_SUMMARY$fun_name), ALL_SUMMARY$category))
+```

@@ -8,14 +8,16 @@ library(scales)
 library(tikzDevice)
 library(viridis)
 library(RColorBrewer)
+library(experimentr)
 
+new_theme <- publication_theme(type = "acmart",
+                               plot.margin = margin(0.1,0.25,0.1,0.2, "cm"))
 
-new_theme <-
-    theme_minimal(base_size = 8) +
-    theme(plot.margin = margin(0.1,0.25,0.1,0.2, "cm"))
-          #axis.text.x = element_text(family = "LinuxLibertineT-TLF"),
-          #axis.text.y = element_text(family = "LinuxLibertineT-TLF"))
-          #plot.background = element_rect(colour = "black", fill=NA, size=1))
+    #theme_minimal(base_size = 8) +
+    #theme(plot.margin = margin(0.1,0.25,0.1,0.2, "cm"))
+    #      axis.text.x = element_text(family = "LinuxLibertineT-TLF"),
+    #      axis.text.y = element_text(family = "LinuxLibertineT-TLF"))
+    #      plot.background = element_rect(colour = "black", fill=NA, size=1))
 
 old_theme <- theme_set(new_theme)
 
@@ -107,6 +109,8 @@ read_lazy(native_env_third, "native_env_third.fst")
 read_lazy(new_env, "new_env.fst")
 read_lazy(call_event_seq, "call_event_seq.fst")
 read_lazy(call_stack, "call_stack.fst")
+read_lazy(side_effects, "side_effects.fst")
+read_lazy(api_calls, "api_calls.fst")
 
 sloc_script %<>%
     mutate(package2 = type) %>%
@@ -116,6 +120,25 @@ sloc_script %<>%
 native_env <- bind_rows(native_env_first,
                         native_env_second,
                         native_env_third)
+
+CORE_PACKAGES <- c("base",
+                   "compiler",
+                   "datasets",
+                   "grDevices",
+                   "graphics",
+                   "grid",
+                   "methods",
+                   "parallel",
+                   "profile",
+                   "splines",
+                   "stats",
+                   "stats4",
+                   "tcltk",
+                   "tools",
+                   "translations",
+                   "utils")
+
+table_path <- function(filename) path(params$tabledir, filename)
 
 # read_lazy <-
 #     arg_ref %>%

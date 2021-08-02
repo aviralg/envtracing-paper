@@ -22,13 +22,11 @@ params:
 ```{r echo = FALSE, warning=FALSE, message=FALSE}
 ## https://bookdown.org/yihui/rmarkdown-cookbook/source-script.html
 source("analysis.R", local = knitr::knit_global())
-
+MacGen <- LatexMacroGenerator$new(params$macrodir)
 
 PACKAGE_INFO <-
     package_info %>%
-    group_by(package, funname) %>%
-    summarize(param_count = n()) %>%
-    ungroup() %>%
+    select(package, funname, param_count = arity) %>%
     mutate(funname = paste0("`", funname, "`"))
 ```
 
@@ -222,7 +220,7 @@ call_dist_plot <-
     coord_flip()+
     labs(x = "Calls", y = "Functions")
 
-save_graph(call_dist_plot, "call_dist")
+save_as_tikz(call_dist_plot, "call_dist")
 ```
 
 # Parameters
@@ -275,5 +273,5 @@ param_dist_plot <-
     coord_flip()+
     labs(x = "Parameters", y = "Functions")
 
-save_graph(param_dist_plot, "param_dist")
+save_as_tikz(param_dist_plot, "param_dist")
 ```

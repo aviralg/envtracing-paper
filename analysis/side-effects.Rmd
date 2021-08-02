@@ -1,0 +1,88 @@
+---
+title: "Call Stack"
+output:
+    html_document:
+        toc: true
+        toc_depth: 3
+        toc_float: true
+        number_sections: true
+        theme: cerulean
+        highlight: pygments
+        code_folding: hide
+        fig_width: 9
+        fig_height: 3
+        css: style.css
+params:
+    datadir: "./data"
+    graphdir: "./graphs"
+    macrodir: "./macros"
+    tabledir: "./tables"
+---
+
+```{r echo = FALSE, warning=FALSE, message=FALSE}
+## https://bookdown.org/yihui/rmarkdown-cookbook/source-script.html
+source("analysis.R", local = knitr::knit_global())
+```
+
+## Table Structure
+
+
+```{r, eval = TRUE}
+str(side_effects)
+```
+
+
+# All functions
+
+```{r, eval = TRUE}
+side_effects %>% 
+count(fun_name, wt = count, name = "count") %>%
+arrange(desc(count))
+```
+
+# get
+
+## Raw
+
+```{r, eval = TRUE}
+GET_TABLE <-
+    side_effects %>%
+    filter(fun_name == "get") %>%
+    filter(!is.na(se_env_qual_name) & !str_starts(se_env_qual_name, fixed("NamedEnv"))) %>%
+    mutate(aliased = qual_name_1 != "base*$#$*get") %>%
+    mutate(source = paste0(package, "*$#$*", type, "/", filename)) %>%
+    mutate(qual_name_2 = case_when(TRUE ~ qual_name_2)) %>%
+    mutate(pack_name = map_chr(str_split(qual_name_2, fixed("*$#$*")), ~.[1])) %>%
+    mutate(se_pack_name = map_chr(str_split(se_env_qual_name, fixed("*$#$*")), ~.[1])) %>%
+    mutate(category = case_when(str_detect(qual_name_2, fixed("/")) ~ "Top-Level",
+                                pack_name %in% CORE_PACKAGES ~ "Core",
+                                TRUE ~ "User")) %>%
+    count(fun_name, source, call_expr, aliased, category, pack_name, qual_name_2, se_pack_name, se_env_qual_name, wt = count, name = "calls") %>%
+    arrange(desc(calls))
+```
+
+## Summary
+
+```{r, eval = TRUE}
+GET_TABLE %>%
+    mutate(same_package = pack_name == se_pack_name) %>%
+    group_by(category, same_package) %>%
+    summarize(calls = sum(calls)) %>%
+    ungroup() %>%
+    mutate(call_perc = round(100 * calls / sum(calls), 2)) %>%
+    datatable()
+
+GET_SUMMARY <-
+    GET_TABLE %>%
+    group_by(fun_name, aliased, category) %>%
+    summarize(calls = sum(calls),
+              packages = length(unique(pack_name)),
+              functions = length(unique(qual_name_2)),
+              pack_names = paste(unique(pack_name), collapse = ", "),
+              fun_names = paste(unique(qual_name_2), collapse = ", ")) %>%
+    ungroup() %>%
+    mutate(call_perc = round(100* calls / sum(calls), 2)) %>%
+    arrange(desc(calls))
+
+datatable(GET_SUMMARY)
+```
