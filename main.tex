@@ -893,13 +893,13 @@ explain 98\% of non-trivial call environments.
   \c{ee}. The code is extracted using \c{substitute}.
 
 \item[{\bf X,A}:] The environments are obtained as value and then used for
-  accessing their bindings. For instance, \c{registerS3methods::assignWrapped}
+  accessing their bindings. For instance, \c{registerS3\-methods::assignWrapped}
   uses \c{parent.frame} to get the caller environment and then evaluates a
   promise in that environment. Similarly, \c{withr::set_envvar} calls
   \c{match.arg} which also uses the parent environment. The \c{match.arg}
   function matches the argument text against a specified list of choices,
   provided as an argument. A last example is \c{rlang::env_get} which looks up
-  the parent environment extracted with \c{parent.frame}.
+  the parent environment extracted with \c{parent.fr\-ame}.
 
 \item[{\bf X,V,A}:] These environments are obtained for the purpose of
   evaluating code in them. The use of \c{glue::glue} by \c{waldo::path_attr} is
