@@ -1027,43 +1027,41 @@ sets. We observe three new events.
   \end{tabular}
 \end{table}
 
-\noindent
-\textbf{A:} This is the most common pattern, and it occurs in many different
+\begin{itemize}
+\item[{\bf A}:]
+  This is the most common pattern, and it occurs in many different
 functions' environments. The most common example is the \c{methods::new}
 function that is used for creating S4 objects. Another example is the
 \c{grid} package that uses explicit environments to create viewport objects
 and keys child viewports by name. The \c{parallel::addClusterOptions} function
 uses an environment to store options such as port number, timeout, and R path
 for the cluster used for parallel execution.
-
-\noindent
-\textbf{A, V:} This pattern represents environments created by the
+\item[{\bf A,V}:]
+This pattern represents environments created by the
 \c{base::eval} and \c{base::evalq} functions. The default behavior of
 these functions is to evaluate an expression in the supplied environment.
 However, in these cases, a list of named elements is supplied instead of an
 environment, which is internally converted into an environment for evaluation.
-
-\noindent
-\textbf{S:} This pattern comes from the \c{base::substitute} function. This
+\item[{\bf S}:]
+This pattern comes from the \c{base::substitute} function. This
 function is used for substituting symbols with expressions in ASTs. The
 substitutions are usually read from an environment. However, in these cases,
 lists are supplied instead; which are internally converted into environments.
-
-\noindent
-\textbf{A, Z, !:} This pattern comes from the methods package's
+\item[{\bf A,Z,!}:]
+This pattern comes from the methods package's
 \c{makeGeneric} function. In the process of converting a function definition
 to a generic function, it creates a new environment, assigns the field
 \c{".Generic"} to the name of the generic method, sets its parent as the
 lexical scope of the function (\texttt{Z}), and finally, sets the new
 environment as the lexical scope of the function (\texttt{!}).
-
-\noindent
-\textbf{A, L, !:} These events happen in S4 objects. Their underlying data store
+\item[{\bf A,L,!}:]
+These events happen in S4 objects. Their underlying data store
 consists of an environment with a reference to the object. This binding is
 locked to prevent modification.
+\end{itemize}
 
-Overall, 168.6K environments are passed to eval and only 100 were used for
-formula construction.
+Overall, 168K environments are passed to eval and only 100 were used for formula
+construction.
 
 Explicit environments in the \emph{Core} category are used for code evaluation,
 substitution, and in the S4 object system. We find that these environments
@@ -1140,8 +1138,7 @@ Table~\ref{table:user_explicit_env_seq} shows the top 7 of the 82 event sets,
 which characterize 96.5\% of these environments. We observe a new event,
 \texttt{@}, used for setting the class attributes.
 
-\begin{table}[!h]
-  \small
+\begin{table}[!h]\small
   \caption{User Explicit Environment Events} \label{table:user_explicit_env_seq}
   \centering
   \begin{tabular}{lrr}
@@ -1159,8 +1156,9 @@ which characterize 96.5\% of these environments. We observe a new event,
   \end{tabular}
 \end{table}
 
-\noindent
-\textbf{A, V:} This set accounts for the majority of environments. It is
+\begin{itemize}
+  \item[{\bf A,V}:]
+This set accounts for the majority of environments. It is
 observed in 36 packages. These environments are created for custom evaluation
 strategies, \ie, for evaluating expressions with custom bindings in the scope.
 The \c{testthat} testing library uses custom environment for evaluating
@@ -1172,9 +1170,8 @@ provides support for evaluating ``quosures'', that are bundles of code and
 environment. The \c{rlang} package creates three environments in native code
 for use by its functions for evaluating expressions in the context of a data
 frame.
-
-\noindent
-\textbf{A:} This pattern represents environments that are used as hash tables
+\item[{\bf A}:]
+This pattern represents environments that are used as hash tables
 and mutable state for packages. The \c{codetools} package provides facilities
 for analysis of R code. Its \c{codetools::mkHash} function creates an
 environment for use as a hash table to store intermediate static analysis
@@ -1183,8 +1180,8 @@ for handling system processes. It uses an explicit environment for storing
 package state such as error codes and socket types. The \c{iterators} package
 uses environments as dynamic state of iterator objects.
 
-\noindent
-\textbf{A, !:} This pattern represents environments that are set as parents of
+\item[{\bf A,!}:]
+This pattern represents environments that are set as parents of
 other environments or functions. This is dominated by \c{R.oo} and \c{R6}
 packages that implement object-oriented systems. They create new environments
 and set them as lexical scopes of object methods. Another example is the
@@ -1194,8 +1191,8 @@ environment, assigns a marker, and sets it as the lexical scope of the function
 which uses the marker to decide whether to execute the code in parallel or
 sequentially.
 
-\noindent
-\textbf{A, @:} This pattern is used by packages to create custom objects, which
+\item[{\bf A@}:]
+This pattern is used by packages to create custom objects, which
 can be used for dispatch based on the class attribute of the environments.
 \c{ggplot2} library implements \c{ggproto}, a prototype based
 object-oriented system. The \c{ggproto} objects are explicit environments
@@ -1204,28 +1201,28 @@ environment to store a tree of nodes and assigns it a class attribute. The
 \c{xts} package creates a plot environment with plotting configuration and
 sets a class attribute on it.
 
-\noindent
-\textbf{A, L:} This pattern shows up in the R6 package during object
+\item[{\bf A,L}:]
+ This pattern shows up in the R6 package during object
 instantiation. The private method bindings are locked in the object environment
 to prevent any modification. Many calls to \c{lockBinding} also originate
 form \c{data.table} which uses a custom environment to store intermediate
 state for implementing data frame indexing.
 
-\noindent
-\textbf{A, L, @:} These events occur on environments from the \c{later} and
-\c{R6} packages . The \c{later} package uses environments as handles for
-event loop objects. These objects contain the unique loop identifier, which is
-locked to prevent modification. The environments are then assigned the class
-attribute, \c{"event_loop"}.
+\item[{\bf A,L,@}:] These events occur on environments from the \c{later} and
+  \c{R6} packages . The \c{later} package uses environments as handles for event
+  loop objects. These objects contain the unique loop identifier, which is
+  locked to prevent modification. The environments are then assigned the class
+  attribute, \c{"event_loop"}.
 
-\noindent
-\textbf{A, @, !:} This event pattern shows up on the environments from the
+\item[{\bf A,@,!}:]
+This event pattern shows up on the environments from the
 \c{plyr} package. This package creates environments with attribute
 \c{"idf"} for representing immutable data frames. It also assigns getter
 functions to these environments to access the columns of the data frame, and
 sets their lexical scope to be the environment itself. The same pattern occurs
 in \c{R6} when an environment representing a superclass object is set as the
 parent environment of a subclass object environment.
+\end{itemize}
 
 Only 597 of the environments in this category were used for formula
 construction. Out of these, 389 were created by the code being tested by
@@ -1723,15 +1720,12 @@ environment could be implemented in a straightforward manner, there are
 sufficient number of cases where environments escape and are used in a
 reflective manner that it is not clear such optimizations can be widely applied.
 
-We also expect the results of this study to further guide the development of
-CoqR\cite{bodin18}, a big-step operational semantics of R, written in the Coq
-proof assistant.
+%% We also expect the results of this study to further guide the development of
+%% CoqR\cite{bodin18}, a big-step operational semantics of R, written in the Coq
+%% proof assistant.
+%% --- no we don't
 
-In our future work, we plan to dig deeper into the data we have gathered and
-identify particular patterns of usage that can be used by a compiler to predict
-whether an environment will require full generality or if a more restricted
-semantics could be applicable. As of this writing we do not know if this will
-yield results.
+\paragraph{Acknowledgments} GRANTS
 
 \bibliography{bib/jv,bib/aviral}
 
