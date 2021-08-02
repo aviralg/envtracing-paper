@@ -241,22 +241,34 @@ possibly, be a step towards a re-design or a warning for compiler writers.
 
 \section{Related Work}
 
-While the Scheme Standard specifies that the \code{eval} function takes an
+Imperative languages like C or Fortran have tried to have efficient
+implementations of environments, typically variables are encoded by offsets from
+a stack pointer and symbolic references are only allowed during debugging of
+non-optimized code. Statically typed functional languages have first-class
+functions and thus must allocate environments on the heap, but they usually
+retain the variable-as-offset implementation technique.
+
+More dynamic languages must retain more information at run-time. For example, to
+support dynamic code generation through the \c{eval} function, it is necessary
+to retain the mapping between symbols and locations. When the language allows to
+programmatically add and remove variables, most hope for an efficient
+compilation strategy dies.  Different languages make various choices....
+
+The Scheme Standard specifies that the \code{eval} function takes an
 environment-specifier, this need not be a first-class
 environment~\cite{SchemeR5RS}. The effect of assignment to variables in this
 environment is unspecified, leaving open the possibility of it being immutable.
-Scheme supports first-class environments and, as a consequence, its
-\code{eval} takes an explicit environment. It provides functions to create new
-environments, read and write bindings, examine parent environments, and obtain
-the current environment as a reified value. Python provides the \code{locals}
-function that returns the local bindings as a dictionary, attached to the
-current frame as an attribute. Updates to this dictionary are not reflected in
-the function's scope. Caller's bindings can be accessed from their frame
-obtained by calling \code{inspect.stack}. Calling \code{locals} outside of a
-function returns the namespace as a dictionary at the point and changes to this
-dictionary are reflected in the namespace. Python's \code{globals} returns a
-dictionary of the global namespace whose updates are also reflected in the
-namespace.
+Scheme supports first-class environments and, as a consequence, its \code{eval}
+takes an explicit environment. It provides functions to create new environments,
+read and write bindings, examine parent environments, and obtain the current
+environment as a reified value. Python provides the \code{locals} function that
+returns the local bindings as a dictionary, attached to the current frame as an
+attribute. Updates to this dictionary are not reflected in the function's scope.
+Caller's bindings can be accessed from their frame obtained by calling
+\code{inspect.stack}. Calling \code{locals} outside of a function returns the
+namespace as a dictionary at the point and changes to this dictionary are
+reflected in the namespace. Python's \code{globals} returns a dictionary of the
+global namespace whose updates are also reflected in the namespace.
 
 \citet{NishizakiSTLC94} introduced a simply typed lambda calculus with
 first-class environments, proved that it is strongly normalizing, and proposed a
@@ -282,20 +294,7 @@ observing the type of argument and return values. Their type language includes a
 type for first-class environments.
 
 
-\section{Environments in the R Language}
-
-The evolution of R has been gradual, rather than offering clearly delineated
-abstractions, the language designer opened up the internals of the interpreter
-for all to see, and packaged some commonly needed functionality into functions
-bundled with the core of the language. Thus, the task of describing the
-``interface'' of environments as seen by developers and end-users involves quite
-a lot of sleuthing. As we prepared this paper, we kept discovering new functions
-that accessed environments from native code. This section is not meant to be an
-exhaustive description, but it gives an overview of the most commonly used
-functions that manipulate environments.
-
-%R is a dynamic language with first-class, lexically scoped, functions.
-\subsection{The R language}
+\section{The R language}
 
 A presentation of the language requires introducing some key concepts. We will
 be brief, interested readers should consult~\cite{AdvancedR}.
@@ -335,13 +334,26 @@ Setting the \code{dim} attribute causes the vector to be subsequently treated as
 a 2$\times$2 matrix. Similarly, the class attribute is used for method dispatch
 in an object-oriented style.
 
-\paragraph{Formulas}  A formula is a compact symbolic
-representation of models used by statistical functions. For example, the linear
-model \code{y~x-1} specifies a line through the origin. Each formula contains a
-reference to the environment in which it is defined to refer to the variables,
-if they are not otherwise provided during model fitting.
+\paragraph{Formulas}  A formula is a compact symbolic representation of models
+used by statistical functions. For example, the linear model \code{y~x-1}
+specifies a line through the origin. Each formula contains a reference to the
+environment in which it is defined to refer to the variables, if they are not
+otherwise provided during model fitting.
 
-\paragraph{Environments}
+
+
+\section{Environments in R}
+
+The evolution of R has been gradual, rather than offering clearly delineated
+abstractions, the language designer opened up the internals of the interpreter
+for all to see, and packaged some commonly needed functionality into functions
+bundled with the core of the language. Thus, the task of describing the
+``interface'' of environments as seen by developers and end-users involves quite
+a lot of sleuthing. As we prepared this paper, we kept discovering new functions
+that accessed environments from native code. This section is not meant to be an
+exhaustive description, but it gives an overview of the most commonly used
+functions that manipulate environments.
+
 Environments bind names to values, implemented by an association list or a
 hashmap, chosen at construction. Each environment also has a parent, forming an
 acyclic chain terminated by the empty environment. That environment is returned
