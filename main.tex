@@ -252,14 +252,16 @@ More dynamic languages must retain more information at run-time. For example, to
 support dynamic code generation through the \c{eval} function, it is necessary
 to retain the mapping between symbols and locations. When the language allows to
 programmatically add and remove variables, most hope for an efficient
-compilation strategy dies. Different languages make various choices. The Scheme
-Standard specifies that \code{eval} takes an environment-specifier, which needs
-not be a first-class environment~\cite{SchemeR5RS}. The effect of assignment to
-variables in this environment is unspecified, leaving open the possibility of it
-being immutable. Scheme supports first-class environments and, as a consequence,
-its \code{eval} takes an explicit environment. It provides functions to create
-new environments, read and write bindings, examine parent environments, and
-obtain the current environment as a reified value. Python provides the
+compilation strategy dies. Different languages make various choices. We compare
+the design of Scheme and Python in this regard. The Scheme Standard specifies
+that \code{eval} takes an environment-specifier, which needs not be a
+first-class environment~\cite{SchemeR5RS}. The effect of assignment to variables
+in this environment is unspecified, leaving open the possibility of it being
+immutable. MIT/GNU Scheme however supports first-class environments and, as a
+consequence, its \code{eval} takes an explicit environment. It provides
+functions to create new environments, read and write bindings, examine parent
+environments, and obtain the current environment as a reified value. Unlike R,
+it does not provide access to caller environments. Python provides the
 \code{locals} function that returns the local bindings as a dictionary, attached
 to the current frame as an attribute. Updates to this dictionary are not
 reflected in the function's scope. Caller's bindings can be accessed from their
@@ -267,24 +269,17 @@ frame obtained by calling \code{inspect.stack}. Calling \code{locals} outside of
 a function returns the namespace as a dictionary at the point and changes to
 this dictionary are reflected in the namespace. Python's \code{globals} returns
 a dictionary of the global namespace whose updates are also reflected in the
-namespace~\cite{}.
+namespace~\cite{}. Neither MIT/GNU Scheme, nor Python, support as rich an
+interface as R's for accessing and manipulating environments.
 
-\citet{NishizakiSTLC94} introduced a simply typed lambda calculus with
-first-class environments, proved that it is strongly normalizing, and proposed a
-type inference algorithm. \citet{NishizakiML94} proposed a sound type inference
-algorithm for a type system with ML-polymorphism in a $\lambda$-calculus with
-first-class environments. Their language has \c{the-environment} function for
-reifying the current environment and \c{eval} for evaluating an expression in an
-environment.
-
-R provides allows modification of enclosing scope of closures. This is related
-to the idea of \c{map-closure} introduced by \citet{Siskind07}. \c{map-closure}
-is a non-referentially-transparent construct that can can be used to examine the
-contents of a closure environment and to construct a new closure with a modified
-environment. By design, this construct does not expose the implementation
-details of environments to the user. Unlike R's environment APIs \c{map-closure}
-does not allow the addition, removal, or renaming of variables and changing the
-lexical scoping of variables at run time.
+R allows modification of enclosing scope of closures. This is similar to the
+idea of \c{map-closure} introduced by \citet{Siskind07}. The \c{map-closure}
+construct can be used to construct a new closure with a modified environment. By
+design, this construct does not expose the implementation details of
+environments to the user. Unlike R's environment APIs, \c{map-closure} does not
+allow the addition, removal, or renaming of variables and changing the lexical
+scoping of variables at run time. This makes it less intrusive compared to R's
+APIs.
 
 \citet{ecoop12} discussed the design of R, providing a comprehensive explanation
 of R's scoping and evaluation mechanism. They present many aspects of
