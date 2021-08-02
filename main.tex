@@ -411,6 +411,61 @@ of a function with \code{environment(f)<-e}.
 ???? Lots of stuff, what does it mean??????
 
 
+\begin{figure*}[t!]
+ \centering
+ \begin{tikzpicture}
+  \definecolor{maroon}{HTML}{D5A6BD}
+  \definecolor{darkmaroon}{HTML}{741B47}
+  \definecolor{yellow}{HTML}{FFF2CC}
+  \definecolor{darkyellow}{HTML}{D6B656}
+  \definecolor{blue}{HTML}{DAE8FC}
+  \definecolor{darkblue}{HTML}{6C8EBF}
+  \definecolor{green}{HTML}{D5E8D4}
+  \definecolor{darkgreen}{HTML}{82B366}
+  \definecolor{orange}{HTML}{FFE6CC}
+  \definecolor{darkorange}{HTML}{D79B00}
+  \definecolor{red}{HTML}{F8CECC}
+  \definecolor{darkred}{HTML}{B85450}
+  \definecolor{purple}{HTML}{E1D5E7}
+  \definecolor{darkpurple}{HTML}{9673A6}
+  \definecolor{gray}{HTML}{F5F5F5}
+  \newcommand{\nodesep}[0]{0.030 \textwidth}
+  \newcommand{\textsep}[0]{0.010 \textwidth}
+  \newcommand{\backopacity}[0]{0.9}
+  \newcommand{\nodename}[1]{\large \begin{tabular}{c}#1\end{tabular}}
+  \newcommand{\nodedesc}[1]{\small \begin{tabular}{c}#1\end{tabular}}
+  \tikzstyle{block}     = [rectangle, rounded corners, minimum width=.08 \textwidth, minimum height=35pt]
+  \tikzstyle{connector} = [line width=0.25mm, ->]
+  \node [block, draw = darkmaroon, very thick, fill = maroon]                                (install)   {\nodename{Setup\\CRAN}};
+  \node [block, draw = darkyellow, very thick, fill = yellow, right = \nodesep of install  ] (extract)   {\nodename{Extract\\Programs}};
+  \node [block, draw = darkblue,   very thick, fill = blue  , right = \nodesep of extract  ] (trace)     {\nodename{Trace}};
+  \node [block, draw = darkgreen,  very thick, fill = green , right = \nodesep of trace    ] (reduce)    {\nodename{Reduce}};
+  \node [block, draw = darkorange, very thick, fill = orange, right = \nodesep of reduce   ] (combine)   {\nodename{Combine}};
+  \node [block, draw = darkred,    very thick, fill = red   , right = \nodesep of combine  ] (summarize) {\nodename{Summarize}};
+  \node [block, draw = darkpurple, very thick, fill = purple, right = \nodesep of summarize] (report)    {\nodename{Report}};
+  \draw [connector] (install)   edge (extract);
+  \draw [connector] (extract)   edge (trace);
+  \draw [connector] (trace)     edge (reduce);
+  \draw [connector] (reduce)    edge (combine);
+  \draw [connector] (combine)   edge (summarize);
+  \draw [connector] (summarize) edge (report);
+  \node [below = \textsep of install]   (installdesc)   {\nodedesc{10 Hours\\17.1 K Packages\\83 GB}};
+  \node [below = \textsep of extract]   (extractdesc)   {\nodedesc{5 Minutes\\100 Packages\\6.7 K Files}};
+  \node [below = \textsep of trace]     (tracedesc)     {\nodedesc{8 Hours\\72.5 K Files\\732 GB}};
+  \node [below = \textsep of reduce]    (reducedesc)    {\nodedesc{2.5 Hours\\57.4 K Files\\482 GB}};
+  \node [below = \textsep of combine]   (combinedesc)   {\nodedesc{14 Minutes\\13 Files\\25 GB}};
+  \node [below = \textsep of summarize] (summarizedesc) {\nodedesc{28 Minutes\\17 Files\\1.5 GB}};
+  \node [below = \textsep of report]    (reportdesc)    {\nodedesc{5 Minutes\\7 Reports}};
+    \begin{scope}[on background layer]
+    \node[fit=(install) (extract), rectangle, rounded corners, fill=gray, fill opacity=\backopacity, label=above:\textbf{Corpus}]          (corpus) {};
+    \node[fit=(trace),             rectangle, rounded corners, fill=gray, fill opacity=\backopacity, label=above:\textbf{Tracing}]         (exectrace) {};
+    \node[fit=(reduce) (report),   rectangle, rounded corners, fill=gray, fill opacity=\backopacity, label=above:\textbf{Post-processing}] (postprocessing) {};
+  \end{scope}
+ \end{tikzpicture}
+  \caption{Analysis Pipeline}\label{fig:analysisPipeline}
+\end{figure*}
+
+
 \subsection{Environments as Data Structures}
 
 Environments can be created using the \newEnv function. This function takes
@@ -476,221 +531,114 @@ function. To support metaprogramming, R provides the \substitute function. This
 function extracts the unevaluated argument text from the promise bound to the
 argument in the supplied environment.
 
-\paragraph{Discussion.}
-R provides a large API for interactive with environments and accessing scopes as
-explicit environments. Environments in R are very versatile objects. While they
-primarily serve as scopes, they can also be used as hash tables, and sandboxing
-expression evaluation. Though R is lexically scoped, ad-hoc lookup strategies
-can be implemented by accessing arbitrary caller environments. The lexical scope
-of a function can be changed, a technique often used for designing custom
-object-oriented systems.
 
-\begin{figure*}[h!]
-  \centering
-  \begin{tikzpicture}
-    \definecolor{maroon}{HTML}{D5A6BD}
-    \definecolor{darkmaroon}{HTML}{741B47}
-    \definecolor{yellow}{HTML}{FFF2CC}
-    \definecolor{darkyellow}{HTML}{D6B656}
-    \definecolor{blue}{HTML}{DAE8FC}
-    \definecolor{darkblue}{HTML}{6C8EBF}
-    \definecolor{green}{HTML}{D5E8D4}
-    \definecolor{darkgreen}{HTML}{82B366}
-    \definecolor{orange}{HTML}{FFE6CC}
-    \definecolor{darkorange}{HTML}{D79B00}
-    \definecolor{red}{HTML}{F8CECC}
-    \definecolor{darkred}{HTML}{B85450}
-    \definecolor{purple}{HTML}{E1D5E7}
-    \definecolor{darkpurple}{HTML}{9673A6}
-    \definecolor{gray}{HTML}{F5F5F5}
+\section{Infrastructure and Corpus}
 
-    \newcommand{\nodesep}[0]{0.030 \textwidth}
-    \newcommand{\textsep}[0]{0.010 \textwidth}
-    \newcommand{\backopacity}[0]{0.9}
+The experimental results reported in this paper are produced by a dynamic
+analysis infrastructure running over a large corpus of R programs. The
+infrastructure has three tasks: assembling executable programs from R packages,
+generating execution traces using a modified R interpreter, and post-processing
+the traces to generate graphs and statistics. For reproducibility, the
+infrastructure lives in a Docker container based on Debian 10.9.
+Figure~\ref{fig:analysisPipeline} summarizes the pipeline along with the
+duration of each stage and the size of returned results.
 
-    \newcommand{\nodename}[1]{\large \begin{tabular}{c}#1\end{tabular}}
-    \newcommand{\nodedesc}[1]{\small \begin{tabular}{c}#1\end{tabular}}
+\subsection{A Corpus of R Programs}
 
-    \tikzstyle{block}     = [rectangle, rounded corners, minimum width=.08 \textwidth, minimum height=35pt]
-    \tikzstyle{connector} = [line width=0.25mm, ->]
-
-    \node [block, draw = darkmaroon, very thick, fill = maroon]                                (install)   {\nodename{Setup\\CRAN}};
-    \node [block, draw = darkyellow, very thick, fill = yellow, right = \nodesep of install  ] (extract)   {\nodename{Extract\\Programs}};
-    \node [block, draw = darkblue,   very thick, fill = blue  , right = \nodesep of extract  ] (trace)     {\nodename{Trace}};
-    \node [block, draw = darkgreen,  very thick, fill = green , right = \nodesep of trace    ] (reduce)    {\nodename{Reduce}};
-    \node [block, draw = darkorange, very thick, fill = orange, right = \nodesep of reduce   ] (combine)   {\nodename{Combine}};
-    \node [block, draw = darkred,    very thick, fill = red   , right = \nodesep of combine  ] (summarize) {\nodename{Summarize}};
-    \node [block, draw = darkpurple, very thick, fill = purple, right = \nodesep of summarize] (report)    {\nodename{Report}};
-
-    \draw [connector] (install)   edge (extract);
-    \draw [connector] (extract)   edge (trace);
-    \draw [connector] (trace)     edge (reduce);
-    \draw [connector] (reduce)    edge (combine);
-    \draw [connector] (combine)   edge (summarize);
-    \draw [connector] (summarize) edge (report);
-
-    \node [below = \textsep of install]   (installdesc)   {\nodedesc{10 Hours\\17.1 K Packages\\83 GB}};
-    \node [below = \textsep of extract]   (extractdesc)   {\nodedesc{5 Minutes\\100 Packages\\6.7 K Files}};
-    \node [below = \textsep of trace]     (tracedesc)     {\nodedesc{8 Hours\\72.5 K Files\\732 GB}};
-    \node [below = \textsep of reduce]    (reducedesc)    {\nodedesc{2.5 Hours\\57.4 K Files\\482 GB}};
-    \node [below = \textsep of combine]   (combinedesc)   {\nodedesc{14 Minutes\\13 Files\\25 GB}};
-    \node [below = \textsep of summarize] (summarizedesc) {\nodedesc{28 Minutes\\17 Files\\1.5 GB}};
-    \node [below = \textsep of report]    (reportdesc)    {\nodedesc{5 Minutes\\7 Reports}};
-
-    \begin{scope}[on background layer]
-      \node[fit=(install) (extract), rectangle, rounded corners, fill=gray, fill opacity=\backopacity, label=above:\textbf{Corpus}]          (corpus) {};
-      \node[fit=(trace),             rectangle, rounded corners, fill=gray, fill opacity=\backopacity, label=above:\textbf{Tracing}]         (exectrace) {};
-      \node[fit=(reduce) (report),   rectangle, rounded corners, fill=gray, fill opacity=\backopacity, label=above:\textbf{Post-processing}] (postprocessing) {};
-    \end{scope}
-  \end{tikzpicture}
-  \caption{Analysis Pipeline}\label{fig:analysisPipeline}
-\end{figure*}
-
-\section{Analysis Infrastructure}
-
-In this section, we describe the infrastructure that will be used for dynamic
-analysis. This infrastructure has three main tasks: assembling executable
-programs from R packages, generating execution traces using an modified R
-interpreter, and post-processing the traces to generate graphs and statistics.
-The entire pipeline is managed by a Makefile that invokes R scripts for each
-step. Trace collection and analysis steps are parallelized using GNU
-Parallel~\cite{gnuparallel}. For reproducibility, the infrastructure is
-installed in a container, based on Debian 10.9, and executed on Docker.
-Figure~\ref{fig:analysisPipeline} illustrates the main stages of our pipeline
-along with their duration and results. The remainder of this section explains
-the various stages.
-
-\subsection{Assembling a Corpus}
-
-The corpus of executable programs is assembled from R packages hosted on
-CRAN~\cite{ligges2017}, the official R package repository. Our scripts mirror
-CRAN on the analysis server and install its packages. Another script invokes the
-R APIs that locate and extract examples, tests, and vignettes from these
-packages. These programs are then prepared for tracing by wrapping them in a
-call to the tracer. Another set of scripts computes metadata such as lines of
-code from the installed packages and extracted corpus.
-
-For this study, we downloaded and installed 17,133 CRAN packages\footnote{CRAN
-  snapshot was taken on 29 May 2021, 8:16 PM UTC}. From these packages, we
-assembled a corpus of the top 100 CRAN packages with highest number of client
-packages. These 100 packages together have 11,786 clients. Package \ggplot has
-the highest number of clients, 2,320, and package \vctrs has the fewest, 108.
-These packages contribute 481.5K lines of R code and 1M lines of native code.
-During execution, these 100 packages call functions from 186 other packages, so
-our evaluation also includes them. These extra packages have 478.2K lines of R
-code and 1.1M lines of native code.
+Our corpus is assembled from R packages hosted on CRAN \cite{ligges2017}, the
+official R package repository. We mirror CRAN on our server and install its
+packages. We downloaded and installed 17,133 CRAN packages.\footnote{Snapshot
+taken on 29 May 2021.} From these, we select the 100 CRAN packages with highest
+number of clients. These 100 packages together have 11,786 clients (\ggplot has
+the highest number of clients, 2,320, and package \vctrs has the fewest, 108).
+These packages contain 481K lines of R code and 1M lines of native code. During
+execution, these 100 packages call functions from 186 other packages, so our
+evaluation also includes them. These extra packages have 478K lines of R code
+and 1.1M lines of native code.
 
 CRAN packages come equipped with runnable code in the form of tests, examples,
 and long-form examples called vignettes. These programs are extracted as
-independently executable scripts for evaluation by the \experimentr library.
-Experiments demonstrate the use of a package's functions, and vignettes
-illustrate a package's functionality with a larger example, typically using data
-supplied with the package. Table~\ref{table:corpus} presents the number and size
-of these scripts. Overall, there are 6.9K scripts with 205.8K lines of code.
+independently executable scripts for evaluation by the \experimentr library. (=
+= = ADD CITE= = =) Experiments demonstrate the use of a package's functions, and
+vignettes illustrate a package's functionality with a larger example, typically
+using data supplied with the package. Overall, there are 6.9K scripts with
+205.8K lines of code, Table~\ref{table:corpus} has details.
 
-\begin{table}[!h]
-  \vspace{-3mm}
-  \small
-  \centering
+\begin{table}[!h]  \vspace{-3mm}  \small  \centering
   \caption{Corpus}\label{table:corpus}
   \vspace{-3mm}
-  \begin{tabular}{lrrr}
-    \toprule
-    &\bf Tests&\bf Examples&\bf Vignettes\\
-    \midrule
-    {Scripts}&1.9K&5.0K&187.0\\
-    \midrule
+  \begin{tabular}{lrrr}    \toprule
+    &\bf Tests&\bf Examples&\bf Vignettes\\    \midrule
+    {Scripts}&1.9K&5.0K&187.0\\    \midrule
     {LOC}&136.7K&55.2K&13.9K\\
     \bottomrule
   \end{tabular}
 \end{table}
 
-\subsection{Generating Execution Traces}
+\subsection{Dynamic Analysis of R}
 
 Execution traces are generated using \envtracer, a dynamic analyzer built on top
-of \rdyntrace. \rdyntrace is a modified GNU R virtual machine version
-4.0.2~\cite{oopsla19b} that raises events during program execution. Callbacks
-attached to these events receive relevant R objects at that point of execution.
-\envtracer uses these callbacks to collect execution information associated with
-environments. The events used by \envtracer include function entry and exit,
-eval entry and exit, object allocation and deallocation, package loading and
-attaching, variable lookup, assignment, and removal, subassignment, subsetting,
-and attribute setting. On tracing entry, \envtracer initializes the tracing
-state. When the program is about to exit \envtracer stores the traces in a
-tabular format for post-processing. While the setup is conceptually simple, the
-details are complex, and, affect scalability if not handled correctly. To handle
-the subtleties of R, \envtracer maintains models of concrete R objects, such as
-environments, functions, calls, and frames on the call stack. Model objects have
-unique identities, whereas R objects are identified by their memory address, and
-the garbage collector can reuse these. \envtracer takes care memory management
-for model objects and provides efficient indexing. \envtracer heuristically
-constructs names of model functions. The model stack updates itself
-appropriately in response to longjump used by R for non-local returns.
-Furthermore, \envtracer extends these models with custom fields which are
-updated in response to \rdyntrace events for collecting data related to this
-paper.
+of \rdyntrace. \rdyntrace modifies GNU R 4.0.2~\cite{oopsla19b} to record events
+during program execution. We use these callbacks to collect execution
+information associated with environments. The events include function entry and
+exit, eval entry and exit, object allocation and deallocation, package loading
+and attaching, variable lookup, assignment, and removal, subassignment,
+subsetting, and attribute setting. When the program exits, \envtracer stores the
+traces in a tabular format. To handle the subtleties of R, \envtracer maintains
+models of concrete R objects, such as environments, functions, calls, and frames
+on the call stack. Model objects have unique identities, whereas R objects are
+identified by their memory address, and the garbage collector can reuse these.
+\envtracer heuristically constructs names of model functions. The model stack
+updates itself appropriately in response to longjump used by R for non-local
+returns.
 
-\subsection{Post-processing}
-In the post-processing step, the execution traces are analyzed to gather
-insights about the use of environments. \envtracer gathers 681GB of data from
-the corpus. Scale is the major challenge. We use a custom map-reduce style
-analysis to process this data. First, in the \textit{reduce} phase, the
-individual execution traces are partially summarized in parallel to generate
-smaller data tables per program, per analysis. This is the most expensive step
-and it substantially reduces the data size. Second, in the \textit{combine}
-phase, these tables are concatenated into a single table per analysis. Third, in
-the \textit{summarize} phase, final summaries are computed from the concatenated
-tables. Finally, in the \textit{report} phase, graphs and tables are generated
-from these summaries using R Markdown notebooks~\cite{rmdpkg}.
+\subsection{Post-processing Traces}
 
-\section{Usage Metrics}
+The execution traces must be analyzed to gather insights. \envtracer gathers
+681GB of data, scale is thus the major challenge. We use a custom map-reduce
+analysis that first processes individual traces in parallel to generate smaller
+tables per program. This is expensive but it substantially reduces data size.
+Then the tables are concatenated into a single table per analysis. Finally
+summaries are computed from the concatenated tables. The report phase generate
+graphs and tables from these summaries.
 
-The 286 corpus packages have 44.3K top-level functions, of which, 18.7K
-functions are exercised by the extracted scripts. From the un-exercised 25.6K
-functions, the majority, 17.2K, belong to transitively included packages, and,
-8.4K belong to the initially selected 100 packages. Since the executable scripts
-are extracted from 100 packages, they don't provide good coverage for the
-transitively included 186 packages.
+\section{How Frequent are Environments?}
 
-Table~\ref{table:packsize} presents the distribution of exercised functions
-across these packages. We observe that 171 packages have 25 functions or less.
-There are few large packages; 8 packages have more than 500 functions.
+The 286 corpus packages have 44K functions, of which 18K are exercised. From the
+un-exercised 25K functions, the majority belong to transitively included
+packages for which we do not have tests, and, some 8K functions are from our
+initial target packages but were unused. Table~\ref{table:packsize} presents the
+distribution of exercised functions across these packages. We observe that 171
+packages have 25 functions or less. There are few large packages; 8 with more
+than 500 functions.
 
-\begin{table}[!h]
-  \vspace{-2mm}
-  \small
-  \caption{Package Size} \label{table:packsize}
-  \centering
-  \begin{tabular}{lr}
-    \toprule
-    \bf Functions&\bf Packages\\
-    \midrule
+\begin{table}[!h]  \vspace{-2mm}  \small
+  \caption{Package Size} \label{table:packsize}  \centering
+  \begin{tabular}{lr}    \toprule
+    \bf Functions&\bf Packages\\    \midrule
     1--25&169\\
     26--50&40\\
     51--100&17\\
     101--150&14\\
     151--200&11\\
-    201--250&15\\
-    \bottomrule
+    201--250&15\\    \bottomrule
   \end{tabular}
   \quad
-  \begin{tabular}{lr}
-    \toprule
-    \bf Functions&\bf Packages\\
-    \midrule
+  \begin{tabular}{lr}    \toprule
+    \bf Functions&\bf Packages\\    \midrule
     251--300&4\\
     301--400&6\\
     401--500&2\\
     501--600&3\\
     601--700&0\\
-    701--800&3\\
-    \bottomrule
+    701--800&3\\    \bottomrule
   \end{tabular}
 \end{table}
 
-We observed 42.1M calls to these functions. Figure~\ref{fig:calldist} shows the
-distribution of calls. 52.9\% functions are called more than ten times. 14.3\%
-functions are called only once, leading to low coverage.
+\noindent
+We observed 42M calls to these functions. Figure~\ref{fig:calldist} shows the
+distribution of calls: 53\% functions are called more than ten times and 14\%
+functions are called only once.
 
 \begin{figure}[!h]
   \centering
@@ -699,49 +647,42 @@ functions are called only once, leading to low coverage.
   \label{fig:calldist}
 \end{figure}
 
-These functions have a total of 67,225 parameter positions.
-Figure~\ref{fig:paramdist} shows the distribution of parameter positions. 3.0\%
-functions have 0 parameters, 22.4\% have 1, and 5.0\% have over 10. There are 4
-functions with over 50 parameters that come from 3 packages. Of those,
-\texttt{ggplot2::theme} has the highest, 95 parameters.
+\noindent
+These functions have a total of 67K parameter positions.
+Figure~\ref{fig:paramdist} shows the distribution of parameters: 3\% functions
+have none, 22\% have one parameter, and 5\% have over 10. There are 4 functions
+with over 50 parameters, and the \texttt{ggplot2::theme} function has 95
+parameters.
 
-\begin{figure}[!h]
-  \centering
+\begin{figure}[!h]  \centering
   \input{graphs/param_dist.tex}
   \caption{Parameter Distribution}
   \label{fig:paramdist}
 \end{figure}
 
-In our corpus, we observed \ObjCntEnvironment environments, which makes them the
-second most widely allocated values. Table~\ref{table:object_count_dist} shows
-the frequency of other values for comparison. Promises are the most widely
-allocated values, which is expected~\cite{oopsla19b}. Vectors of logicals and
-characters are more frequent than integers, reals, and raw. Language objects,
-i.e, first-class expressions, are used for metaprogramming. Lists are
-heterogeneous vectors. Other objects such as S4 or externalptr are rare, and are
-presented together in the \emph{Other} category.
+We counted \ObjCntEnvironment environments, which makes them the second most
+widely allocated values. Table~\ref{table:object_count_dist} shows the frequency
+of other values for comparison. Promises lead as there is one per
+parameter~\cite{oopsla19b}. Vectors of logicals and characters are more frequent
+than integers, reals, and raw.
+Table~\ref{table:api_calls} gives the number of calls made to the various
+environment APIs.
 
-\begin{table}[!h]
-  \vspace{-3mm}
-  \small
+
+\begin{table}[!h]  \vspace{-3mm}  \small
   \caption{Object Counts} \label{table:object_count_dist}
   \centering
-  \begin{tabular}{lr}
-    \toprule
-    \textbf{Type}&\textbf{Count}\\
-    \midrule
+  \begin{tabular}{lr} \toprule
+    \textbf{Type}&\textbf{Count}\\\midrule
     Promise&\ObjCntPromise\\
     Environment&\ObjCntEnvironment\\
     Logical&\ObjCntLogical\\
     Character&\ObjCntCharacter\\
     Language&\ObjCntLanguage\\
-    Integer&\ObjCntInteger\\
-    \bottomrule
+    Integer&\ObjCntInteger\\\bottomrule
   \end{tabular}
-  \begin{tabular}{lr}
-    \toprule
-    \textbf{Type}&\textbf{Count}\\
-    \midrule
+  \begin{tabular}{lr}\toprule
+    \textbf{Type}&\textbf{Count}\\\midrule
     List&\ObjCntList\\
     Closure&\ObjCntClosure\\
     Real&\ObjCntReal\\
@@ -752,8 +693,6 @@ presented together in the \emph{Other} category.
   \end{tabular}
 \end{table}
 
-Table~\ref{table:api_calls} gives the number of calls made to the various
-environment APIs.
 
 \begin{table*}[!h]
   \vspace{-3mm}
@@ -831,29 +770,24 @@ environment APIs.
 \end{table*}
 
 
-\section{Provenance}
+\section{Where do Environments come from?}
 
-In this section, we investigate the source of environments.
 Table~\ref{table:env_source} presents the distribution of environments by
-source. In this table, the \emph{Core} row represents environments created by
-the GNU R implementation and 16 packages that ship with it. These packages are
+origin. The \emph{Core} row is for environments created by the language
+implementation and the core 16 packages that ship with it.\footnote{They are
 \code{base}, \code{compiler}, \code{datasets}, \code{grDevices},
 \code{graphics}, \code{grid}, \code{methods}, \code{parallel}, \code{profile},
 \code{splines}, \code{stats}, \code{stats4}, \code{tcltk}, \code{tools},
-\code{translations}, and \code{utils.} The \emph{User} row represents
-environments created by the corpus of CRAN packages. The environments created by
-these sources can come from \emph{Native} or \emph{R} code. Environments in
-\emph{Native} code are created using the C APIs: \code{allocSExp},
-\\\code{Rf_NewEnvironment}, and \code{R_NewHashedEnv}. Environments in \emph{R}
-code are created using the \newEnv function. From the table, we observe that
-\emph{Core} is responsible for 99.89\% of the environments, and \emph{User}
-packages are responsible for 0.03\% of the environments. Environments in the
-\emph{Core} category mostly come from native code, whereas in the \emph{User}
-category, twice as many environments are created from \emph{R} as \emph{Native}.
-We also encountered 904.4K (0.08\%) of environments during tracing which were
-unrelated to the code being traced. These environments were created during the
-initialization of R session, which involves loading some of the \emph{Core}
-packages. We ignore these environments from the rest of the discussion.
+\code{translations}, and \code{utils.}} The \emph{User} row is for environments
+that come from user-defined packages. We further differentiate between package
+created in \emph{native} code and \emph{R} code. Native environments are created
+using C APIs: \code{allocSExp}, \\\code{Rf_NewEnvironment}, and
+\code{R_NewHashedEnv}. R environments come from calls to the \newEnv function.
+Core is responsible for over 99\% of environments and this, mostly from C code.
+Whereas the 0.03\% of User environment are twice as like to originate in R. We
+encountered 904K environments which were unrelated to the code being traced.
+They were created during the initialization of R session and were ignored from
+the rest of the discussion.
 
 \begin{table}[!h]
   \small
@@ -873,79 +807,62 @@ packages. We ignore these environments from the rest of the discussion.
   \end{tabular}
 \end{table}
 
-In the \textbf{Core} \emph{Native} class, 99.7\% of the environments are created
-for function calls, 344.7K for package loading and package namespaces, 2.8M by
-the \code{methods} package for S4 object-oriented system, 165.5K by the
-\code{base} package for dynamic evaluation using \code{eval}, and 145.8K by
-\code{base} package for substitute.
-
-In the \textbf{Core} \emph{R} class, 94.1\% of the environments are created by
-the \code{base} package, and 5.3\% by \code{methods} for the S4 object-oriented
-system. The \code{base} package contribution comes from an internal function,
-\code{lazyLoadDBexec}, used for loading package code and processed help files
-from a binary database.
-
-In the \textbf{User} class, environments are created by the packages in R and
-native code for a variety of purposes such as for use as hash tables, objects
-for custom object-oriented systems, sandboxing, etc.
+In the Core Native class, 99\% of environments are needed to implement function
+environments. There 344K environment used for package namespaces, as well as
+2.8M for the S4 object system implemented by the \code{methods} package. Some
+165K were used for \c{eval} and 145K for \c{substitute}. In the Core R class,
+94\% of the environments come from the \c{base} package and 5\% from
+\code{methods}.
 
 
-\section{Usage Patterns}
+\section{How are Environment Used?}
 
-In this section, we study how the environments are used in our corpus. For this,
-we divide the environments into three categories, presented in
-Table~\ref{table:env_category}. \textbf{Call} environments are created for
-evaluating function calls, \textbf{Explicit} environments are created for
-non-standard purposes, and \textbf{Package} environments are created by the
-package loading subsystem of R. We separately focus on the environments in these
-three categories.
+We divide environments into three categories, presented in
+Table~\ref{table:env_category}: \textbf{Calls} are environments used for
+evaluating function calls, \textbf{Explicits} are created for non-standard
+purposes, and \textbf{Packages} are needed for package loading.
 
 \begin{table}[!h]
   \vspace{-3mm} \small
   \caption{Environment Categories} \label{table:env_category}
   \centering
-  \begin{tabular}{lrr}
-    \toprule
+  \begin{tabular}{lrr}    \toprule
     &\textbf{\#}&\textbf{\%}\\
     \midrule
-    \textbf{Call}&1.2B&99.32\%\\
-    \textbf{Explicit}&3.7M&0.33\%\\
-    \textbf{Package}&3.3M&0.28\%\\
-    \bottomrule
+    \textbf{Calls}&1.2B&99.3\%\\
+    \textbf{Explicits}&3.7M&0.3\%\\
+    \textbf{Packages}&3.3M&0.2\%\\ \bottomrule
   \end{tabular}
 \end{table}
 
 
 \subsection{Call Environments}
 
-Of the 1.2 B call environments, only 20.9M call environments register any
-events. To understand how these environments are used, we look at the of events
-that occur on them. The events of interest are described below.
+Of the 1.2B calls, only 20M environments register any events. To understand how
+these environments are used, we look at these events. The events of interest are
+described below.
 \begin{itemize}
 \item \texttt{A} for read, write and remove.
-\item \texttt{V} for evaluating code in the environment using the \eval function.
-\item \texttt{S} for using the \substitute function in the environment.
+\item \texttt{V} for evaluating code in the environment using  \eval.
+\item \texttt{S} for using \substitute in the environment.
 \item \texttt{X} for extracting the environment using \code{parent.frame},
   \code{sys.frame} or \code{sys.frames}.
 \end{itemize}
 
 Table~\ref{table:call_env_seq} presents the frequency of the most common event
-sets. Overall, there are 63 event sets but the top four sets explain the
-usage patterns for 98.4\% of the call environments with any events. This is
-followed by a long tail of event sets.
+sets. Overall, there are 63 event sets but the top four sets explain the usage
+patterns for 98\% of the call environments with any events. This is followed
+by a long tail of event sets.
 
-\begin{table}[!h]
-  \small
-  \caption{Call Environment Events} \label{table:call_env_seq}
-  \centering
-  \begin{tabular}{lrr}
-    \toprule
+\begin{table}[!h]  \small
+  \caption{Call Environment Events} \label{table:call_env_seq}  \centering
+  \begin{tabular}{lrr}    \toprule
     \textbf{Event}&\textbf{\#}&\textbf{Cum. \%}\\
     \midrule
-    \texttt{S}&9.8M&46.6\%\\
-    \texttt{X, A}&8.3M&86.3\%\\
-    \texttt{X, V, A}&2.2M&96.9\%\\
-    \texttt{X, S, V, A}&312.6K&98.4\%\\
+    \texttt{S}&          9.8M & 46\%\\
+    \texttt{X, A}&       8.3M & 86\%\\
+    \texttt{X, V, A}&    2.2M & 97\%\\
+    \texttt{X, S, V, A}& 312K & 98\%\\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -1006,17 +923,16 @@ followed by a long tail of event sets.
   extracts the environment using \code{parent.frame} for evaluation.
 
 
-  Apart from these sequences, formula construction also stands out as a
-  relatively frequent operation. These formulas extract the environment of the
-  call in which they are created and carry them around as attributes. We
-  observed 66.6K formulas constructed in call environments. The most common
-  example is the \code{stats::formula} function, which results in the creation
-  of 11.2K formulas. Apart from this, 2.8M call environments are used for
-  evaluating code.
+Apart from these sequences, formula construction also stands out as a relatively
+frequent operation. These formulas extract the environment of the call in which
+they are created and carry them around as attributes. We observed 66.6K formulas
+constructed in call environments. The most common example is the
+\code{stats::formula} function, which results in the creation of 11.2K formulas.
+Apart from this, 2.8M call environments are used for evaluating code.
 
 
 From this analysis, we conclude that most call environments do not have to be
-explicit, since only 20.9M register any events. One would then expect an
+explicit, since only 20M register any events. One would then expect an
 optimizing compiler to optimize away accesses for these cases. Unfortunately, as
 the event sets show, there are sufficient cases where environments are accessed
 reflectively and the dynamic nature of R can make it challenging to predict when
