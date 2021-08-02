@@ -827,115 +827,101 @@ Table~\ref{table:env_category}: \textbf{Calls} are environments used for
 evaluating function calls, \textbf{Explicits} are created for non-standard
 purposes, and \textbf{Packages} are needed for package loading.
 
-\begin{table}[!h]
-  \vspace{-3mm} \small
-  \caption{Environment Categories} \label{table:env_category}
-  \centering
-  \begin{tabular}{lrr}    \toprule
-    &\textbf{\#}&\textbf{\%}\\
-    \midrule
-    \textbf{Calls}&1.2B&99.3\%\\
-    \textbf{Explicits}&3.7M&0.3\%\\
-    \textbf{Packages}&3.3M&0.2\%\\ \bottomrule
+\begin{table}[!h] \small
+  \caption{Environment Categories} \label{table:env_category}\centering
+  \begin{tabular}{lrr}\toprule
+     \textbf{Calls}&     1.2B& 99.3\%\\
+    \textbf{Explicits}& 3.7M& 0.3\%\\
+    \textbf{Packages}&  3.3M& 0.2\%\\\bottomrule
   \end{tabular}
 \end{table}
 
 
-\subsection{Call Environments}
+\subsection{Calls}
 
-Of the 1.2B calls, only 20M environments are explicitly used by the functions in
-Table~\ref{table:api_calls} The remaining environments are used implicitly for
-reads and writes. To understand how the 20M environments are used, we look at
-these events. The events of interest are described below.
+Of 1.2B calls, only 20M environments are passed to the functions of
+Table~\ref{table:api_calls}. The remaining environments are used only as
+``traditional'' environments for creating, reading and updating variables. To
+understand how those 20M environments are used, we summarize manipulation
+of these environment with four groups of operations:
+
 \begin{itemize}
-\item \texttt{A} for read, write and remove.
-\item \texttt{V} for evaluating code in the environment using  \eval.
-\item \texttt{S} for using \substitute in the environment.
-\item \texttt{X} for extracting the environment using \code{parent.frame},
-  \code{sys.frame} or \code{sys.frames}.
+\item \texttt{A}: variable reads, writes and removes.
+\item \texttt{V}: \eval.
+\item \texttt{S}  \substitute.
+\item \texttt{X}  \code{parent.frame}, \code{sys.frame} or \code{sys.frames}.
 \end{itemize}
 
-Table~\ref{table:call_env_seq} presents the frequency of the most common event
-sets. Overall, there are 63 event sets but the top four sets explain the usage
-patterns for 98\% of the call environments with any events. This is followed
-by a long tail of event sets.
+\noindent
+Any environment may be used by a combination of the operations above.
+Table~\ref{table:call_env_seq} has the frequency of the most common ``sets'' of
+operations, these are operations that happen to the same environment in no
+particular order or frequency. Overall, there are 63 sets but the top four
+explain 98\% of non-trivial call environments.
 
 \begin{table}[!h]  \small
-  \caption{Call Environment Events} \label{table:call_env_seq}  \centering
+  \caption{Operation mix} \label{table:call_env_seq}  \centering
   \begin{tabular}{lrr}    \toprule
-    \textbf{Event}&\textbf{\#}&\textbf{Cum. \%}\\
-    \midrule
+    \textbf{Event}&\textbf{\#}&\textbf{Cum. \%}\\\midrule
     \texttt{S}&          9.8M & 46\%\\
-    \texttt{X, A}&       8.3M & 86\%\\
-    \texttt{X, V, A}&    2.2M & 97\%\\
-    \texttt{X, S, V, A}& 312K & 98\%\\
-    \bottomrule
+    \texttt{X,A}&        8.3M & 86\%\\
+    \texttt{X,V,A}&      2.2M & 97\%\\
+    \texttt{X,S,V,A}   & 312K & 98\%\\\bottomrule
   \end{tabular}
 \end{table}
 
-\noindent
-\textbf{S:} This event happens in functions that use \code{substitute}.
-  Most of these cases originate from calls to \base package functions:
-  \code{::}, \code{:::}, \code{delayedAssign}, and \code{evalq}. The expression
-  \code{ns::sym} reads the value of publicly exported binding \code{sym} from
-  namespace \code{ns}; \code{:::} also reads private bindings. These functions
-  uses \substitute to access the symbol and namespace names, convert them to
-  strings, and use the \code{get} function for the actual lookup. The
-  \code{evalq} function is a variant of \eval. It uses the \substitute function
-  to extract the expression AST for evaluation in a custom environment. The
-  expression \code{delayedAssign(x, expr, eval_env, assign_env)} binds \code{x}
-  to a promise containing the unevaluated expression \code{expr} in
-  \code{assign_env}. The expression is evaluated in \code{eval_env}. The
-  \code{expr} text is extracted using \code{substitute}.
+\begin{itemize}
+\item[{\bf S}:] Most uses of \c{substitute} originates from \base package
+  functions such as \c{::}, \c{:::}, \c{delayedAssign}, and \c{evalq}. For
+  example, when users write \c{ns::sym}, this has for effect of reading the
+  variable \c{sym} publicly exported from namespace \c{ns} (function \c{:::}
+  reads private bindings). \substitute is used to access the symbol and
+  namespace names, convert them to strings, and then \c{get()} does the actual
+  lookup. The \c{evalq} function uses \substitute to extract the expression AST
+  for evaluation in a custom environment. The expression
+  \c{delayed\-Assign(x,e,ee,ae)} binds \c{x} to a promise containing the
+  unevaluated expression \c{e} in environment \c{ae} ad evaluates in environment
+  \c{ee}. The code is extracted using \c{substitute}.
 
-\noindent
-\textbf{X, A:} These events happen to function environments whose
-  environment is extracted and used for accessing or modifying bindings. An
-  example is the use of \code{delayedAssign} by
-  \code{base::registerS3methods::assignWrapped} which uses \code{parent.frame}
-  to extract the caller environment for evaluating promise code. Similarly,
-  \code{withr::set_envvar} calls \code{base::match.arg} which also uses the
-  parent environment. The \code{match.arg} function matches the argument text
-  against a specified list of choices, provided as an argument. Another example
-  is the \code{rlang::env_get} function which performs a lookup in the parent
-  environment, extracted using \code{parent.frame}.
+\item[{\bf X,A}:] The environments are obtained as value and then used for
+  accessing their bindings. For instance, \c{registerS3methods::assignWrapped}
+  uses \c{parent.frame} to get the caller environment and then evaluates a
+  promise in that environment. Similarly, \c{withr::set_envvar} calls
+  \c{match.arg} which also uses the parent environment. The \c{match.arg}
+  function matches the argument text against a specified list of choices,
+  provided as an argument. A last example is \c{rlang::env_get} which looks up
+  the parent environment extracted with \c{parent.frame}.
 
-\noindent
-\textbf{X, V, A:} These events happen when an environment is extracted
-  and used for evaluating expressions. The use of \code{glue::glue} function by
-  \code{waldo::path_attr} is one such example. The \code{glue::glue} function
-  performs string interpolation by evaluating R code embedded in curly braces in
-  a string. It extracts the caller's environment using \code{parent.frame},
-  evaluates these embedded code blocks, and replaces them with their value to
-  obtain the interpolated string. Another example is the \code{do.call}
-  function, used by the \code{base::order} function. This function constructs a
-  call expression with the supplied function name and arguments and evaluates it
-  in the caller's environment, extracted using \code{parent.frame}.
+\item[{\bf X,V,A}:] These environments are obtained for the purpose of
+  evaluating code in them. The use of \c{glue::glue} by \c{waldo::path_attr} is
+  an example where \c{glue} performs string interpolation by evaluating code
+  embedded in curly braces. It extracts the caller's environment evaluates
+  embedded code blocks, and replaces them with their value to obtain the
+  interpolated string. Another example is \c{do.call} used by \c{order}
+  function; it constructs a call expression with the supplied function name and
+  arguments and evaluates it in the caller's environment.
 
-\noindent
-\textbf{X, S, V, A:} These events happen when an environment is used for
-  \substitute as well as for evaluating expressions. This is particularly common
-  in a code path of \code{match.arg} when the set of values against which the
-  argument is to be matched are non provided. In this case, \code{match.arg}
-  uses \code{substitute} to get the argument name, reflectively accesses its
-  default value expression from the parent environment, and evaluates it to
-  obtain the set of acceptable options. The \code{match.arg} function is used in
-  this form in the \code{base::textConnection} function for matching string
-  encoding. Another example is the \code{glue::glue_data} function. This
-  function forms the core of the \code{glue::glue} function, doing the actual
-  interpolation. It uses substitute to access the inputs, which could be unnamed
-  strings to be interpolated, or named arguments to be made available for
-  substitution. Then, it evaluates them using the \code{eval} function which
-  extracts the environment using \code{parent.frame} for evaluation.
+\item[{\bf X,S,V,A}:] Environments that are used in a combination of \eval and
+  \substitute use cases. This occurs in \c{match.arg} when the set of values
+  against which the argument is to be matched are not provided, then
+  \c{match.arg} uses \c{substitute} to get the argument name, reflectively
+  accesses its default value expression from the parent environment, and
+  evaluates it to obtain the set of acceptable options. The \c{match.arg}
+  function is used in this form in \c{textConnection} for matching string
+  encoding. Another example is \c{glue::glue_data} which forms the core of
+  \c{glue::glue}, doing the actual interpolation. It uses substitute to access
+  the inputs, which could be unnamed strings to be interpolated, or named
+  arguments to be made available for substitution. Then, it evals them in the
+  environment obtained from \c{parent.frame}.
 
+\end{itemize}
 
 Apart from these sequences, formula construction also stands out as a relatively
 frequent operation. These formulas extract the environment of the call in which
-they are created and carry them around as attributes. We observed 66.6K formulas
+they are created and carry them around as attributes. We observed 66K formulas
 constructed in call environments. The most common example is the
-\code{stats::formula} function, which results in the creation of 11.2K formulas.
+\c{stats::formula} function, which results in the creation of 11K formulas.
 Apart from this, 2.8M call environments are used for evaluating code.
-
 
 From this analysis, we conclude that most call environments do not have to be
 explicit, since only 20M register any events. One would then expect an
@@ -944,7 +930,7 @@ the event sets show, there are sufficient cases where environments are accessed
 reflectively and the dynamic nature of R can make it challenging to predict when
 this will happen. These environments can be passed around and modified at will,
 making it hard to reason about the program from that point onwards. Especially
-challenging is the use of the \code{eval} function on call environments, which
+challenging is the use of the \c{eval} function on call environments, which
 makes it possible to execute any code with arbitrary effects.
 
 \subsection{Explicit Environments}
@@ -956,9 +942,9 @@ from user packages. We analyze the two environment categories below, separately.
 
 There are 9 packages responsible for all the explicit environments from
 \emph{Core}. Table~\ref{table:core_explicit_pack} shows the frequency of
-environments they create. The \code{base} and \code{methods} packages alone
-contribute to 99\% of the environments. The \code{base} package exports the
-basic built-in functions of R and the \code{methods} package implements the S4
+environments they create. The \c{base} and \c{methods} packages alone
+contribute to 99\% of the environments. The \c{base} package exports the
+basic built-in functions of R and the \c{methods} package implements the S4
 object-oriented system.
 
 \begin{table}[!h]
@@ -969,15 +955,15 @@ object-oriented system.
     \toprule
     \textbf{Package}&\textbf{\#}&\textbf{Cu. \%}\\
     \midrule
-    \code{methods}&3.0M&89.2\%\\
-    \code{base}&329.9K&99.0\%\\
-    \code{grid}&15.7K&99.5\%\\
-    \code{grDevices}&10.7K&99.8\%\\
-    \code{stats}&2.7K&99.9\%\\
-    \code{compiler}&2.4K&100\%\\
-    \code{parallel}&610&100\%\\
-    \code{tools}&217&100\%\\
-    \code{utils}&7&100\%\\
+    \c{methods}&3.0M&89.2\%\\
+    \c{base}&329.9K&99.0\%\\
+    \c{grid}&15.7K&99.5\%\\
+    \c{grDevices}&10.7K&99.8\%\\
+    \c{stats}&2.7K&99.9\%\\
+    \c{compiler}&2.4K&100\%\\
+    \c{parallel}&610&100\%\\
+    \c{tools}&217&100\%\\
+    \c{utils}&7&100\%\\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -985,7 +971,7 @@ object-oriented system.
 The explicit environments in these 9 packages originate from 60 functions.
 Table~\ref{table:core_explicit_fun} shows the top 6 functions. These functions
 alone contribute to 98\% of all the explicit environments in \emph{Core}. They
-all belong to \code{methods} and \code{base} packages.
+all belong to \c{methods} and \c{base} packages.
 
 \begin{table}[!h]
   \small
@@ -995,12 +981,12 @@ all belong to \code{methods} and \code{base} packages.
     \toprule
     \textbf{Function}&\textbf{\#}&\textbf{Cum. \%}\\
     \midrule
-    \code{methods::new}&2.8M&84.3\%\\
-    \code{base::eval}&165.5K&89.2\%\\
-    \code{base::substitute}&145.8K&93.5\%\\
-    \code{methods::.mlistAddToTable}&50.2K&95.0\%\\
-    \code{methods::.resetInheritedMethods}&50.2K&96.5\%\\
-    \code{methods::makeGeneric}&50.2K&98.0\%\\
+    \c{methods::new}&2.8M&84.3\%\\
+    \c{base::eval}&165.5K&89.2\%\\
+    \c{base::substitute}&145.8K&93.5\%\\
+    \c{methods::.mlistAddToTable}&50.2K&95.0\%\\
+    \c{methods::.resetInheritedMethods}&50.2K&96.5\%\\
+    \c{methods::makeGeneric}&50.2K&98.0\%\\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -1034,31 +1020,31 @@ sets. We observe three new events.
 
 \noindent
 \textbf{A:} This is the most common pattern, and it occurs in many different
-functions' environments. The most common example is the \code{methods::new}
+functions' environments. The most common example is the \c{methods::new}
 function that is used for creating S4 objects. Another example is the
-\code{grid} package that uses explicit environments to create viewport objects
-and keys child viewports by name. The \code{parallel::addClusterOptions} function
+\c{grid} package that uses explicit environments to create viewport objects
+and keys child viewports by name. The \c{parallel::addClusterOptions} function
 uses an environment to store options such as port number, timeout, and R path
 for the cluster used for parallel execution.
 
 \noindent
 \textbf{A, V:} This pattern represents environments created by the
-\code{base::eval} and \code{base::evalq} functions. The default behavior of
+\c{base::eval} and \c{base::evalq} functions. The default behavior of
 these functions is to evaluate an expression in the supplied environment.
 However, in these cases, a list of named elements is supplied instead of an
 environment, which is internally converted into an environment for evaluation.
 
 \noindent
-\textbf{S:} This pattern comes from the \code{base::substitute} function. This
+\textbf{S:} This pattern comes from the \c{base::substitute} function. This
 function is used for substituting symbols with expressions in ASTs. The
 substitutions are usually read from an environment. However, in these cases,
 lists are supplied instead; which are internally converted into environments.
 
 \noindent
 \textbf{A, Z, !:} This pattern comes from the methods package's
-\code{makeGeneric} function. In the process of converting a function definition
+\c{makeGeneric} function. In the process of converting a function definition
 to a generic function, it creates a new environment, assigns the field
-\code{".Generic"} to the name of the generic method, sets its parent as the
+\c{".Generic"} to the name of the generic method, sets its parent as the
 lexical scope of the function (\texttt{Z}), and finally, sets the new
 environment as the lexical scope of the function (\texttt{!}).
 
@@ -1081,15 +1067,15 @@ remove or simplify them will likely break all these packages.
 From our corpus, 55 packages are responsible for all the explicit environments
 in the \emph{User} category. Table~\ref{table:user_explicit_pack} shows the
 distribution of these environments by the top 8 packages, which account for
-95.9\% of the environments in this category. The \code{vctrs} package provides
-tools for type-coercion and size-recycling of R vectors. The \code{rlang}
+95.9\% of the environments in this category. The \c{vctrs} package provides
+tools for type-coercion and size-recycling of R vectors. The \c{rlang}
 package provides a consistent API to work with R objects and exposes an
 evaluation mechanism used by the ``tidyverse'' packages for building DSLs.
-\code{R6} implements a single-inheritance object-oriented system.
-\code{codetools} implements code analysis for the R compiler. \code{ggplot2} is
-a popular plotting library. \code{testthat} is widely used for testing R code.
-The \code{dplyr} implements a DSL for SQL like queries on data frames.
-Lastly, the \code{magrittr} package implements the pipe operator for building
+\c{R6} implements a single-inheritance object-oriented system.
+\c{codetools} implements code analysis for the R compiler. \c{ggplot2} is
+a popular plotting library. \c{testthat} is widely used for testing R code.
+The \c{dplyr} implements a DSL for SQL like queries on data frames.
+Lastly, the \c{magrittr} package implements the pipe operator for building
 function pipelines.
 
 \begin{table}[!h]
@@ -1100,14 +1086,14 @@ function pipelines.
     \toprule
     \textbf{Package}&\textbf{\#}&\textbf{Cu. \%}\\
     \midrule
-    \code{vctrs}&142.9K&36.2\%\\
-    \code{rlang}&75.2K&55.2\%\\
-    \code{R6}&74.1K&73.9\%\\
-    \code{codetools}&39.2K&83.8\%\\
-    \code{ggplot2}&24.3K&90.0\%\\
-    \code{testthat}&9.1K&92.3\%\\
-    \code{dplyr}&8.3K&94.4\%\\
-    \code{magrittr}&6.1K&95.9\%\\
+    \c{vctrs}&142.9K&36.2\%\\
+    \c{rlang}&75.2K&55.2\%\\
+    \c{R6}&74.1K&73.9\%\\
+    \c{codetools}&39.2K&83.8\%\\
+    \c{ggplot2}&24.3K&90.0\%\\
+    \c{testthat}&9.1K&92.3\%\\
+    \c{dplyr}&8.3K&94.4\%\\
+    \c{magrittr}&6.1K&95.9\%\\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -1115,8 +1101,8 @@ function pipelines.
 The explicit environments in these 55 packages originate from 322 functions.
 Table~\ref{table:user_explicit_fun} shows the top ten functions. These functions
 contribute to 65.1\% of all the explicit environments in \emph{User}. They
-functions belong to 5 packages: \code{R6}, \code{vctrs}, \code{codetools},
-\code{ggplot2}, and \code{rlang}.
+functions belong to 5 packages: \c{R6}, \c{vctrs}, \c{codetools},
+\c{ggplot2}, and \c{rlang}.
 
 \begin{table}[!h]
   \small
@@ -1126,16 +1112,16 @@ functions belong to 5 packages: \code{R6}, \code{vctrs}, \code{codetools},
     \toprule
     \textbf{Function}&\textbf{\#}&\textbf{Cum. \%}\\
     \midrule
-    \code{R6::generator_funs::new}&63.4K&16.0\%\\
-    \code{vctrs::vec_c}&55.7K&30.1\%\\
-    \code{codetools::mkHash}&31.3K&38.0\%\\
-    \code{ggplot2::ggproto}&24.3K&44.2\%\\
-    \code{rlang::eval_tidy}&18.1K&48.8\%\\
-    \code{vctrs::vec_slice}&16.5K&52.9\%\\
-    \code{rlang::new_data_mask}&13.8K&56.4\%\\
-    \code{vctrs::vec_cast_common}&12.8K&59.7\%\\
-    \code{vctrs::vec_as_names}&10.7K&62.4\%\\
-    \code{R6::create_super_env}&10.6K&65.1\%\\
+    \c{R6::generator_funs::new}&63.4K&16.0\%\\
+    \c{vctrs::vec_c}&55.7K&30.1\%\\
+    \c{codetools::mkHash}&31.3K&38.0\%\\
+    \c{ggplot2::ggproto}&24.3K&44.2\%\\
+    \c{rlang::eval_tidy}&18.1K&48.8\%\\
+    \c{vctrs::vec_slice}&16.5K&52.9\%\\
+    \c{rlang::new_data_mask}&13.8K&56.4\%\\
+    \c{vctrs::vec_cast_common}&12.8K&59.7\%\\
+    \c{vctrs::vec_as_names}&10.7K&62.4\%\\
+    \c{R6::create_super_env}&10.6K&65.1\%\\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -1168,33 +1154,33 @@ which characterize 96.5\% of these environments. We observe a new event,
 \textbf{A, V:} This set accounts for the majority of environments. It is
 observed in 36 packages. These environments are created for custom evaluation
 strategies, \ie, for evaluating expressions with custom bindings in the scope.
-The \code{testthat} testing library uses custom environment for evaluating
-testing code. The \code{vctrs::vec_c} function is an alternative to R's \code{c}
+The \c{testthat} testing library uses custom environment for evaluating
+testing code. The \c{vctrs::vec_c} function is an alternative to R's \c{c}
 function for building a vector of values. It uses an explicit environment under
 the hood for repairing the names of the vector elements. The
-\code{rlang::eval_tidy} function is an alternative to R's \code{eval} which
+\c{rlang::eval_tidy} function is an alternative to R's \c{eval} which
 provides support for evaluating ``quosures'', that are bundles of code and
-environment. The \code{rlang} package creates three environments in native code
+environment. The \c{rlang} package creates three environments in native code
 for use by its functions for evaluating expressions in the context of a data
 frame.
 
 \noindent
 \textbf{A:} This pattern represents environments that are used as hash tables
-and mutable state for packages. The \code{codetools} package provides facilities
-for analysis of R code. Its \code{codetools::mkHash} function creates an
+and mutable state for packages. The \c{codetools} package provides facilities
+for analysis of R code. Its \c{codetools::mkHash} function creates an
 environment for use as a hash table to store intermediate static analysis
-information. Another example is the \code{ps} package that provides facilities
+information. Another example is the \c{ps} package that provides facilities
 for handling system processes. It uses an explicit environment for storing
-package state such as error codes and socket types. The \code{iterators} package
+package state such as error codes and socket types. The \c{iterators} package
 uses environments as dynamic state of iterator objects.
 
 \noindent
 \textbf{A, !:} This pattern represents environments that are set as parents of
-other environments or functions. This is dominated by \code{R.oo} and \code{R6}
+other environments or functions. This is dominated by \c{R.oo} and \c{R6}
 packages that implement object-oriented systems. They create new environments
 and set them as lexical scopes of object methods. Another example is the
-\code{foreach} package which provides iteration constructs that can execute code
-sequentially or in parallel. The \code{foreach::\%do\%} function creates a new
+\c{foreach} package which provides iteration constructs that can execute code
+sequentially or in parallel. The \c{foreach::\%do\%} function creates a new
 environment, assigns a marker, and sets it as the lexical scope of the function
 which uses the marker to decide whether to execute the code in parallel or
 sequentially.
@@ -1202,42 +1188,42 @@ sequentially.
 \noindent
 \textbf{A, @:} This pattern is used by packages to create custom objects, which
 can be used for dispatch based on the class attribute of the environments.
-\code{ggplot2} library implements \code{ggproto}, a prototype based
-object-oriented system. The \code{ggproto} objects are explicit environments
-with the \code{"ggproto"} class attribute. The \code{XML} package creates an
+\c{ggplot2} library implements \c{ggproto}, a prototype based
+object-oriented system. The \c{ggproto} objects are explicit environments
+with the \c{"ggproto"} class attribute. The \c{XML} package creates an
 environment to store a tree of nodes and assigns it a class attribute. The
-\code{xts} package creates a plot environment with plotting configuration and
+\c{xts} package creates a plot environment with plotting configuration and
 sets a class attribute on it.
 
 \noindent
 \textbf{A, L:} This pattern shows up in the R6 package during object
 instantiation. The private method bindings are locked in the object environment
-to prevent any modification. Many calls to \code{lockBinding} also originate
-form \code{data.table} which uses a custom environment to store intermediate
+to prevent any modification. Many calls to \c{lockBinding} also originate
+form \c{data.table} which uses a custom environment to store intermediate
 state for implementing data frame indexing.
 
 \noindent
-\textbf{A, L, @:} These events occur on environments from the \code{later} and
-\code{R6} packages . The \code{later} package uses environments as handles for
+\textbf{A, L, @:} These events occur on environments from the \c{later} and
+\c{R6} packages . The \c{later} package uses environments as handles for
 event loop objects. These objects contain the unique loop identifier, which is
 locked to prevent modification. The environments are then assigned the class
-attribute, \code{"event_loop"}.
+attribute, \c{"event_loop"}.
 
 \noindent
 \textbf{A, @, !:} This event pattern shows up on the environments from the
-\code{plyr} package. This package creates environments with attribute
-\code{"idf"} for representing immutable data frames. It also assigns getter
+\c{plyr} package. This package creates environments with attribute
+\c{"idf"} for representing immutable data frames. It also assigns getter
 functions to these environments to access the columns of the data frame, and
 sets their lexical scope to be the environment itself. The same pattern occurs
-in \code{R6} when an environment representing a superclass object is set as the
+in \c{R6} when an environment representing a superclass object is set as the
 parent environment of a subclass object environment.
 
 Only 597 of the environments in this category were used for formula
 construction. Out of these, 389 were created by the code being tested by
-\code{testthat}. One example that stands out is the \code{survival} package
+\c{testthat}. One example that stands out is the \c{survival} package
 which creates explicit environments for use in formulas. We observe 22
-environments created by \code{survival::coxph} and
-\code{survival::model.frame.coxph} to be used for formula construction, as shown
+environments created by \c{survival::coxph} and
+\c{survival::model.frame.coxph} to be used for formula construction, as shown
 below.
 
 \begin{lstlisting}
@@ -1248,16 +1234,16 @@ environment(tform$formula) <- coxenv
 
 162K (41\%) of the explicit environments were used for dynamic code evaluation.
 These environments were created from 33 packages. 88.2\% of these environments
-were from the \code{vctrs} package. Four packages, \code{vctrs},
-\code{testthat}, \code{magrittr}, and \code{rlang} together contribute 98.2\% of
+were from the \c{vctrs} package. Four packages, \c{vctrs},
+\c{testthat}, \c{magrittr}, and \c{rlang} together contribute 98.2\% of
 these environments.
 
 50.8K (12.9\%) of these environments have a class attribute.
 Table~\ref{table:explicit_env_attr} presents the class attributes attached to
 environments by frequency and the package from which the attributes originate.
-\code{ggplot2} alone accounts for 47.8\% of environments, owing to the
-\code{ggproto} object system. \code{ggplot2}, \code{rlang}, \code{R6}, and
-\code{plyr} account for 99.2\% of the environments with attributes.
+\c{ggplot2} alone accounts for 47.8\% of environments, owing to the
+\c{ggproto} object system. \c{ggplot2}, \c{rlang}, \c{R6}, and
+\c{plyr} account for 99.2\% of the environments with attributes.
 \begin{table}[!h]
   \small
   \caption{Environment Attributes} \label{table:explicit_env_attr}
@@ -1293,7 +1279,7 @@ packages.
 We observe 3.3M environments related to packages and namespaces. The package
 loading mechanism alone accounts for 2.9M of these environments. The remaining
 environments are used as package namespaces. 2.3M of these environments
-originate from a single \code{base} package function, \code{lazyLoadDBexec},
+originate from a single \c{base} package function, \c{lazyLoadDBexec},
 used only internally by R. This function is responsible for loading a package's
 code from a binary file and also for loading processed help file data. A few
 environments are created internally by the interpreter to store a package's
@@ -1566,8 +1552,8 @@ We conclude that \c{R6} is the biggest user of the APIs discussed in this
 section. Environment bindings are unlocked by very few functions, and they are
 never used to inject new bindings or modify functions in other packages. We
 found one instance of the use of \c{unlockBinding} to update the definitions of
-\code{cbind} and \code{rbind} functions in the \code{base} package by
-\code{data.table} prior to R version \texttt{4.0.0}. The dispatch behavior of
+\c{cbind} and \c{rbind} functions in the \c{base} package by
+\c{data.table} prior to R version \texttt{4.0.0}. The dispatch behavior of
 these functions prevented the correct overloaded method to be chosen when they
 were called with two arguments of type \c{data.table} and \c{data.frame}
 respectively. The \c{data.table} package modified these functions to address
