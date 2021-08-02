@@ -1,5 +1,5 @@
-\documentclass[10pt,review,sigplan,anonymous=true,authorversion=true,nonacm=true]{acmart}
-\settopmatter{printfolios=false,printccs=false,printacmref=false}
+\documentclass[10pt,review,sigplan,authorversion=true]{acmart}
+\settopmatter{printfolios=true,printccs=true,printacmref=true}
 
 \bibliographystyle{ACM-Reference-Format}
 \citestyle{acmauthoryear}   %% For author/year citations
@@ -126,26 +126,24 @@
 %% \acmArticle{153}
 %%% \acmMonth{10}
 \begin{document}
-\title{On Design and Use of First-Class Environments in R}
-
-\author{Aviral Goel}\affiliation{\institution{Northeastern University}\country{USA}}
-\author{Jan Vitek}\affiliation{\institution{Czech Technical University and Northeastern University}\country{USA}}
+\title{First-Class Environments in R}
+\author{Aviral Goel}\affiliation{\institution{Northeastern University}\country{}}
+\author{Jan Vitek}\affiliation{\institution{Czech Technical University in Prague\\Northeastern University}\country{}}
 \authorsaddresses{}
-\renewcommand{\shortauthors}{Goel, et al.}
+\renewcommand{\shortauthors}{Goel, Vitek}
 
 
 \begin{abstract}
   The R programming language is widely used for statistical computing. To enable
   interactive data exploration and rapid prototyping, R encourages a dynamic
-  programming style. This programming style is support by a number of features
-  including first-class environments. R is the only language, with millions of
-  users, that provides a full reflective interface for manipulating
-  environments. With the great flexibility afforded by first-class environments,
-  comes challenges for reasoning about code and significant restrictions about
-  what transformations a compiler is allowed to apply to programs. This paper is
-  an overview of the environment interface refined over two decades. We explain
-  the rationale behind the design and document how environments are used in the
-  wild by the means of a corpus analysis.
+  programming style. This programming style is supported by features such as
+  first-class environments. Amongst widely used languages, R has the richest
+  interface for programmatically manipulating environments. With the flexibility
+  afforded by reflective operations on first-class environments, come
+  significant challenges for reasoning and optimizing user-defined code. This
+  paper documents the reflective interface used to operate over first-class
+  environment. We explain the rationale behind its design and conduct a large
+  scale study of how the interface is used in popular libraries.
 \end{abstract}
 
 \begin{CCSXML}
@@ -183,50 +181,59 @@
 \maketitle
 \section{Introduction}
 
-The ability to name values in a computation is a key building block of
-linguistic abstractions. Programming languages have concepts such as local
-variables, global variables, function parameters that boil down to a mapping
-of values to names, commonly referred to as an \emph{environment}. The semantics of
-environments have a profound impact on how programming languages can be
-implemented. At a first approximation, restricted semantics greatly simplify the
-task of generating efficient machine code.
+The ability to name values is a building block of linguistic abstractions. Local
+variables, global variables, function parameters, all boil down to a mapping
+from names to values, commonly referred to as an \emph{environment}. The
+semantics of environments have a profound impact on how languages can be
+implemented. At a first approximation, the more restricted the semantics, the
+easier it is to implement the language efficiently. Early languages did not
+support recursion, thus their compilers could generate code where each variable
+had its unique, pre-determined, location in the computer's memory. When a
+variable's value was determined to be constant, it did not even need a memory
+location, the variable was effectively an alias for that value. As languages
+became more expressive, implementations had to store variables in data
+structures such as the stack, for traditional imperative languages, or in
+heap-allocated records, for functional languages. When the compiler could assume
+all variable accesses were known at compile time, the variables could be
+represented by offsets from a known location. On the the other hand, for
+languages that allowed symbolic lookups, the mapping between names and locations
+had to be retained. Each of these choices comes with performance implications.
 
-Early languages had variables that were read and written to by statically
-determined names, and they did not support recursive functions. Thus there was a
-single environment for compilation unit and, in that environment, each variable
-its own memory location; as it generated code the compiler knew exactly which
-location every name referred to. When a variable's value was constant, that
-variable could be treated as a synonym for its value and did not require a
-memory location. To improve performance, variables could be cached in machine
-registered and spilled to memory only when needed.
+The R programming language was created in 1993~\cite{r96} as a direct descendent
+to S whose origin dates to 1976~\cite{s88}. Both languages found inspiration in
+earlier work on Lisp~\cite{Lisp}, CLOS~\cite{CLOS}, and
+Scheme~\cite{SchemeR5RS}. Yet, they chose to depart from those previous
+languages in small and large ways. R evolved to become a functional language,
+without type annotations, with delayed evaluation of function arguments, mutable
+state, and various mechanisms for supporting object-oriented programming.
 
-As languages became more expressive, allowing recursion and first-class
-functions, implementations had to allocate environments, respectively, on the
-stack or in the heap. Lisp treated code as data, and thus lifted the restriction
-that variable names be statically known. This meant that from a compiler's point
-of view, it became much harder to generate efficient code. Environments were
-data structures that could at any time be inspected and the mapping between
-variables and values be observed.
+At heart, R is a simple language. Its expressivity stems from the combination of
+delayed evaluation and the language's rich reflective interface that allows to
+extend the core semantics in various ways. One of the keys design choices was to
+make environments first-class and allow full programmatic access over
+environments.
 
-In this paper, we focus on the R programming language created in 1993~\cite{r96}, as
-a directed descendent to S whose origin dates to 1976~\cite{s88}. Inspired by Lisp,
-CLOS, and Scheme, the designers of R created a lazy functional language that
-supported various forms of object-oriented programming. One of the keys to
-expressivity was the choice of making environments first-class. Environments are
-data structures that can be created and manipulated programmatically. One can,
-for example, write code that acquires the environment of the caller of the
-currently executing function, check if it contains a variable named \c{x}, and,
-if it does, rename that variable to \c{y}. Needless to say that this flexibility
-does limit what a compiler can do to make R run fast~\cite{dls19}.
+In R, an environment is an unordered mutable map from symbols to values.
+Environments are omnipresent -- they represent name spaces, or scopes, for
+variables within a function, but also the name spaces that are constructed when
+a package is loaded. As they are the only mutable data structure in the language
+they are also used as hashmaps and objects. They are created implicitly when a
+function is called, and explicitly with \c{new.env}. Operations are provided to
+read variables and update or delete them. It is even possible change the
+association between a closure and its environment. R's interface allows, for
+example, to acquires the environment of the caller of the currently executing
+function, check if it contains a variable \c{x}, and rename it to \c{y}.
+Needless to say that this flexibility causes headaches to implementers,
+\citet{dls19} gives an account of these challenges.
 
-Our goal with this paper is to document the interface that R exposes to
-environments. This interface evolved through the years, some of it dates back to
-S, with changes and adaptations through the decades. The interface is rich and
-not always consistent or certainly not minimal. Through a dynamic analysis
-conducted on a corpus of popular R libraries and their clients, we report on the
-practical usage of environments. This allows us to explain the need for this
-rich interface and could, possibly, be a step towards a re-design or a hint for
-compiler writers as to where optimization opportunities may lie.
+This paper documents the interface that R exposes to environments. This
+interface evolved through the years. It is rich and not always consistent, and
+certainly not minimal. Through a dynamic analysis conducted on a corpus of
+popular R libraries and their clients, we report on the practical usage of
+environments. This allows us to explain the need for this interface and could,
+possibly, be a step towards a re-design or a warning for compiler writers.
+
+\newpage
 
 \section{Related Work}
 
@@ -234,7 +241,7 @@ While the Scheme Standard specifies that the \code{eval} function takes an
 environment-specifier, this need not be a first-class
 environment~\cite{SchemeR5RS}. The effect of assignment to variables in this
 environment is unspecified, leaving open the possibility of it being immutable.
-GNU Scheme supports first-class environments and, as a consequence, its
+Scheme supports first-class environments and, as a consequence, its
 \code{eval} takes an explicit environment. It provides functions to create new
 environments, read and write bindings, examine parent environments, and obtain
 the current environment as a reified value. Python provides the \code{locals}
@@ -1454,7 +1461,7 @@ callers of \c{environment<-}, which account for \EnvAsnTopFiveCallPerc calls.
 \end{table}
 
 On the \c{Core} side, \c{methods}, and \c{stats} are responsible for all calls
-to \c{environment<-}. 
+to \c{environment<-}.
 
 Two two functions of the \c{methods} package, \c{.makeDefaultBinding} and
 \c{installClassMethod}, are responsible for \EnvAsnMethodsCallPerc of all
@@ -1738,7 +1745,7 @@ copy of the \c{withr::defer}.
 The \c{rlang::captureArgInfo} function is used for introspection of a binding in
 an environment, which default to \c{parent.frame()}.
 
-The \c{glue::glue} function 
+The \c{glue::glue} function
 
 
 The argument \c{n} to \c{parent.frame} controls the number of frames to go back
