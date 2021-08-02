@@ -22,6 +22,7 @@ params:
 ```{r echo = FALSE, warning=FALSE, message=FALSE}
 ## https://bookdown.org/yihui/rmarkdown-cookbook/source-script.html
 source("analysis.R", local = knitr::knit_global())
+MacGen <- LatexMacroGenerator$new(params$macrodir)
 ```
 
 ## Table Structure
@@ -41,9 +42,317 @@ arrange(desc(count))
 ```
 
 
-## parent.frame
+# parent.frame
+
+## Raw
 
 ```{r, eval = TRUE}
+PARENT_FRAME_TABLE <-
+    call_stack %>%
+    filter(fun_name == "parent.frame") %>%
+    mutate(aliased = qual_name_1 != "base*$#$*parent.frame") %>%
+    mutate(source = paste0(package, "*$#$*", type, "/", filename)) %>%
+    mutate(qual_name_2 = case_when(is.na(qual_name_2) ~ source,
+                                   qual_name_2 == "<NA>*$#$*cf310b234c2e3737e11da7504a65762f00e467cc650620cff724d49ceeee713432d4b32e7bf899c9f41aa742c5b1cd7d3d4cd0fe6845a1faf1b7735a5fd7b047" & str_starts(qual_name_3, "withr") ~ "withr*$#$*defer",
+                                   qual_name_2 == "<NA>*$#$*cf310b234c2e3737e11da7504a65762f00e467cc650620cff724d49ceeee713432d4b32e7bf899c9f41aa742c5b1cd7d3d4cd0fe6845a1faf1b7735a5fd7b047" & str_starts(qual_name_3, "rlang") ~ "rlang*$#$*defer",
+                                   qual_name_2 == "<NA>*$#$*cf310b234c2e3737e11da7504a65762f00e467cc650620cff724d49ceeee713432d4b32e7bf899c9f41aa742c5b1cd7d3d4cd0fe6845a1faf1b7735a5fd7b047" & str_starts(qual_name_3, "webfakes") ~ "webfakes*$#$*defer",
+                                   qual_name_2 == "<NA>*$#$*cf310b234c2e3737e11da7504a65762f00e467cc650620cff724d49ceeee713432d4b32e7bf899c9f41aa742c5b1cd7d3d4cd0fe6845a1faf1b7735a5fd7b047" & str_starts(qual_name_3, "testthat") ~ "withr*$#$*defer",
+                                   qual_name_2 == "<NA>*$#$*cf310b234c2e3737e11da7504a65762f00e467cc650620cff724d49ceeee713432d4b32e7bf899c9f41aa742c5b1cd7d3d4cd0fe6845a1faf1b7735a5fd7b047" & qual_name_3 == "<NA>*$#$*local_utf8_test"	~ "withr*$#$*defer",
+                                   
+                                   qual_name_2 == "<NA>*$#$*cf310b234c2e3737e11da7504a65762f00e467cc650620cff724d49ceeee713432d4b32e7bf899c9f41aa742c5b1cd7d3d4cd0fe6845a1faf1b7735a5fd7b047" & qual_name_3 %in% c("<NA>*$#$*.generate_temp_vignette", "<NA>*$#$*local_create_site", "dbplyr*$#$*local_context", "<NA>*$#$*local_rng_version") ~ "withr*$#$*defer",
+                                   qual_name_2 == "<NA>*$#$*75a26cb68832f85761c88ea36159a8aad1c3e5b7b0e721c0b4c6af88e38334fed3bd2b11276711e9ec24f3cbbc105248922632774c5e4bb25f72a71df6f63589" ~ "testthat*$#$*R6(Reporter)*$#$*local_user_output",
+                                   qual_name_2 == "<NA>*$#$*methods" ~ "methods*$#$*.GeneratorMethods*$#$*methods",
+                                   qual_name_2 == "<NA>*$#$*24a2bd9ef1d1d0bed806a984c395ea21bbe8f6c7e28034d5ab619490dfd2057496cb2893ea5f506ca61e31d3580e8e2ed220a9fc53ee5970cabc102f8fd241eb" ~ "R6*$#$*R6Class",
+                                   qual_name_2 == "<NA>*$#$*133d28cb40ee05ee5300da5684d5a339a5eb512c26b21219fb8d6a8d8b806f5c0acee1f55f1d8b849f40bb9a7f6a9966abc207feedfd0c39274c404b3a46ec1d" ~ "dplyr*$#$*as_inlined_function",
+                                   qual_name_2 == "<NA>*$#$*f9808637609439a5d4fbbaf6e0b2fc107c2021e894a23a579ce0f379e75ba5c50e881ad16f7d245a74658989b5b479c690b470ef7c6bf36041eb2c6869cd62a9" ~ "dplyr*$#$*as_inlined_function",
+                                   qual_name_2 == "<NA>*$#$*6a3c1264bb1527ad8fb4f2a1a2fbf070e55db8eb6e1a5f2feb45876798bfcee96106bf15390adb09e9ce0e83264950554109a7427501b1ac02cf0059d21db303" ~ "dplyr*$#$*as_inlined_function",
+                                   qual_name_2 == "<NA>*$#$*4086eb6f97510d9f59a5fba00f16519bbc59cf9d808cffc488586b4a6d405bd484116a3932b9cd1d0e43ab11edb063f09b43821d280742e743f4cddbbca9de37" ~ "dplyr*$#$*as_inlined_function",
+                                   qual_name_2 == "<NA>*$#$*1439d2027067c49ccee706ebf6da85e17472d9b7c173f64e4efea7d8da862b0b7f070eb1f141ff62b83e67f47cb77dcc01096bac86574bd6a49e54bece8607ea" ~ "dplyr*$#$*as_inlined_function",
+                                   qual_name_2 == "<NA>*$#$*5a1f26c7de5616df178d82b47100cf4cb3de7ae66217d097abad5f9c4b6e5de7267eedd846914dd8a71e214788b7af9a4871da0f5bc799165441269a9db004b0" ~ "dplyr*$#$*as_inlined_function",
+                                   qual_name_2 == "<NA>*$#$*71abb9f3a35351f8f195fb6f6c6855c53304c2afbc1068017ab39c6d2d56d56893ea4f30c5193c4f5736263a3cfe3dac031a5999c92c78100b767937b6ab7f4a" ~ "dplyr*$#$*as_inlined_function",
+                                   qual_name_2 == "<NA>*$#$*b26cca5b1730f85a210700af84e592186b182862c02208724bde7f8f27811b12c3585e6fd9172365ada617812715f0eb4e8c65972826e4f5879e8e7b8df54a17" ~ "dplyr*$#$*as_inlined_function",
+                                   qual_name_2 == "<NA>*$#$*d2e6c92f534ee62ae4f72ed684f835a947e7bb1c871f6bfc689e8bab19ed846f1aaa136f6f1168c41f138f192eba49b89d590556248c3122b9940cc5857e9a99" ~ "dplyr*$#$*as_inlined_function",
+                                   qual_name_2 == "<NA>*$#$*fbdcf15072b7cc1dcbd64745fc16c1b7e42d2d69e48368fc4d68d009e887da3715a20b166ea35acfeddc5add37c61cdbab11b29ba6eb9f37854db984351ad9ca" ~ "dplyr*$#$*as_inlined_function",
+                                   qual_name_2 == "<NA>*$#$*389e77288eda2516381036ceaa57a7faea734a4b1d442dd0e105d34f3b3f0be46baba1da0fe5277a2fa28e85fbe36b2b8018eb675b1672e399d78e714a1e8dcd" ~ "dplyr*$#$*as_inlined_function",
+                                   qual_name_2 == "<NA>*$#$*ead886885dcb8aeb960d80aef9054541a656f7282fae2ea59521f0499a886a6bbd68866d1146c5ed1978f9d61177fe06e2ebdc8193e1e1f38253f9b9f853ab25" ~ "dplyr*$#$*as_inlined_function",
+                                   qual_name_2 == "<NA>*$#$*4721693649ca73a8b0964597eb6958cca3b731ece5f9f18af6a67f5f1c053adcbf1f619306d9df5663456a719bb60088e7f2cdeba02b00c0ef5b0fd64d3f09b9" ~ "dplyr*$#$*as_inlined_function",
+                                   qual_name_2 == "<NA>*$#$*c951370e9d4edbf71f896945efe8b5a176cca89354e7723e14af9d3e4e0e965c786bc1ea7dd336ff6bc86bec2b0a1a5262cdc3d24040a625fda420bd4d8a5e14" ~ "dplyr*$#$*as_inlined_function",
+                                   qual_name_2 == "<NA>*$#$*ccfd93b19b3967ea16bc2ff4af3fb2f84df41e9bbf303b72954111c20442e3099fc497c25bff0428b161f00d45aa9b7f730c1fb97b2c46ba52713ec6df6d7dfd" ~ "dplyr*$#$*as_inlined_function",
+                                   qual_name_2 == "<NA>*$#$*f85f1e960944e3c616dd97e54b2bf2b3a2fa0c2d98a3098dd0f0d657a7450633a74d3038fee59cd374ee2a9d07135ff901cf7ff8898ee89e68c8ece9327800bf" ~ "dplyr*$#$*as_inlined_function",
+                                   qual_name_2 == "<NA>*$#$*9be8a02a8d42eda5c87df69443549321557a50606a73747b1c90de0d027b877ebf28791ecc890e89f06c2fe26827843ed06f314298d38ab01edfd4b414e6a66d" ~ "dplyr*$#$*as_inlined_function",
+                                   qual_name_2 == "<NA>*$#$*9d16889a3465f2357962df8bf813fc1f7e6a15d5ac16e5fd5fed6dc2cd589e6383ec5ade750a4b0f7345fbf158161a010c5bb0a3793baa6ba7642378d70cb61e" ~ "dplyr*$#$*as_inlined_function",
+                                   qual_name_2 == "<NA>*$#$*9be8a02a8d42eda5c87df69443549321557a50606a73747b1c90de0d027b877ebf28791ecc890e89f06c2fe26827843ed06f314298d38ab01edfd4b414e6a66d" ~ "dplyr*$#$*as_inlined_function",
+                                   qual_name_2 == "<NA>*$#$*8b818139c426ad348b5fbf6912d081484301cd2e2565e7480f7453570399f64d9b272fab4e5a90e000450203999b6a7c155da13e1a4168d0c29abfa804f2637e" ~ "dplyr*$#$*as_inlined_function",
+                                   qual_name_2 == "<NA>*$#$*dc63e2b51ac9a3daa1880b083c2388d55ef5bcbb807c0c1fc606a3d00df75830f6e0132e11c3b1e05a919d3eb7f9d9152b9ce2e591593ef344d0b745bbabf604" ~ "dplyr*$#$*as_inlined_function",
+                                   qual_name_2 == "<NA>*$#$*9b7037c2d503da37715af41fde521a90c413b26bd17c5bcbf3a39f9bf72b2acb522f7cde2a31b5e5c4ba578367c5fa0a55bdb41be0e730df20adde107ff0df88" ~ "dplyr*$#$*as_inlined_function",
+                                   qual_name_2 == "<NA>*$#$*fb884172df92d7f7714d82fe74501f5b0164e3371bddbbef7cff5e1fd01bab5e0f56d9e1b6ad0c17a466e5f7046abb1c082dfcb7b8c88fcaab16173bb8c446a5" ~ "dplyr*$#$*as_inlined_function",
+                                   qual_name_2 == "<NA>*$#$*fe60ae2b43cb62cde80eb81ccfcce68e39f9c3d835dfa004633f85eb31c0822b359e9e672a518a31b471919a3962c5c65c2e66f8da74e07ab5b6052c3dd74616" ~ "dplyr*$#$*as_inlined_function",
+                                   qual_name_2 == "<NA>*$#$*4c72503e84e660092349d322ed72cd8b40748850f4ba56cbd6492f5d7a8438ce121343b02a60217f9d547598c83ff1c4eb3430eede86414fbab6656830e91056" ~ "dplyr*$#$*as_inlined_function",
+                                   qual_name_2 == "<NA>*$#$*86c0c8985cbe848b14cf13d5e5d7296f4e4279e95da83e02b76e349620cb897e87512d914e27b2868108ca4304f782d6e8508391aa7f36b0721e0bd407bd6a12" ~ "dplyr*$#$*as_inlined_function",
+                                   qual_name_2 == "<NA>*$#$*b70f3a86566b358f94562127e074a4abb09cd4b5db4020f1aaee090f4198e66fb13b6e13443953ab606e53ae5cd5e2d309e985a01146ca1b3566fd7daa3c3910" ~ "base*$#$*Vectorize*$#$*FUNV",
+                                   qual_name_2 == "<NA>*$#$*l" ~ "rlang*$#$*testthat/test-trace.R/l",
+                                   qual_name_2 == "<NA>*$#$*local_colors" ~ "crayon*$#$*testthat/helper.R/local_colors",
+                                   qual_name_2 == "<NA>*$#$*8755bfcda5dd97a61cc81d8955240e544dc2e1e7504f15089eda6474b169c7bc1dc4e56d31eb5760328eeb04e25545b0ae9160effd645bdd7bddaa8893b452df" ~ "R.utils*$#$*withSeed",
+                                   qual_name_2 == "<NA>*$#$*4ca482ff9e2167d5e1d54b30b971ae4ca944dc9bd0930a9477bf7f0deaf44d1b8e9d9b964c2fdcdb2c3f28ef0c3996963dfca92e1d9f66b25a0c9572232aa563" ~ "zoo*$#$*vignette/zoo-faq/<NA>*$#$*4ca482ff9e2167d5e1d54b30b971ae4ca944dc9bd0930a9477bf7f0deaf44d1b8e9d9b964c2fdcdb2c3f28ef0c3996963dfca92e1d9f66b25a0c9572232aa563",
+                                   qual_name_2 == "<NA>*$#$*local_rng_version" & str_starts(source, fixed("cli")) ~ "cli*$#$*testthat/helper.R/local_rng_version",
+                                   qual_name_2 == "<NA>*$#$*local_rng_version" & str_starts(source, fixed("igraph")) ~ "igraph*$#$*testthat/helper.R/local_rng_version",
+                                   qual_name_2 == "<NA>*$#$*f" & str_starts(source, fixed("glue")) ~ "glue*$#$*tests/testthat/test-glue.R/f",
+                                   qual_name_2 == "<NA>*$#$*f_base" & str_starts(source, fixed("rlang")) ~ "rlang*$#$*testthat/test-retired.R/f_base",
+                                   qual_name_2 == "<NA>*$#$*renderTriple" & source == "shiny*$#$*example/createRenderFunction" ~ "shiny*$#$*example/createRenderFunction.R/renderTriple",
+                                   qual_name_2 == "<NA>*$#$*renderTriple" & source == "shiny*$#$*example/exprToFunction" ~ "shiny*$#$*example/exprToFunction.R/renderTriple",
+                                   qual_name_2 == "<NA>*$#$*justExecute" & source == "shiny*$#$*testthat/test-reactivity" ~ "shiny*$#$*testthat/test-reactivity.R/justExecute",
+                                   qual_name_2 == "<NA>*$#$*setInlineRsp" ~ "R.rsp*$#$*setInlineRsp",
+                                   qual_name_2 == "<NA>*$#$*648dc6eca0f9903d13c2c8b3461f5972066ed0ed202685257a2319ebedc8ceb24ee101317e30f89e2d77d69c5a69f801c921954f13eb081cadedf30cd8307ad6" ~ "cli*$#$*format_error",
+                                   qual_name_2 %in% c("<NA>*$#$*glue_safely", "<NA>*$#$*glue_fmt", "<NA>*$#$*glue_sh", "<NA>*$#$*fun", "<NA>*$#$*renderDouble", "<NA>*$#$*local_create_site", 
+                                                      "<NA>*$#$*.generate_temp_vignette", "<NA>*$#$*ivcoef", "<NA>*$#$*createFormula", "<NA>*$#$*fn", 
+                                                      "<NA>*$#$*db09a60a5b7989c0cc8c44d881a8d2bffea2f8a71db26768a12ccfe01fdf1c75803729bd5025669c3805a66761b7ca920c55e82f1a7eeaf210f7103ab5ab3363", 
+                                                      "<NA>*$#$*pnl.xaxis", "<NA>*$#$*pnl.xyarea", "<NA>*$#$*my.panel", "<NA>*$#$*g") ~ paste0(source, "/", qual_name_2),
+                                   TRUE ~ qual_name_2)) %>%
+    mutate(pack_name = map_chr(str_split(qual_name_2, fixed("*$#$*")), ~.[1])) %>%
+    mutate(result_pack_name = map_chr(str_split(result_env_qual_name, fixed("*$#$*")), ~.[1])) %>%
+    mutate(category = case_when(str_detect(qual_name_2, fixed("/")) ~ "Top-Level",
+                                pack_name %in% CORE_PACKAGES ~ "Core",
+                                TRUE ~ "User")) %>%
+    count(fun_name, n, source, call_expr, aliased, category, pack_name, qual_name_2, result_pack_name, result_env_qual_name, wt = count, name = "calls") %>%
+    arrange(desc(calls))
+```
+
+## Summary
+
+```{r, eval = TRUE}
+PARENT_FRAME_TABLE %>%
+    mutate(same_package = pack_name == result_pack_name) %>%
+    group_by(category, same_package) %>%
+    summarize(calls = sum(calls)) %>%
+    ungroup() %>%
+    mutate(call_perc = round(100 * calls / sum(calls), 2)) %>%
+    datatable()
+
+PARENT_FRAME_SUMMARY <-
+    PARENT_FRAME_TABLE %>%
+    group_by(fun_name, aliased, category) %>%
+    summarize(calls = sum(calls),
+              packages = length(unique(pack_name)),
+              functions = length(unique(qual_name_2)),
+              pack_names = paste(unique(pack_name), collapse = ", "),
+              fun_names = paste(unique(qual_name_2), collapse = ", ")) %>%
+    ungroup() %>%
+    mutate(call_perc = round(100* calls / sum(calls), 2)) %>%
+    arrange(desc(calls))
+
+datatable(PARENT_FRAME_SUMMARY)
+
+
+PARENT_FRAME_TABLE_LATEX <-
+    PARENT_FRAME_TABLE %>%
+    filter(!is.na(qual_name_2) & !str_starts(qual_name_2, fixed("<NA>"))) %>%
+    filter(category != "Top-Level") %>%
+    group_by(category) %>%
+    summarize(CallCnt = sum(calls),
+              PackCnt = length(unique(pack_name)),
+              FunCnt = length(unique(qual_name_2)),
+              pack_names = paste(unique(pack_name), collapse = ", "),
+              fun_names = paste(unique(qual_name_2), collapse = ", ")) %>%
+    ungroup() %>%
+    mutate(CallPerc = latex_sanitize(label_percent()(round(CallCnt / sum(CallCnt), 2)))) %>%
+    mutate(CallCnt = label_number_si(accuracy = 0.1)(CallCnt))
+    
+MacGen$from_df(PARENT_FRAME_TABLE_LATEX,
+               PackCnt,
+               FunCnt,
+               CallCnt,
+               CallPerc, 
+               prefix = paste0("ParentFrame", PARENT_FRAME_TABLE_LATEX$category))
+```
+
+## Call Expression Distribution
+
+```{r, eval = TRUE}
+PARENT_FRAME_TABLE %>%
+    count(call_expr, wt = calls, name = "calls") %>%
+    arrange(desc(calls)) %>%
+    mutate(call_perc = round(100 * calls / sum(calls), 2)) %>%
+    mutate(call_cumperc = round(100 * cumsum(calls) / sum(calls), 2)) %>%
+    datatable()
+```
+
+## Depth Distribution
+
+```{r, eval = TRUE}
+PARENT_FRAME_DEPTH <-
+    PARENT_FRAME_TABLE %>%
+    count(n, wt = calls, name = "calls") %>%
+    arrange(desc(calls)) %>%
+    mutate(call_perc = round(100 * calls / sum(calls), 2)) %>%
+    mutate(call_cumperc = round(100 * cumsum(calls) / sum(calls), 2))
+
+datatable(PARENT_FRAME_DEPTH)
+
+PARENT_FRAME_DEPTH_LATEX <-
+PARENT_FRAME_DEPTH %>%
+mutate(CallPerc = latex_sanitize(label_percent(0.01)(call_perc / 100))) %>%
+mutate(Name = c("One", "Two", "Three"))
+
+MacGen$from_df(PARENT_FRAME_DEPTH_LATEX,
+               CallPerc,
+               prefix = paste0("ParentFrameDepth", PARENT_FRAME_DEPTH_LATEX$Name))
+```
+
+## Call Expression and Depth
+
+```{r, eval = TRUE}
+PARENT_FRAME_DEPTH_CALLERS <-
+PARENT_FRAME_TABLE %>%
+    filter(!(category %in% c("Top-Level"))) %>%
+    count(n, call_expr, pack_name, qual_name_2, wt = calls, name = "calls") %>%
+    group_by(n) %>%
+    arrange(desc(calls)) %>%
+    mutate(call_perc = round(100 * calls / sum(calls), 2)) %>%
+    mutate(call_cumperc = round(100 * cumsum(calls) / sum(calls), 2)) %>%
+    ungroup()
+
+datatable(PARENT_FRAME_DEPTH_CALLERS)
+
+
+PARENT_FRAME_DEPTH_CALLER_COUNT_LATEX <- 
+PARENT_FRAME_DEPTH_CALLERS %>%
+group_by(n) %>%
+summarize(FunCnt = length(unique(qual_name_2))) %>%
+ungroup() %>%
+mutate(NName = case_when(n == 1 ~ "One", n == 2 ~ "Two", n == 3 ~ "Three"))
+
+MacGen$from_df(PARENT_FRAME_DEPTH_CALLER_COUNT_LATEX,
+               FunCnt,
+               prefix = paste0("ParentFrameDepth", PARENT_FRAME_DEPTH_CALLER_COUNT_LATEX$NName))
+
+
+PARENT_FRAME_DEPTH_CALLERS_LATEX <-
+PARENT_FRAME_DEPTH_CALLERS %>%
+    group_by(n) %>%
+    slice(1:2) %>%
+    mutate(Position = c("One", "Two")) %>%
+    ungroup() %>%
+    mutate(CallPerc = latex_sanitize(label_percent(0.01)(call_perc / 100))) %>%
+    mutate(NName = case_when(n == 1 ~ "One", n == 2 ~ "Two", n == 3 ~ "Three")) %>%
+    mutate(Name = paste0("ParentFrameDepth", NName, "Caller", Position)) %>%
+    mutate(CallerName = str_replace_all(qual_name_2, fixed("*$#$*"), "::")) %>%
+    mutate(CallerName = paste0("\\c{", latex_sanitize(CallerName), "}"))
+    
+MacGen$from_df(PARENT_FRAME_DEPTH_CALLERS_LATEX,
+               CallerName,
+               CallPerc,
+               prefix = PARENT_FRAME_DEPTH_CALLERS_LATEX$Name)
+```
+
+## Frequency
+
+```{r, eval = TRUE}
+PARENT_FRAME_CALLERS <-
+    PARENT_FRAME_TABLE %>%
+    count(category, qual_name_2, wt = calls, name = "calls") %>%
+    arrange(desc(calls)) %>%
+    group_by(category) %>%
+    arrange(desc(calls)) %>%
+    mutate(call_perc = round(100 * calls / sum(calls), 2)) %>%
+    mutate(call_cumperc = round(100 * cumsum(calls) / sum(calls), 2)) %>%
+    slice(1:10) %>%
+    mutate(position = c("One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten")) %>%
+    ungroup()
+
+datatable(PARENT_FRAME_CALLERS)
+
+ParentFrameCoreTopTenCallCount <-
+    PARENT_FRAME_CALLERS %>%
+    filter(category == "Core") %>%
+    pull(calls) %>%
+    sum()
+
+ParentFrameCoreTopTenCallPerc <-
+    latex_sanitize(label_percent(0.1)(
+        ParentFrameCoreTopTenCallCount / 
+        PARENT_FRAME_TABLE %>% filter(category == "Core") %>% pull(calls) %>% sum()))
+        
+MacGen$from_args(ParentFrameCoreTopTenCallPerc = ParentFrameCoreTopTenCallPerc)
+
+ParentFrameUserTopTenCallCount <-
+    PARENT_FRAME_CALLERS %>%
+    filter(category == "User") %>%
+    pull(calls) %>%
+    sum()
+    
+ParentFrameUserTopTenCallPerc <-
+    latex_sanitize(label_percent(0.1)(
+        ParentFrameUserTopTenCallCount / 
+        PARENT_FRAME_TABLE %>% filter(category == "User") %>% pull(calls) %>% sum()))
+        
+MacGen$from_args(ParentFrameUserTopTenCallPerc = ParentFrameUserTopTenCallPerc)
+
+PARENT_FRAME_CALLERS_LATEX <-
+PARENT_FRAME_CALLERS %>%
+filter(!(category %in% c("Top-Level"))) %>%
+mutate(CallPerc = latex_sanitize(label_percent(0.01)(call_perc / 100))) %>%
+mutate(CallerName = str_replace_all(qual_name_2, fixed("*$#$*"), "::")) %>%
+mutate(CallerName = paste0("\\c{", latex_sanitize(CallerName), "}"))
+
+MacGen$from_df(PARENT_FRAME_CALLERS_LATEX,
+               CallerName,
+               CallPerc,
+               prefix = paste0("ParentFrame",
+                               PARENT_FRAME_CALLERS_LATEX$category,
+                               PARENT_FRAME_CALLERS_LATEX$position))
+```
+
+## Tainted
+
+```{r, eval = TRUE}
+PARENT_FRAME_TAINTED_FUNCTIONS <- length(unique(PARENT_FRAME_TABLE$result_env_qual_name))
+
+print(PARENT_FRAME_TAINTED_FUNCTIONS)
+
+tainted_culprit_distribution <-
+    PARENT_FRAME_TABLE %>%
+    group_by(result_env_qual_name) %>%
+    summarize(culprits = length(unique(qual_name_2))) %>%
+    ungroup()
+
+
+PARENT_FRAME_TABLE %>%
+left_join(tainted_culprit_distribution, by = "result_env_qual_name") %>%
+filter(culprits == 1) %>%
+group_by(category, qual_name_2) %>%
+summarize(tainted = length(unique(result_env_qual_name))) %>%
+ungroup() %>%
+arrange(desc(tainted)) %>%
+mutate(tainted_perc = round(100 * tainted / PARENT_FRAME_TAINTED_FUNCTIONS, 2)) %>%
+mutate(call_cumperc = round(100 * cumsum(tainted) / PARENT_FRAME_TAINTED_FUNCTIONS, 2)) %>%
+datatable()
+
+
+PARENT_FRAME_TABLE %>%
+group_by(category, qual_name_2) %>%
+summarize(tainted = length(unique(result_env_qual_name))) %>%
+ungroup() %>%
+group_by(category, tainted) %>%
+summarize(fun_count = length(unique(qual_name_2))) %>%
+ungroup() %>%
+datatable()
+```
+
+## Cleanup
+
+```{r, eval = TRUE}
+PARENT_FRAME_TABLE %>%
+    filter(is.na(result_pack_name) | result_pack_name == "<NA>") %>%
+    arrange(desc(calls)) %>%
+    datatable()
+    
+PARENT_FRAME_TABLE %>%
+    filter(qual_name_2 == "rlang*$#$*captureArgInfo") %>%
+    arrange(desc(calls)) %>%
+    datatable()
+```
+
+```
 PARENT_FRAME_SUMMARY <-
     call_stack %>% 
     filter(fun_name == "parent.frame") %>% 
@@ -106,17 +415,447 @@ R6/R/r6_class.R/R6Class
 ```
 
 
-## parent.frame
+# environment
+
+# parent.frame
+
+## Raw
+
+```{r, eval = TRUE}
+ENVIRONMENT_TABLE <-
+    call_stack %>%
+    filter(fun_name == "environment") %>%
+    mutate(aliased = qual_name_1 != "base*$#$*environment") %>%
+    mutate(source = paste0(package, "*$#$*", type, "/", filename)) %>%
+    mutate(qual_name_2 = case_when(str_starts(qual_name_2, fixed("base*$#$*tryCatch")) & str_ends(qual_name_2, fixed("*$#$*doTryCatch")) ~ "base*$#$*tryCatch*$#$*doTryCatch",
+                                   str_starts(qual_name_2, fixed("base*$#$*tryCatch*$#$*tryCatchOne")) ~ "base*$#$*tryCatch*$#$*tryCatchOne",
+                                   qual_name_2 == "<NA>*$#$*rewire" ~ "shiny*$#$*testthat/helper.R/rewire",
+                                   qual_name_2 == "<NA>*$#$*d8bfb806e7653a6d3e3e27e652331fc534c0e62736ea1b66c8d6e544d4292c54608766e3039aadeb0c3b224324a52978cb3124377b4edb65f51120adfe81017c" ~ "foreach*$#$*doSEQ",
+                                   qual_name_2 == "<NA>*$#$*a75af109d7da031a30fff4219ccd025182b19e79848ac7b8c0b4b488d41172ab845db905738fa4448245dc50d41643e38ef9084e0290dd7c1d95d0a1193fa738" ~ "methods*$#$*body<-::MethodDefinition",
+                                   qual_name_2 == "<NA>*$#$*parent*$#$*0c9da6393ceeb9b41cd33ff61818d740b17024c285379d558e751097f7a62099de7f7aa4761d171951425f7a0f672926ebc1362e2d813953f6f001ee528044a9" ~ "shiny*$#$*moduleServer",
+                                   qual_name_2 == "<NA>*$#$*outerModule*$#$*41a060d9cbf6de0b05be2d26b9be1fbe493cfc2c0f13229f8664132c277eee3e69e735c72908960b08aa5caed104df544017d959928a300234a630087d283883" ~ "shiny*$#$*moduleServer",
+                                   qual_name_2 == "<NA>*$#$*myModuleServer*$#$*a73c3f38445cc6458523c404d3a92ea6f8deba201216b7c288a7132fbf522776f81c6b00f2056508d7e7078bd6c36fea211d280a6c6713e1926ceed9656a3580" ~ "shiny*$#$*moduleServer",
+                                   qual_name_2 == "<NA>*$#$*module*$#$*faaf8223d0e08850e6e6b5dd380e3c48d869731dd322cd1ac66caa986a8327db5c389bee2ee43adfc6f599268d5611ea8a98d04cc5853bdd67e4e77c916a6f22" ~ "shiny*$#$*moduleServer",
+                                   qual_name_2 == "<NA>*$#$*module*$#$*a206431f98693e3a430395fc780d52f9aa9794b35a34dc2e6007897886ba46609fd265aee7c0e456b3a41e4122599441ec3e5855d136431498952fbfdcf0dc28" ~ "shiny*$#$*moduleServer",
+                                   qual_name_2 == "<NA>*$#$*module*$#$*0640960d5ba00d73919a3552388a1ef4429532df70da391659ba28cb7072dba9c6857efc67dd599872c89863ee5911f6c9b88c65883ddcc9567ba76464b15a60" ~ "shiny*$#$*moduleServer",
+                                   qual_name_2 == "<NA>*$#$*960bb4fccef9ce8bdab76bd243b8882ed42a502d69124e9766065099fe880e71dca57a7e535923ef172709a96ff3e8da679f804721f92541579a931d7e32a361" ~ "shiny*$#$*moduleServer",
+                                   qual_name_2 == "<NA>*$#$*956d1c62f0b87a91989615de58c364e2d75dce42e38ff84913442d5b01b49b97e5f3396a83ac0262a515f243f36b77b011797e195a5eadc611470c43321c1c6e*$#$*ecc71c52d7ef140b3f19b602e002aa0b8f8d898b6db72dd237acbba8f090366c4802dafeef472abe6610c6bb4f9d3cb64e5a1685b2072e16f745cea448dfd9c0" ~ "shiny*$#$*moduleServer",
+                                   qual_name_2 == "<NA>*$#$*6eeb9db6c6b548fd7f0a069e3aa71e6aeabc1f0f5f1598220d12e90100266a40f6e19f70fc1068395cade7c1cd0f27cac1d9061f7eee56ef3ac0ca63c75948e5*$#$*a58393fffed716d782039ff9f9b7021e8156fdb09c67b3253d4fa0dc5ea4192a68f63dbbe9bda7b821a8ecd437cb15087a36c0aaa85144ee4913e00d0858d554" ~ "shiny*$#$*moduleServer",
+                                   qual_name_2 == "<NA>*$#$*5d26b8deafbb8d09e9f5ad7d0370a50ecd6a62ec26b1736a7a948c167ff364e31117d9084dcbc4971528b9ab4adb09f5392e550faafbe1e979fea6eae9fc571e*$#$*79161f870621cc01116ea87416aeb6eebcb89b28b7c2b591f1f16802ef8d92c590770e934665a287614c52d3ac8792c7822caf6cc0259d249a9c817c6a304cd9" ~ "shiny*$#$*moduleServer",
+                                   qual_name_2 == "<NA>*$#$*23a061e80f5cf534b3950cdd495a1f0188684157e89817ba471cd2accd49054012674a8009cedc4b7c9f29985bf4292a999133b0a3ab0d957f3fa57fc45af8e8*$#$*e78d98a3fc3bf39145aefb165b41d691fbbfc34eeaec4f85886e2716f1ea9415832fcf95f2d6072c8e9d37f99389400c6555c55cf549fda08162f29d6ebbdde4" ~ "shiny*$#$*moduleServer",
+                                   qual_name_2 == "<NA>*$#$*2ae04899b56d2a4922d9088b16dca9f5493c3ceb37dabbfb0d6625d23af95e73e9e212ac86b83f1445eacfdbd3fa81b3a661bb7f3c5da3fa04debfa085395681*$#$*remap_func_envs*$#$*655729dd5ad88c8d804343ea7f72e9e0e26fe2b9781998c9a0df54061a1a818cdcddffdc3f868a18f3559ea5c228b7773a58b4c6cabf8b5f0a73a540337960a7" ~ "R6*$#$*remap_func_envs::lapply_arg",
+                                   qual_name_2 == "<NA>*$#$*79197ba71aa3ab7a184d4b4a855ab7a44e417429372c19a51e2f019c32cb81bb8be9e4d96b8fab73661dd8dc6a3992d115b3c9a57d1c68f744ed1ed9c131bbb9" ~ "methods*$#$*body<-::MethodDefinition", 
+                                   qual_name_2 == "<NA>*$#$*d5450620faf6bb32b82ecc469f3cd0f088142b84bbee547d1ab316b3a235e9947ed15e1cf6424e97822057481eb1e2f6765a323f973a775a6394359c4868fcdb" ~ "jsonlite*$#$*testthat/test-serializeJSON-functions/lapply-argument",
+                                   qual_name_2 == "<NA>*$#$*2ae04899b56d2a4922d9088b16dca9f5493c3ceb37dabbfb0d6625d23af95e73e9e212ac86b83f1445eacfdbd3fa81b3a661bb7f3c5da3fa04debfa085395681*$#$*copy_slice*$#$*is_method" ~ "R6*$#$*copy_slice*$#$*is_method",
+                                   qual_name_2 == "<NA>*$#$*791620f526e71dbac7e9a2c9576df3936e806cc59c77b953e6972fef671f1a907c456e5b2a5a830c3f8514edfca5eb4b23192b88aa83a2c1d8052c3881f3d666" ~ "rlang*$#$*testthat/test-eval-tidy/fn",
+                                   qual_name_2 == "<NA>*$#$*6664fc5d83a9dbca201fd53044222cb934710b4897643aa88ae177252c91eb4b0106dbddb83e9e3c2b54394223beb23557f189b0fd349d9d98a2d55d3411abd3" ~ "dplyr*$#$*testthat/test-summarise/out",
+                                   qual_name_2 == "<NA>*$#$*1c77f40f43c37011c9dcc09c0c15b27411f56d8072a693f4294f5f9d111ce528b92c5adc1fff7d55d50a9103f8deea921f4413fe1391ed2011c956b9f4c080e0" ~ "shiny*$#$*testthat/test-reactivity/fun-1",
+                                   qual_name_2 == "<NA>*$#$*182b5c31157b66f7a10d9ebd1e6314dce3a1b3458fda1975af7f180f0d2b6b77f596a26973f21ff06bed2b66d3581f2b0627683ad0af3dfcefebefa8a93807c5" ~ "shiny*$#$*testthat/test-reactivity/fun-2",
+                                   qual_name_2 == "<NA>*$#$*fn" ~ source,
+                                   qual_name_2 == "<NA>*$#$*doLTSdata*$#$*dolts" ~ "robustbase*$#$*test/tlts/doLTSdata*$#$*dolts",
+                                   qual_name_2 == "<NA>*$#$*current_frame" ~ "rlang*$#$*testthat/test-c-api/current_frame",
+                                   qual_name_2 == "<NA>*$#$*capture" ~ "rlang*$#$*testthat/test-cnd-entrace/capture",
+                                   qual_name_2 == "<NA>*$#$*checkWarning" ~ "gtools*$#$*test/test_binsearch/checkWarning",
+                                   qual_name_2 == "<NA>*$#$*getSpline.xy" ~ "robustbase*$#$*test/MT-tst/getSpline.xy",
+                                   qual_name_2 == "<NA>*$#$*g" ~ "rlang*$#$*testthat/test-stack/g-1",
+                                   qual_name_2 == "<NA>*$#$*fun" ~ paste0(source, "/", "fun"),
+                                   TRUE ~ qual_name_2)) %>%
+    mutate(pack_name = map_chr(str_split(qual_name_2, fixed("*$#$*")), ~.[1])) %>%
+    mutate(result_pack_name = map_chr(str_split(result_env_qual_name, fixed("*$#$*")), ~.[1])) %>%
+    mutate(category = case_when(str_detect(qual_name_2, fixed("/")) ~ "Top-Level",
+                                pack_name %in% CORE_PACKAGES ~ "Core",
+                                TRUE ~ "User")) %>%
+    count(fun_name, n, source, call_expr, aliased, category, pack_name, qual_name_2, result_pack_name, result_env_qual_name, wt = count, name = "calls") %>%
+    arrange(desc(calls))
+```
+
+## Summary
 
 ```{r, eval = TRUE}
 ENVIRONMENT_SUMMARY <-
-    call_stack %>% 
-    filter(fun_name == "environment") %>% 
-    mutate(aliased = qual_name_1 != "base*$#$*environment") %>%
-    mutate(pack_name = map_chr(str_split(qual_name_2, fixed("*$#$*")), ~.[1])) %>%
-    mutate(result_pack_name = map_chr(str_split(result_env_qual_name, fixed("*$#$*")), ~.[1])) %>%
-    count(fun_name, n, aliased, pack_name, qual_name_2, result_pack_name, result_env_qual_name, wt = count, name = "count") %>%
-    arrange(desc(count))
+    ENVIRONMENT_TABLE %>%
+    group_by(fun_name, aliased, category) %>%
+    summarize(calls = sum(calls),
+              packages = length(unique(pack_name)),
+              functions = length(unique(qual_name_2)),
+              pack_names = paste(unique(pack_name), collapse = ", "),
+              fun_names = paste(unique(qual_name_2), collapse = ", ")) %>%
+    ungroup() %>%
+    mutate(call_perc = round(100* calls / sum(calls), 2)) %>%
+    arrange(desc(calls))
     
 datatable(ENVIRONMENT_SUMMARY)
+```
+
+## Cleanup
+
+```{r, eval = TRUE}
+ENVIRONMENT_TABLE %>%
+filter(is.na(qual_name_2) | pack_name == "<NA>") %>%
+datatable()
+```
+
+
+# sys.frames
+
+```{r, eval = TRUE}
+SYS_FRAMES_TABLE <-
+    call_stack %>%
+    filter(fun_name == "sys.frames") %>%
+    mutate(aliased = qual_name_1 != "base*$#$*sys.frames") %>%
+    mutate(source = paste0(package, "*$#$*", type, "/", filename)) %>%
+    mutate(qual_name_2 = case_when(qual_name_2 == "base*$#$*eval" ~ source,
+                                   TRUE ~ qual_name_2)) %>%
+    mutate(pack_name = map_chr(str_split(qual_name_2, fixed("*$#$*")), ~.[1])) %>%
+    mutate(result_pack_name = map_chr(str_split(result_env_qual_name, fixed("*$#$*")), ~.[1])) %>%
+    mutate(category = case_when(str_detect(qual_name_2, fixed("/")) ~ "Top-Level",
+                                pack_name %in% CORE_PACKAGES ~ "Core",
+                                TRUE ~ "User")) %>%
+    count(fun_name, n, source, call_expr, aliased, category, pack_name, qual_name_2, seq_env_qual_name, result_pack_name, result_env_qual_name, wt = count, name = "calls") %>%
+    arrange(desc(calls))
+    
+datatable(SYS_FRAMES_TABLE)
+```
+
+## Extractees
+
+
+```{r, eval = TRUE}
+process_env_qual_names <- function(names) {
+
+    process_one <- function(names) {
+        str_split(names, fixed("|")) %>%
+        first() %>%
+        purrr::keep(~ {!is.na(.) & !str_starts(., "NamedEnv")})
+    }
+    
+    map(names, process_one) %>%
+    flatten_chr() %>%
+    {tibble(env_name = .)} %>%
+    count(env_name, name = "calls")
+}
+
+SYS_FRAMES_EXTRACTEES <-
+    call_stack %>%
+    filter(fun_name == "sys.frames") %>%
+    pull(seq_env_qual_name) %>%
+    process_env_qual_names()
+    
+    
+datatable(SYS_FRAMES_EXTRACTEES)
+```
+
+
+## Summary
+
+```{r, eval = TRUE}
+SYS_FRAMES_SUMMARY <-
+    SYS_FRAMES_TABLE %>%
+    group_by(fun_name, aliased, category) %>%
+    summarize(calls = sum(calls),
+              packages = length(unique(pack_name)),
+              functions = length(unique(qual_name_2)),
+              pack_names = paste(unique(pack_name), collapse = ", "),
+              fun_names = paste(unique(qual_name_2), collapse = ", ")) %>%
+    ungroup() %>%
+    mutate(call_perc = round(100* calls / sum(calls), 2)) %>%
+    arrange(desc(calls))
+    
+datatable(SYS_FRAMES_SUMMARY)
+```
+
+
+# sys.parents
+
+## Raw
+
+```{r, eval = TRUE}
+SYS_PARENTS_TABLE <-
+    call_stack %>% 
+    filter(fun_name == "sys.parents") %>% 
+    mutate(aliased = qual_name_1 != "base*$#$*sys.parents") %>%
+    mutate(qual_name_2 = case_when(qual_name_2 == "base*$#$*eval" & qual_name_3 == "testthat*$#$*test_code" ~ paste0(package, "*$#$*", type, "/", filename),
+                                   qual_name_2 == "<NA>*$#$*capture" & qual_name_3 == "<NA>*$#$*capture_1" ~ paste0(package, "*$#$*", type, "/", filename),
+                                   qual_name_2 == "shiny*$#$*createStackTracePromiseDomain*$#$*diff_myers" & qual_name_3 == "<NA>*$#$*522810d0a92f660d83f0cc7dfae5d72cc8b405134945c3c80aedf8a8bc597fa80c01d4796097110bab0208fc9d9ab1cf52830519c26552bd353269f2c3294ce0" ~ "shiny*$#$*createStackTracePromiseDomain*$#$*wrapOnRejected",
+                                   qual_name_2 == "shiny*$#$*createStackTracePromiseDomain*$#$*94deb03c3763d43d2c6e3dc4a908ac028cc0d45171adb3bb450b0efcfc2c60834946bf035bd57b1568e5d1e50afcba20d11674a7a059b55cc5e3b7d9ed6cd0bd" ~ "shiny*$#$*createStackTracePromiseDomain*$#$*wrapOnFulfilled",
+                                   qual_name_2 == "shiny*$#$*createStackTracePromiseDomain*$#$*9ae112b8d888a8d62dce69779013b5388d12a744bdb68fae202f038cc68b90f25ec6d79e172a0ee929b82d0466d7b4aa9bb85fa8a6cc62ac5e90406e7272d130" ~  "shiny*$#$*createStackTracePromiseDomain*$#$*wrapOnRejected",
+                                   TRUE ~ qual_name_2)) %>%
+    mutate(pack_name = map_chr(str_split(qual_name_2, fixed("*$#$*")), ~.[1])) %>%
+    mutate(category = case_when(str_detect(qual_name_2, fixed("/")) ~ "Top-Level",
+                                pack_name %in% CORE_PACKAGES ~ "Core",
+                                TRUE ~ "User")) %>%
+    count(fun_name, aliased, category, pack_name, qual_name_2, qual_name_3, qual_name_4, wt = count, name = "calls") %>%
+    arrange(desc(calls))
+    
+datatable(SYS_PARENTS_TABLE)
+```
+
+
+## Call Expressions
+
+```{r, eval = TRUE}
+call_stack %>% 
+    filter(fun_name == "sys.parents") %>%
+    pull(call_expr) %>%
+    unique()
+```
+
+## Summary
+
+```{r, eval = TRUE}
+SYS_PARENTS_SUMMARY <-
+    SYS_PARENTS_TABLE %>%
+    group_by(fun_name, aliased, category) %>%
+    summarize(calls = sum(calls),
+              packages = length(unique(pack_name)),
+              functions = length(unique(qual_name_2)),
+              pack_names = paste(unique(pack_name), collapse = ", "),
+              fun_names = paste(unique(qual_name_2), collapse = ", ")) %>%
+    ungroup() %>%
+    mutate(call_perc = round(100* calls / sum(calls), 2)) %>%
+    arrange(desc(calls))
+
+datatable(SYS_PARENTS_SUMMARY)
+```
+
+# sys.nframe
+
+## Raw
+
+```{r, eval = TRUE}
+SYS_NFRAME_TABLE <-
+    call_stack %>%
+    filter(fun_name == "sys.nframe") %>% 
+    mutate(aliased = qual_name_1 != "base*$#$*sys.nframe") %>%
+    mutate(qual_name_2 = case_when(qual_name_2 == "base*$#$*eval" & qual_name_3 == "testthat*$#$*test_code" ~ "rlang*$#$*tests/testthat/test-retired.R",
+                                   qual_name_2 == "base*$#$*Sys.sleep" & qual_name_3 == "base*$#$*eval" ~ "later*$#$*C::async_input_handler::at_top_level::sys_nframe",
+                                   qual_name_2 == "rlang*$#$*eval_bare" & qual_name_3 == "testthat*$#$*test_code*$#$*register_expectation" ~ qual_name_3,
+                                   qual_name_2 == "<NA>*$#$*get_signal_info" ~ "rlang*$#$*tests/testthat/test-cnd-entrace.R",
+                                   qual_name_2 == "<NA>*$#$*fixup_ctxt_depth" ~ "rlang*$#$*tests/testthat/helper-stack.R",
+                                   qual_name_2 == "<NA>*$#$*4b9505884b8481240b790a197dc26a00d1e9b740c5653e3cb349752491657c54b4110da870fcf8ea474e6680cd30f3ba67ea32d1f18d23061dec19341240b1eb" ~ "processx*$#$*rethrow_call",
+                                   qual_name_2 == "<NA>*$#$*20469c4926d3f4b50ec02ee07c054708e6f81eb7a366842fd4f5969bd0a8cb0aaeacaa89155e4f27ca0cde452aac948a2bd599e812f7be4d60eb8445571c923f" ~ "processx*$#$*rethrow_call_with_cleanup",
+                                   qual_name_2 == "<NA>*$#$*dee9b7e0d975f57c46b8f5a24053df27ba43c52fff3f26311700f70c29b893a4be26ecae0473dae632e4ae9ffeabb66f68ae9a1033901ecd3734a174a9061615" ~ "callr*$#$*throw",
+                                   TRUE ~ qual_name_2)) %>%
+    mutate(pack_name = map_chr(str_split(qual_name_2, fixed("*$#$*")), ~.[1])) %>%
+    mutate(category = case_when(str_detect(qual_name_2, fixed("/")) ~ "Top-Level",
+                                pack_name %in% CORE_PACKAGES ~ "Core",
+                                TRUE ~ "User")) %>%
+    count(fun_name, aliased, category, pack_name, qual_name_2, qual_name_3, qual_name_4, wt = count, name = "calls") %>%
+    arrange(desc(calls))
+    
+datatable(SYS_NFRAME_TABLE)
+```
+
+## Call Expressions
+
+```{r, eval = TRUE}
+call_stack %>% 
+    filter(fun_name == "sys.nframe") %>%
+    pull(call_expr) %>%
+    unique()
+```
+
+## Summary
+
+```{r, eval = TRUE}
+SYS_NFRAME_SUMMARY <-
+    SYS_NFRAME_TABLE %>%
+    group_by(fun_name, aliased, category) %>%
+    summarize(calls = sum(calls),
+              packages = length(unique(pack_name)),
+              functions = length(unique(qual_name_2)),
+              pack_names = paste(unique(pack_name), collapse = ", "),
+              fun_names = paste(unique(qual_name_2), collapse = ", ")) %>%
+    ungroup() %>%
+    mutate(call_perc = round(100* calls / sum(calls), 2)) %>%
+    arrange(desc(calls))
+
+datatable(SYS_NFRAME_SUMMARY)
+
+#SYS_NFRAME_ALL_CALLS <- sum(SYS_NFRAME_TABLE$calls)
+#SYS_NFRAME_ALL_FUNCTIONS <- length(unique(SYS_NFRAME_TABLE$qual_name_2))
+#
+#SYS_NFRAME_CORE_CALLS <- SYS_NFRAME_TABLE %>% filter(core) %>% pull(calls) %>% sum()
+#SYS_NFRAME_CORE_CALLS_PERC <- round(100 * SYS_NFRAME_CORE_CALLS / SYS_NFRAME_ALL_CALLS, 2)
+#SYS_NFRAME_CORE_FUNCTIONS <- SYS_NFRAME_TABLE %>% filter(core) %>% pull(qual_name_2) %>% unique() %>% length()
+#
+#SYS_NFRAME_USER_CALLS <- SYS_NFRAME_TABLE %>% filter(!core) %>% pull(calls) %>% sum()
+#SYS_NFRAME_USER_CALLS_PERC <- round(100 * SYS_NFRAME_USER_CALLS / SYS_NFRAME_ALL_CALLS, 2)
+#SYS_NFRAME_USER_FUNCTIONS <- SYS_NFRAME_TABLE %>% filter(!core) %>% pull(qual_name_2) %>% unique() %>% length()
+
+#Total number of `sys.nframe` calls is 
+#`r SYS_NFRAME_ALL_CALLS` 
+#of which 
+#`r SYS_NFRAME_CORE_CALLS` (`r SYS_NFRAME_CORE_CALLS_PERC`%)
+#are from core packages and 
+#`r SYS_NFRAME_USER_CALLS` (`r SYS_NFRAME_USER_CALLS_PERC`%) 
+#are from user packages. 
+#
+#`r SYS_NFRAME_ALL_FUNCTIONS` functions call `sys.nframe` 
+#out of which  `r SYS_NFRAME_CORE_FUNCTIONS` are core functions 
+#and `r SYS_NFRAME_USER_FUNCTIONS` are user functions.
+```
+
+
+# baseenv
+
+## Raw
+
+```{r, eval = TRUE}
+BASEENV_TABLE <-
+    call_stack %>%
+    filter(fun_name == "baseenv") %>%
+    mutate(aliased = qual_name_1 != "base*$#$*baseenv") %>%
+    mutate(source = paste0(package, "*$#$*", type, "/", filename)) %>%
+    mutate(qual_name_2 = case_when(TRUE ~ qual_name_2)) %>%
+    mutate(pack_name = map_chr(str_split(qual_name_2, fixed("*$#$*")), ~.[1])) %>%
+    mutate(result_pack_name = map_chr(str_split(result_env_qual_name, fixed("*$#$*")), ~.[1])) %>%
+    mutate(category = case_when(str_detect(qual_name_2, fixed("/")) ~ "Top-Level",
+                                pack_name %in% CORE_PACKAGES ~ "Core",
+                                TRUE ~ "User")) %>%
+    count(fun_name, n, source, call_expr, aliased, category, pack_name, qual_name_2, result_pack_name, result_env_qual_name, wt = count, name = "calls") %>%
+    arrange(desc(calls))
+```
+
+## Cleanup
+
+```{r, eval = TRUE}
+BASEENV_TABLE %>%
+    filter(is.na(qual_name_2) | pack_name == "<NA>") %>%
+    datatable()
+```
+
+## Summary
+
+```{r, eval = TRUE}
+BASEENV_TABLE %>%
+    mutate(same_package = pack_name == result_pack_name) %>%
+    group_by(category, same_package) %>%
+    summarize(calls = sum(calls)) %>%
+    ungroup() %>%
+    mutate(call_perc = round(100 * calls / sum(calls), 2)) %>%
+    datatable()
+
+BASEENV_SUMMARY <-
+    BASEENV_TABLE %>%
+    group_by(fun_name, aliased, category) %>%
+    summarize(calls = sum(calls),
+              packages = length(unique(pack_name)),
+              functions = length(unique(qual_name_2)),
+              pack_names = paste(unique(pack_name), collapse = ", "),
+              fun_names = paste(unique(qual_name_2), collapse = ", ")) %>%
+    ungroup() %>%
+    mutate(call_perc = round(100* calls / sum(calls), 2)) %>%
+    arrange(desc(calls))
+
+datatable(BASEENV_SUMMARY)
+```
+
+# globalenv
+
+## Raw
+
+```{r, eval = TRUE}
+GLOBALENV_TABLE <-
+    call_stack %>%
+    filter(fun_name == "globalenv") %>%
+    mutate(aliased = qual_name_1 != "base*$#$*globalenv") %>%
+    mutate(source = paste0(package, "*$#$*", type, "/", filename)) %>%
+    mutate(qual_name_2 = case_when(TRUE ~ qual_name_2)) %>%
+    mutate(pack_name = map_chr(str_split(qual_name_2, fixed("*$#$*")), ~.[1])) %>%
+    mutate(result_pack_name = map_chr(str_split(result_env_qual_name, fixed("*$#$*")), ~.[1])) %>%
+    mutate(category = case_when(str_detect(qual_name_2, fixed("/")) ~ "Top-Level",
+                                pack_name %in% CORE_PACKAGES ~ "Core",
+                                TRUE ~ "User")) %>%
+    count(fun_name, n, source, call_expr, aliased, category, pack_name, qual_name_2, result_pack_name, result_env_qual_name, wt = count, name = "calls") %>%
+    arrange(desc(calls))
+```
+
+## Cleanup
+
+```{r, eval = TRUE}
+GLOBALENV_TABLE %>%
+    filter(is.na(qual_name_2) | pack_name == "<NA>") %>%
+    datatable()
+```
+
+## Summary
+
+```{r, eval = TRUE}
+GLOBALENV_TABLE %>%
+    mutate(same_package = pack_name == result_pack_name) %>%
+    group_by(category, same_package) %>%
+    summarize(calls = sum(calls)) %>%
+    ungroup() %>%
+    mutate(call_perc = round(100 * calls / sum(calls), 2)) %>%
+    datatable()
+
+GLOBALENV_SUMMARY <-
+    GLOBALENV_TABLE %>%
+    group_by(fun_name, aliased, category) %>%
+    summarize(calls = sum(calls),
+              packages = length(unique(pack_name)),
+              functions = length(unique(qual_name_2)),
+              pack_names = paste(unique(pack_name), collapse = ", "),
+              fun_names = paste(unique(qual_name_2), collapse = ", ")) %>%
+    ungroup() %>%
+    mutate(call_perc = round(100* calls / sum(calls), 2)) %>%
+    arrange(desc(calls))
+
+datatable(GLOBALENV_SUMMARY)
+```
+
+
+# as.environment
+
+## Raw
+
+```{r, eval = TRUE}
+AS_ENVIRONMENT_TABLE <-
+    call_stack %>%
+    filter(fun_name == "as.environment") %>%
+    mutate(aliased = qual_name_1 != "base*$#$*as.environment") %>%
+    mutate(source = paste0(package, "*$#$*", type, "/", filename)) %>%
+    mutate(qual_name_2 = case_when(TRUE ~ qual_name_2)) %>%
+    mutate(pack_name = map_chr(str_split(qual_name_2, fixed("*$#$*")), ~.[1])) %>%
+    mutate(result_pack_name = map_chr(str_split(result_env_qual_name, fixed("*$#$*")), ~.[1])) %>%
+    mutate(category = case_when(str_detect(qual_name_2, fixed("/")) ~ "Top-Level",
+                                pack_name %in% CORE_PACKAGES ~ "Core",
+                                TRUE ~ "User")) %>%
+    count(fun_name, n, source, call_expr, aliased, category, pack_name, qual_name_2, result_pack_name, result_env_qual_name, wt = count, name = "calls") %>%
+    arrange(desc(calls))
+```
+
+## Cleanup
+
+```{r, eval = TRUE}
+AS_ENVIRONMENT_TABLE %>%
+    filter(is.na(qual_name_2) | pack_name == "<NA>") %>%
+    datatable()
+```
+
+## Summary
+
+```{r, eval = TRUE}
+AS_ENVIRONMENT_TABLE %>%
+    mutate(same_package = pack_name == result_pack_name) %>%
+    group_by(category, same_package) %>%
+    summarize(calls = sum(calls)) %>%
+    ungroup() %>%
+    mutate(call_perc = round(100 * calls / sum(calls), 2)) %>%
+    datatable()
+
+AS_ENVIRONMENT_SUMMARY <-
+    AS_ENVIRONMENT_TABLE %>%
+    group_by(fun_name, aliased, category) %>%
+    summarize(calls = sum(calls),
+              packages = length(unique(pack_name)),
+              functions = length(unique(qual_name_2)),
+              pack_names = paste(unique(pack_name), collapse = ", "),
+              fun_names = paste(unique(qual_name_2), collapse = ", ")) %>%
+    ungroup() %>%
+    mutate(call_perc = round(100* calls / sum(calls), 2)) %>%
+    arrange(desc(calls))
+
+datatable(AS_ENVIRONMENT_SUMMARY)
 ```

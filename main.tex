@@ -383,14 +383,16 @@ backwards if \code{n} is negative); \code{parent.frame(n)} optimises calls to
 active environments.
 
 \begin{lstlisting}
- f <- function() { print(environment())
- g <- function() { parent.frame(1); g() }  ???????????????????????????????????
+ f <- function() { print(environment()); g() }
+ g <- function() { print(parent.frame(1)); }
  f()
  # <env: 0x7f2> <env: 0x7f2>
 \end{lstlisting}
 
 \noindent
-In the above ???
+In the above code snippet, \c{f} accesses its own environment using the call to
+\c{environment()} and it's callee \c{g} accesses \c{f}'s environment by calling
+\c{parent.frame(-1)}.
 
 The global environment , referred by the variable \code{.GlobalEnv} (at offset
 0), is returned by \code{globalenv()}. One can rebind the enclosing environment
@@ -408,8 +410,9 @@ of a function with \code{environment(f)<-e}.
  # <env: 0x7f1>
 \end{lstlisting}
 
-???? Lots of stuff, what does it mean??????
-
+The code snippet above modifies the enclosing scope of \c{f}, defined at the
+top-level. The environment \c{e}, created using \c{new.env}, is assigned the
+enclosing scope of \c{f} using \c{environment(f) <- e}.
 
 \begin{figure*}[t!]
  \centering

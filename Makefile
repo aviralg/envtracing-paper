@@ -21,7 +21,7 @@ all: main.pdf open
 open:
 	open main.pdf
 
-main.pdf: merge-macros
+main.pdf:
 	$(PDFLATEX) main && $(BIBTEX) main
 
 clean:
@@ -56,6 +56,12 @@ call-stack:
 
 side-effects:
 	make analysis ANALYSIS=side-effects
+
+lock:
+	make analysis ANALYSIS=lock
+
+scope:
+	make analysis ANALYSIS=scope
 
 .PHONY: all open main.pdf clean analysis
 

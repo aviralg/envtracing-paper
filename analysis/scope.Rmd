@@ -1,0 +1,388 @@
+---
+title: "Scope"
+output:
+    html_document:
+        toc: true
+        toc_depth: 3
+        toc_float: true
+        number_sections: true
+        theme: cerulean
+        highlight: pygments
+        code_folding: hide
+        fig_width: 9
+        fig_height: 3
+        css: style.css
+params:
+    datadir: "./data"
+    graphdir: "./graphs"
+    macrodir: "./macros"
+    tabledir: "./tables"
+---
+
+```{r echo = FALSE, warning=FALSE, message=FALSE}
+## https://bookdown.org/yihui/rmarkdown-cookbook/source-script.html
+source("analysis.R", local = knitr::knit_global())
+MacGen <- LatexMacroGenerator$new(params$macrodir)
+```
+
+## Table Structure
+
+
+```{r, eval = TRUE}
+str(call_stack)
+```
+
+
+## All functions
+
+```{r, eval = TRUE}
+call_stack %>% 
+count(fun_name, wt = count, name = "count") %>%
+arrange(desc(count))
+```
+
+
+# environment
+
+## Raw
+
+```{r, eval = TRUE}
+ENVIRONMENT_TABLE <-
+    call_stack %>%
+    filter(fun_name == "environment") %>%
+    filter(!is.na(fun_qual_name)) %>%
+    mutate(aliased = qual_name_1 != "base*$#$*environment") %>%
+    mutate(source = paste0(package, "*$#$*", type, "/", filename)) %>%
+    mutate(qual_name_2 = case_when(str_starts(call_expr, fixed("environment(plot_snapshot)")) ~ "evaluate*$#$*evaluate",
+                                   qual_name_2 == "<NA>*$#$*2ae04899b56d2a4922d9088b16dca9f5493c3ceb37dabbfb0d6625d23af95e73e9e212ac86b83f1445eacfdbd3fa81b3a661bb7f3c5da3fa04debfa085395681*$#$*remap_func_envs*$#$*655729dd5ad88c8d804343ea7f72e9e0e26fe2b9781998c9a0df54061a1a818cdcddffdc3f868a18f3559ea5c228b7773a58b4c6cabf8b5f0a73a540337960a7" ~ "generator_funs*$#$*clone_method*$#$*copy_slice*$#$*is_method",
+                                   qual_name_2 == "<NA>*$#$*2ae04899b56d2a4922d9088b16dca9f5493c3ceb37dabbfb0d6625d23af95e73e9e212ac86b83f1445eacfdbd3fa81b3a661bb7f3c5da3fa04debfa085395681*$#$*copy_slice*$#$*is_method" ~ "generator_funs*$#$*clone_method*$#$*copy_slice*$#$*is_method",
+                                   qual_name_2 == "<NA>*$#$*getSpline.xy" ~ paste0("robustbase*$#$*", source, "/getSpline.xy"),
+                                   qual_name_2 == "<NA>*$#$*rewire" ~ paste0("shiny*$#$*", source, "/rewire"),
+                                   TRUE ~ qual_name_2)) %>%
+    mutate(pack_name = map_chr(str_split(qual_name_2, fixed("*$#$*")), ~.[1])) %>%
+    mutate(result_pack_name = map_chr(str_split(result_env_qual_name, fixed("*$#$*")), ~.[1])) %>%
+    mutate(category = case_when(str_detect(qual_name_2, fixed("/")) ~ "Top-Level",
+                                pack_name %in% CORE_PACKAGES ~ "Core",
+                                TRUE ~ "User")) %>%
+    count(fun_name, n, source, call_expr, aliased, category, pack_name, qual_name_2, qual_name_3, qual_name_4, fun_qual_name, result_pack_name, result_env_qual_name, wt = count, name = "calls") %>%
+    arrange(desc(calls))
+    
+datatable(ENVIRONMENT_TABLE)
+```
+
+## Top Callers
+
+```{r, eval = TRUE}
+ENVIRONMENT_TABLE %>%
+    count(qual_name_2, wt = calls, name = "calls") %>%
+    arrange(desc(calls)) %>%
+    mutate(call_perc = round(100 * calls / sum(calls), 2)) %>%
+    mutate(call_cumperc = round(100 * cumsum(calls) / sum(calls), 2)) %>%
+    datatable()
+```
+
+## Cleanup
+
+```{r, eval = TRUE}
+ENVIRONMENT_TABLE %>%
+    mutate(type = str_starts(fun_qual_name, fixed("<NA>"))) %>%
+    count(type, wt = calls, name = "calls") %>%
+    datatable()
+
+ENVIRONMENT_TABLE %>%
+    count(fun_qual_name, wt=calls, name="calls") %>%
+    filter(str_starts(fun_qual_name, fixed("<NA>"))) %>%
+    arrange(desc(calls)) %>%
+    datatable()
+
+
+EnvironmentBaseRegisterMethodCallCount <- 
+    ENVIRONMENT_TABLE %>%
+    filter(str_starts(qual_name_2, fixed("base*$#$*registerS3methods"))) %>%
+    pull(calls) %>%
+    sum()
+    
+EnvironmentMethodsCallCount <- 
+    ENVIRONMENT_TABLE %>%
+    filter(str_starts(qual_name_2, fixed("methods*$#$*"))) %>%
+    pull(calls) %>%
+    sum()
+
+EnvironmentBaseRegisterMethodCallPerc <- 
+    latex_sanitize(label_percent(0.1)(EnvironmentBaseRegisterMethodCallCount / sum(ENVIRONMENT_TABLE$calls)))
+    
+EnvironmentMethodsCallPerc <- 
+    latex_sanitize(label_percent(0.1)(EnvironmentMethodsCallCount / sum(ENVIRONMENT_TABLE$calls)))
+    
+MacGen$from_args(EnvironmentBaseRegisterMethodCallPerc = EnvironmentBaseRegisterMethodCallPerc)
+MacGen$from_args(EnvironmentMethodsCallPerc = EnvironmentMethodsCallPerc)
+```
+
+## Summary
+
+```{r, eval = TRUE}
+ENVIRONMENT_TABLE %>%
+    mutate(same_package = pack_name == result_pack_name) %>%
+    group_by(category, same_package) %>%
+    summarize(calls = sum(calls)) %>%
+    ungroup() %>%
+    mutate(call_perc = round(100 * calls / sum(calls), 2)) %>%
+    datatable()
+
+ENVIRONMENT_SUMMARY <-
+    ENVIRONMENT_TABLE %>%
+    group_by(fun_name, aliased, category) %>%
+    summarize(calls = sum(calls),
+              packages = length(unique(pack_name)),
+              functions = length(unique(qual_name_2)),
+              pack_names = paste(unique(pack_name), collapse = ", "),
+              fun_names = paste(unique(qual_name_2), collapse = ", ")) %>%
+    ungroup() %>%
+    mutate(call_perc = round(100* calls / sum(calls), 2)) %>%
+    arrange(desc(calls))
+
+datatable(ENVIRONMENT_SUMMARY)
+
+EnvironmentUnclassifiedCallCount <- 
+    ENVIRONMENT_TABLE %>%
+    filter(is.na(qual_name_2) | str_starts(qual_name_2, fixed("<NA>"))
+           | qual_name_2 %in% c("base*$#$*lapply", "base*$#$*eval")) %>%
+    pull(calls) %>%
+    sum()
+
+EnvironmentUnclassifiedCallPerc <- 
+   latex_sanitize(label_percent(0.01)(EnvironmentUnclassifiedCallCount / sum(ENVIRONMENT_TABLE$calls)))
+
+MacGen$from_args(EnvironmentUnclassifiedCallPerc = EnvironmentUnclassifiedCallPerc)
+
+ENVIRONMENT_LATEX_TABLE <-
+    ENVIRONMENT_TABLE %>%
+    filter(!is.na(qual_name_2) & !str_starts(qual_name_2, fixed("<NA>"))) %>%
+    filter(!(qual_name_2 %in% c("base*$#$*lapply", "base*$#$*eval"))) %>%
+    filter(category != "Top-Level") %>%
+    group_by(category) %>%
+    summarize(CallCnt = sum(calls),
+              PackCnt = length(unique(pack_name)),
+              FunCnt = length(unique(qual_name_2)),
+              pack_names = paste(unique(pack_name), collapse = ", "),
+              fun_names = paste(unique(qual_name_2), collapse = ", ")) %>%
+    ungroup() %>%
+    mutate(CallPerc = latex_sanitize(label_percent()(round(CallCnt / sum(CallCnt), 2)))) %>%
+    mutate(CallCnt = label_number_si(accuracy = 0.1)(CallCnt))
+    
+MacGen$from_df(ENVIRONMENT_LATEX_TABLE,
+               PackCnt,
+               FunCnt,
+               CallCnt,
+               CallPerc, 
+               prefix = paste0("Environment", ENVIRONMENT_LATEX_TABLE$category))
+```
+
+# environment<-
+
+## Raw
+
+```{r, eval = TRUE}
+ENVIRONMENT_ASSIGN_TABLE <-
+    call_stack %>%
+    filter(fun_name == "environment<-") %>%
+    filter(!is.na(fun_qual_name)) %>%
+    mutate(aliased = qual_name_1 != "base*$#$*environment<-") %>%
+    mutate(source = paste0(package, "*$#$*", type, "/", filename)) %>%
+    mutate(call_expr = str_trim(call_expr)) %>%
+    mutate(qual_name_2 = case_when(qual_name_2 == "<NA>*$#$*d42bedd66f9bb747b3e3274ecc5e2225062540a513bec01f4f9049c536c209b6465f8a44c45cd24c760ec505cada18645411a3ac6693e3fc8afd42ddd6f071f9" ~ "methods*$#$*.makeDefaultBinding",
+                                   qual_name_2 == "base*$#$*lapply" & qual_name_3 == "<NA>*$#$*assign_func_envs" ~ "R6*$#$*assign_func_envs",
+                                   str_starts(call_expr, fixed("make.link(link")) ~ "stats*$#$*make.link",
+                                   str_starts(call_expr, fixed("installClassMethod")) ~ "methods*$#$*installClassMethod",
+                                   str_starts(call_expr, fixed("fix.family.link.family")) ~ "mgcv*$#$*fix.family.link.family",
+                                   str_starts(call_expr, fixed("fix.family.var")) ~ "mgcv*$#$*fix.family.var",
+                                   str_starts(call_expr, fixed("fix.family.ls")) ~ "mgcv*$#$*fix.family.ls",
+                                   str_starts(call_expr, fixed("negative.binomial")) ~ "MASS*$#$*negative.binomial",
+                                   str_starts(call_expr, fixed("rbdtree")) ~ "ape*$#$*rbdtree",
+                                   str_starts(call_expr, fixed("mkdevfun")) ~ "lme4*$#$*mkdevfun",
+                                   str_starts(call_expr, fixed("rpart")) ~ "rpart*$#$*rpart",
+                                   str_starts(call_expr, fixed("psiFunc")) ~ "robustbase*$#$*psiFunc",
+                                   str_starts(call_expr, fixed("set_env")) ~ "rlang*$#$*set_env",
+                                   qual_name_2 == "R.oo*$#$*.subset2Internal" ~ "R.oo*$#$*.subset2Internal.Class",
+                                   qual_name_2 == "base*$#$*mapply" & qual_name_3 == "shiny*$#$*addGeneratedInstanceMethods" ~ "shiny*$#$*addGeneratedInstanceMethods",
+                                   str_starts(call_expr, fixed("fix.family.link.extended.family")) ~ "mgcv*$#$*fix.family.link.extended.family",
+                                   str_starts(call_expr, fixed("foreach")) ~ "foreach*$#$*%do%",
+                                   fun_qual_name == "lme4*$#$*mkLmerDevfun*$#$*devfun" ~ "lme4*$#$*mkLmerDevfun",
+                                   str_starts(fun_qual_name, fixed("mgcv*$#$*ocat")) ~ "mgcv*$#$*ocat",
+                                   str_starts(fun_qual_name, fixed("mgcv*$#$*scat")) ~ "mgcv*$#$*scat",
+                                   str_starts(fun_qual_name, fixed("mgcv*$#$*negbin")) ~ "mgcv*$#$*negbin",
+                                   str_starts(fun_qual_name, fixed("mgcv*$#$*tw")) ~ "mgcv*$#$*tw",
+                                   str_starts(fun_qual_name, fixed("mgcv*$#$*twlss")) ~ "mgcv*$#$*twlss",
+                                   str_starts(fun_qual_name, fixed("mgcv*$#$*ziP")) ~ "mgcv*$#$*ziP",
+                                   str_starts(fun_qual_name, fixed("mgcv*$#$*betar")) ~ "mgcv*$#$*betar",
+                                   str_starts(fun_qual_name, fixed("mgcv*$#$*cox.ph")) ~ "mgcv*$#$*cox.ph",
+                                   str_starts(fun_qual_name, fixed("mgcv*$#$*nb")) ~ "mgcv*$#$*nb",
+                                   str_starts(fun_qual_name, fixed("ape*$#$*rTraitMult")) ~ "ape*$#$*rTraitMult",
+                                   str_starts(fun_qual_name, fixed("ape*$#$*rTraitCont")) ~ "ape*$#$*rTraitCont",
+                                   str_starts(fun_qual_name, fixed("ape*$#$*rTraitDisc")) ~ "ape*$#$*rTraitDisc",
+                                   str_starts(fun_qual_name, fixed("MASS*$#$*negative.binomial")) ~ "MASS*$#$*negative.binomial",
+                                   fun_qual_name == "<NA>*$#$*d8bfb806e7653a6d3e3e27e652331fc534c0e62736ea1b66c8d6e544d4292c54608766e3039aadeb0c3b224324a52978cb3124377b4edb65f51120adfe81017c" ~ "foreach*$#$*%do%",
+                                   str_starts(call_expr, fixed("idata.frame")) ~ "plyr*$#$*idata.frame",
+                                   TRUE ~ qual_name_2)) %>%
+    mutate(pack_name = map_chr(str_split(qual_name_2, fixed("*$#$*")), ~.[1])) %>%
+    mutate(result_pack_name = map_chr(str_split(result_env_qual_name, fixed("*$#$*")), ~.[1])) %>%
+    mutate(category = case_when(str_detect(qual_name_2, fixed("/")) ~ "Top-Level",
+                                pack_name %in% CORE_PACKAGES ~ "Core",
+                                TRUE ~ "User")) %>%
+    count(fun_name, n, source, call_expr, aliased, category, pack_name, qual_name_2, qual_name_3, qual_name_4, fun_qual_name, result_pack_name, result_env_qual_name, wt = count, name = "calls") %>%
+    arrange(desc(calls))
+    
+datatable(ENVIRONMENT_ASSIGN_TABLE)
+```
+
+## Top Callers
+
+```{r, eval = TRUE}
+ENVIRONMENT_ASSIGN_TOP_CALLERS <-
+    ENVIRONMENT_ASSIGN_TABLE %>%
+    count(qual_name_2, wt = calls, name = "calls") %>%
+    arrange(desc(calls)) %>%
+    mutate(call_perc = round(100 * calls / sum(calls), 2)) %>%
+    mutate(call_cumperc = round(100 * cumsum(calls) / sum(calls), 2))
+    
+datatable(ENVIRONMENT_ASSIGN_TOP_CALLERS)
+
+ENVIRONMENT_ASSIGN_TOP_CALLERS_LATEX <-
+ENVIRONMENT_ASSIGN_TOP_CALLERS %>%
+slice(1:5) %>%
+rename(CallerName = qual_name_2, CallPerc = call_perc) %>%
+mutate(CallerName = str_replace_all(CallerName, fixed("*$#$*"), "::")) %>%
+mutate(CallerName = paste0("\\c{", latex_sanitize(CallerName), "}")) %>%
+mutate(Position = c("One", "Two", "Three", "Four", "Five")) %>%
+mutate(CallCount = label_number_si(accuracy = 0.1)(CallPerc / 100)) %>%
+mutate(CallPercRaw = CallPerc) %>%
+mutate(CallPerc = latex_sanitize(label_percent(0.1)(CallPerc / 100)))
+
+ENVIRONMENT_ASSIGN_TOP_CALLERS_LATEX %>%
+MacGen$from_df(CallerName,
+               CallPerc,
+               prefix = paste0("EnvAsn", ENVIRONMENT_ASSIGN_TOP_CALLERS_LATEX$Position))
+               
+MacGen$from_args(EnvAsnTopFiveCallPerc = latex_sanitize(label_percent(0.01)(sum(ENVIRONMENT_ASSIGN_TOP_CALLERS_LATEX$CallPercRaw) / 100)))
+```
+
+## Cleanup
+
+```{r, eval = TRUE}
+ENVIRONMENT_ASSIGN_TABLE %>%
+    mutate(type = str_starts(fun_qual_name, fixed("<NA>"))) %>%
+    count(type, wt = calls, name = "calls") %>%
+    datatable()
+
+ENVIRONMENT_ASSIGN_TABLE %>%
+    count(fun_qual_name, wt=calls, name="calls") %>%
+    filter(str_starts(fun_qual_name, fixed("<NA>"))) %>%
+    arrange(desc(calls)) %>%
+    datatable()
+```
+
+## Summary
+
+```{r, eval = TRUE}
+ENVIRONMENT_ASSIGN_TABLE %>%
+    mutate(same_package = pack_name == result_pack_name) %>%
+    group_by(category, same_package) %>%
+    summarize(calls = sum(calls)) %>%
+    ungroup() %>%
+    mutate(call_perc = round(100 * calls / sum(calls), 2)) %>%
+    datatable()
+
+ENVIRONMENT_ASSIGN_SUMMARY <-
+    ENVIRONMENT_ASSIGN_TABLE %>%
+    group_by(fun_name, aliased, category) %>%
+    summarize(calls = sum(calls),
+              packages = length(unique(pack_name)),
+              functions = length(unique(qual_name_2)),
+              pack_names = paste(unique(pack_name), collapse = ", "),
+              fun_names = paste(unique(qual_name_2), collapse = ", ")) %>%
+    ungroup() %>%
+    mutate(call_perc = round(100* calls / sum(calls), 2)) %>%
+    arrange(desc(calls))
+
+datatable(ENVIRONMENT_ASSIGN_SUMMARY)
+
+EnvAsnUnclassifiedCallCount <- 
+    ENVIRONMENT_ASSIGN_TABLE %>%
+    filter(is.na(qual_name_2) | str_starts(qual_name_2, fixed("<NA>"))
+           | qual_name_2 %in% c("base*$#$*lapply", "base*$#$*eval")) %>%
+    pull(calls) %>%
+    sum()
+
+EnvAsnUnclassifiedCallPerc <- 
+   latex_sanitize(label_percent(0.01)(EnvAsnUnclassifiedCallCount / sum(ENVIRONMENT_ASSIGN_TABLE$calls)))
+
+MacGen$from_args(EnvAsnUnclassifiedCallPerc = EnvAsnUnclassifiedCallPerc)
+
+ENVIRONMENT_ASSIGN_LATEX_TABLE <-
+    ENVIRONMENT_ASSIGN_TABLE %>%
+    filter(!is.na(qual_name_2) & !str_starts(qual_name_2, fixed("<NA>"))) %>%
+    filter(!(qual_name_2 %in% c("base*$#$*lapply", "base*$#$*eval"))) %>%
+    group_by(category) %>%
+    summarize(CallCnt = sum(calls),
+              PackCnt = length(unique(pack_name)),
+              FunCnt = length(unique(qual_name_2)),
+              pack_names = paste(unique(pack_name), collapse = ", "),
+              fun_names = paste(unique(qual_name_2), collapse = ", ")) %>%
+    ungroup() %>%
+    mutate(CallPerc = latex_sanitize(label_percent()(round(CallCnt / sum(CallCnt), 2)))) %>%
+    mutate(CallCnt = label_number_si(accuracy = 0.1)(CallCnt))
+    
+MacGen$from_df(ENVIRONMENT_ASSIGN_LATEX_TABLE,
+               PackCnt,
+               FunCnt,
+               CallCnt,
+               CallPerc, 
+               prefix = paste0("EnvAsn", ENVIRONMENT_ASSIGN_LATEX_TABLE$category))
+```
+
+## Inner Function Modifications
+
+```{r, eval = TRUE}
+ENVIRONMENT_ASSIGN_INNER_FUNCTION_TABLE <-
+ENVIRONMENT_ASSIGN_TABLE %>%
+filter(category == "User" & str_starts(fun_qual_name, fixed(qual_name_2)))
+
+ENVIRONMENT_ASSIGN_INNER_FUNCTION_TABLE %>%
+datatable()
+
+ENVIRONMENT_ASSIGN_USER_NON_R6_COUNT <-
+ENVIRONMENT_ASSIGN_TABLE %>%
+filter(category == "User" & !str_starts(qual_name_2, fixed("R6"))) %>%
+pull(calls) %>%
+sum()
+
+EnvAsnUserInnerFunCallPerc <- 
+   latex_sanitize(label_percent(0.01)(sum(ENVIRONMENT_ASSIGN_INNER_FUNCTION_TABLE$calls) / ENVIRONMENT_ASSIGN_USER_NON_R6_COUNT))
+   
+MacGen$from_args(EnvAsnUserInnerFunCallPerc = EnvAsnUserInnerFunCallPerc)
+
+
+MacGen$from_args(EnvAsnUserInnerFunFunCnt = length(unique(ENVIRONMENT_ASSIGN_INNER_FUNCTION_TABLE$qual_name_2)))
+MacGen$from_args(EnvAsnUserInnerFunPackCnt = length(unique(ENVIRONMENT_ASSIGN_INNER_FUNCTION_TABLE$pack_name)))
+```
+
+## Core methods package calls
+
+```{r, eval = TRUE}
+ENVIRONMENT_ASSIGN_METHODS_CALL_COUNT <-
+    ENVIRONMENT_ASSIGN_TABLE %>%
+    filter(category == "Core" & str_starts(qual_name_2, fixed("methods*$#$*"))) %>%
+    pull(calls) %>%
+    sum()
+
+ENVIRONMENT_ASSIGN_CORE_CALL_COUNT <-
+    ENVIRONMENT_ASSIGN_TABLE %>%
+    filter(category == "Core") %>%
+    pull(calls) %>%
+    sum()
+
+EnvAsnMethodsCallPerc <- 
+   latex_sanitize(label_percent(0.01)(ENVIRONMENT_ASSIGN_METHODS_CALL_COUNT / ENVIRONMENT_ASSIGN_CORE_CALL_COUNT))
+   
+MacGen$from_args(EnvAsnMethodsCallPerc = EnvAsnMethodsCallPerc)
+```
