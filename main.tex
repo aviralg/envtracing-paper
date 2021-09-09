@@ -416,61 +416,6 @@ The code snippet above modifies the enclosing scope of \c{f}, defined at the
 top-level. The environment \c{e}, created using \c{new.env}, is assigned the
 enclosing scope of \c{f} using \c{environment(f)<-e}.
 
-\begin{figure*}[t!]\small
- \centering
- \begin{tikzpicture}
-  \definecolor{maroon}{HTML}{D5A6BD}
-  \definecolor{darkmaroon}{HTML}{741B47}
-  \definecolor{yellow}{HTML}{FFF2CC}
-  \definecolor{darkyellow}{HTML}{D6B656}
-  \definecolor{blue}{HTML}{DAE8FC}
-  \definecolor{darkblue}{HTML}{6C8EBF}
-  \definecolor{green}{HTML}{D5E8D4}
-  \definecolor{darkgreen}{HTML}{82B366}
-  \definecolor{orange}{HTML}{FFE6CC}
-  \definecolor{darkorange}{HTML}{D79B00}
-  \definecolor{red}{HTML}{F8CECC}
-  \definecolor{darkred}{HTML}{B85450}
-  \definecolor{purple}{HTML}{E1D5E7}
-  \definecolor{darkpurple}{HTML}{9673A6}
-  \definecolor{gray}{HTML}{F5F5F5}
-  \newcommand{\nodesep}[0]{0.030 \textwidth}
-  \newcommand{\textsep}[0]{0.010 \textwidth}
-  \newcommand{\backopacity}[0]{0.9}
-  \newcommand{\nodename}[1]{\normalsize \begin{tabular}{c}#1\end{tabular}}
-  \newcommand{\nodedesc}[1]{\small \begin{tabular}{c}#1\end{tabular}}
-  \tikzstyle{block}     = [rectangle, rounded corners, minimum width=.08 \textwidth, minimum height=35pt]
-  \tikzstyle{connector} = [line width=0.25mm, ->]
-  \node [block, draw = darkmaroon, very thick, fill = maroon]                                (install)   {\nodename{Setup\\CRAN}};
-  \node [block, draw = darkyellow, very thick, fill = yellow, right = \nodesep of install  ] (extract)   {\nodename{Extract\\Programs}};
-  \node [block, draw = darkblue,   very thick, fill = blue  , right = \nodesep of extract  ] (trace)     {\nodename{Trace}};
-  \node [block, draw = darkgreen,  very thick, fill = green , right = \nodesep of trace    ] (reduce)    {\nodename{Reduce}};
-  \node [block, draw = darkorange, very thick, fill = orange, right = \nodesep of reduce   ] (combine)   {\nodename{Combine}};
-  \node [block, draw = darkred,    very thick, fill = red   , right = \nodesep of combine  ] (summarize) {\nodename{Summarize}};
-  \node [block, draw = darkpurple, very thick, fill = purple, right = \nodesep of summarize] (report)    {\nodename{Report}};
-  \draw [connector] (install)   edge (extract);
-  \draw [connector] (extract)   edge (trace);
-  \draw [connector] (trace)     edge (reduce);
-  \draw [connector] (reduce)    edge (combine);
-  \draw [connector] (combine)   edge (summarize);
-  \draw [connector] (summarize) edge (report);
-  \node [below = \textsep of install]   (installdesc)   {\nodedesc{10 Hours\\17.1 K Packages\\83 GB}};
-  \node [below = \textsep of extract]   (extractdesc)   {\nodedesc{5 Minutes\\100 Packages\\6.7 K Files}};
-  \node [below = \textsep of trace]     (tracedesc)     {\nodedesc{8 Hours\\72.5 K Files\\732 GB}};
-  \node [below = \textsep of reduce]    (reducedesc)    {\nodedesc{2.5 Hours\\57.4 K Files\\482 GB}};
-  \node [below = \textsep of combine]   (combinedesc)   {\nodedesc{14 Minutes\\13 Files\\25 GB}};
-  \node [below = \textsep of summarize] (summarizedesc) {\nodedesc{28 Minutes\\17 Files\\1.5 GB}};
-  \node [below = \textsep of report]    (reportdesc)    {\nodedesc{5 Minutes\\7 Reports}};
-    \begin{scope}[on background layer]
-    \node[fit=(install) (extract), rectangle, rounded corners, fill=gray, fill opacity=\backopacity, label=above:\textbf{Corpus}]          (corpus) {};
-    \node[fit=(trace),             rectangle, rounded corners, fill=gray, fill opacity=\backopacity, label=above:\textbf{Tracing}]         (exectrace) {};
-    \node[fit=(reduce) (report),   rectangle, rounded corners, fill=gray, fill opacity=\backopacity, label=above:\textbf{Post-processing}] (postprocessing) {};
-  \end{scope}
- \end{tikzpicture}
-  \caption{Analysis Pipeline}\label{fig:analysisPipeline}
-\end{figure*}
-
-
 \subsection{Environments as Data Structures}
 
 Environments can be created by calls to \newEnv; it takes three optional
@@ -531,12 +476,52 @@ infrastructure has three tasks: assembling executable programs from R packages,
 generating execution traces using a modified R interpreter, and post-processing
 the traces to generate graphs and statistics. For reproducibility, the
 infrastructure lives in a Docker container based on Debian 10.9.
-Figure~\ref{fig:analysisPipeline} summarizes the pipeline along with the
-duration of each stage and the size of returned results.
+Figure~\ref{fig:pipeline} shows the pipeline along with the duration of
+each stage and the size of returned results. We discuss the three tasks of this
+pipeline next.
 
-\subsection{A Corpus of R Programs}
+\begin{figure}[H]\small
+ \centering
+ \begin{tikzpicture}
+  \definecolor{maroon}{HTML}{D5A6BD}
+  \definecolor{darkmaroon}{HTML}{741B47}
+  \definecolor{yellow}{HTML}{FFF2CC}
+  \definecolor{darkyellow}{HTML}{D6B656}
+  \definecolor{blue}{HTML}{DAE8FC}
+  \definecolor{darkblue}{HTML}{6C8EBF}
+  \definecolor{green}{HTML}{D5E8D4}
+  \definecolor{darkgreen}{HTML}{82B366}
+  \definecolor{orange}{HTML}{FFE6CC}
+  \definecolor{darkorange}{HTML}{D79B00}
+  \definecolor{red}{HTML}{F8CECC}
+  \definecolor{darkred}{HTML}{B85450}
+  \definecolor{purple}{HTML}{E1D5E7}
+  \definecolor{darkpurple}{HTML}{9673A6}
+  \definecolor{gray}{HTML}{F5F5F5}
+  \newcommand{\nodesep}[0]{0.030 \textwidth}
+  \newcommand{\textsep}[0]{0.002 \textwidth}
+  \newcommand{\backopacity}[0]{0.9}
+  \newcommand{\nodename}[1]{\normalsize \begin{tabular}{c}#1\end{tabular}}
+  \newcommand{\nodedesc}[1]{\small \begin{tabular}{c}#1\end{tabular}}
+  \tikzstyle{block}     = [rectangle, rounded corners, minimum width=.08 \textwidth, minimum height=30pt]
+  \tikzstyle{connector} = [line width=0.25mm, ->]
 
-Our corpus is assembled from R packages hosted on CRAN \cite{ligges2017}, the
+  \node [block, draw = black, very thick, fill = gray]                              (corpus)   {\nodename{Corpus}};
+  \node [block, draw = black, very thick, fill = gray, right = \nodesep of corpus]  (tracing)  {\nodename{Tracing}};
+  \node [block, draw = black, very thick, fill = gray, right = \nodesep of tracing] (analysis) {\nodename{Analysis}};
+
+  \draw [connector] (corpus)  edge (tracing);
+  \draw [connector] (tracing) edge (analysis);
+
+  \node [below = \textsep of corpus]   (corpusdesc)   {\nodedesc{10 Hours\\100 Packages\\6.7 K Files}};
+  \node [below = \textsep of tracing]  (tracingdesc)  {\nodedesc{8 Hours\\732 GB\\72.5 K Files}};
+  \node [below = \textsep of analysis] (analysisdesc) {\nodedesc{3.5 Hours\\1.5 GB\\7 Reports}};
+ \end{tikzpicture}
+  \caption{Pipeline}\label{fig:pipeline}
+\end{figure}
+
+
+\paragraph{Corpus} Our corpus is assembled from R packages hosted on CRAN \cite{ligges2017}, the
 official R package repository. We mirror CRAN on our server and install its
 packages. We downloaded and installed 17,133 CRAN packages.\footnote{Snapshot
 taken on 29 May 2021.} From these, we select the 100 CRAN packages with the highest
@@ -560,38 +545,43 @@ Table~\ref{table:corpus} has details.
   \vspace{-3mm}
   \begin{tabular}{lrrr}    \toprule
     &\bf Tests&\bf Examples&\bf Vignettes\\    \midrule
-    {Scripts}&1.9K&5.0K&187.0\\    \midrule
+    {Scripts}&1.5K&5.0K&187\\    \midrule
     {LOC}&136.7K&55.2K&13.9K\\
     \bottomrule
   \end{tabular}
 \end{table}
 
-\subsection{Dynamic Analysis of R}
 
-Execution traces are generated using \envtracer, a dynamic analyzer built on top
-of \rdyntrace. \rdyntrace modifies GNU R 4.0.2~\cite{oopsla19b} to record events
-during program execution. We use these callbacks to collect execution
-information associated with environments. The events include function entry and
-exit, eval entry and exit, object allocation and deallocation, package loading
-and attaching, variable lookup, assignment, and removal, subassignment,
-subsetting, and attribute setting. When the program exits, \envtracer stores the
-traces in a tabular format. To handle the subtleties of R, \envtracer maintains
-models of concrete R objects, such as environments, functions, calls, and frames
-on the call stack. Model objects have unique identities, whereas R objects are
-identified by their memory address, and the garbage collector can reuse these.
-\envtracer heuristically constructs names of model functions. The model stack
-updates itself appropriately in response to longjump used by R for non-local
-returns.
+\paragraph{Tracing} Execution traces are generated using \envtracer, a dynamic
+analyzer built on top of \rdyntrace. \rdyntrace modifies GNU R
+4.0.2~\cite{oopsla19b} to record events during program execution. \envtracer
+collects execution information associated with environments from these events.
 
-\subsection{Post-processing Traces}
+\paragraph{Analysis} The tracing step generates 681GB of data; analyzing data at
+this scale is thus the major challenge. We use a custom map-reduce analysis that
+first processes individual traces in parallel to generate smaller tables per
+program. This is expensive, but it substantially reduces data size. Then the
+tables are concatenated into a single table per analysis. Finally, summaries are
+computed from the concatenated tables. The report phase generates graphs and
+tables from these summaries.
 
-The execution traces must be analyzed to gather insights. \envtracer gathers
-681GB of data; scale is thus the major challenge. We use a custom map-reduce
-analysis that first processes individual traces in parallel to generate smaller
-tables per program. This is expensive, but it substantially reduces data size.
-Then the tables are concatenated into a single table per analysis. Finally,
-summaries are computed from the concatenated tables. The report phase generates
-graphs and tables from these summaries.
+
+%% \subsection{Dynamic Analysis of R}
+%% 
+%% Execution traces are generated using \envtracer, a dynamic analyzer built on top
+%% of \rdyntrace. \rdyntrace modifies GNU R 4.0.2~\cite{oopsla19b} to record events
+%% during program execution. We use these callbacks to collect execution
+%% information associated with environments. The events include function entry and
+%% exit, eval entry and exit, object allocation and deallocation, package loading
+%% and attaching, variable lookup, assignment, and removal, subassignment,
+%% subsetting, and attribute setting. When the program exits, \envtracer stores the
+%% traces in a tabular format. To handle the subtleties of R, \envtracer maintains
+%% models of concrete R objects, such as environments, functions, calls, and frames
+%% on the call stack. Model objects have unique identities, whereas R objects are
+%% identified by their memory address, and the garbage collector can reuse these.
+%% \envtracer heuristically constructs names of model functions. The model stack
+%% updates itself appropriately in response to longjump used by R for non-local
+%% returns.
 
 \section{How Frequent are Environments?}
 
@@ -736,7 +726,6 @@ an argument. Overall, they cover most of the non-traditional uses of environment
     \texttt{globalenv}&\CallCntGlobalenv\\
     \texttt{\~}&\CallCntTilde\\
     \texttt{environmentName}&\CallCntEnvironmentname\\
-    \texttt{sys.calls}&\CallCntSysDotcalls\\
     \texttt{rm}&\CallCntRm\\
     \bottomrule
   \end{tabular}
@@ -751,7 +740,7 @@ an argument. Overall, they cover most of the non-traditional uses of environment
     \texttt{unlockBinding}&\CallCntUnlockbinding\\
     \texttt{length}&375\\
     \texttt{objects}& 119\\
-    \texttt{pos.to.env}& 7\\    \\\bottomrule
+    \texttt{pos.to.env}& 7\\\bottomrule
   \end{tabular}
 \end{table}
 
@@ -1438,60 +1427,60 @@ and they are never used to inject new bindings in other packages. We only found
 one package, \c{data.table}, which unlocked bindings to update base functions
 \c{cbind} and \c{rbind}.
 
-\section{Call Stack Reflection}
-
-Table~\ref{table:call_stack_ref} gives the distribution of calls to
-\c{parent.frame}. As usual {Core} is the major user, contributing to
-\ParentFrameCoreCallPerc of calls. Though, {User} is only
-\ParentFrameUserCallPerc of calls, there are \ParentFrameUserFunCnt clients of
-\c{parent.frame} in \ParentFrameUserPackCnt packages.
-Table~\ref{table:par_frm_top_core_callers} gives the top ten {Core} callers.
-
-\begin{table}[!h]  \small  \centering
-  \caption{Call Stack Reflection API}\label{table:call_stack_ref} \vspace{-3mm}
-  \begin{tabular}{llrrrr}
-    \toprule &&\textbf{P\#}&\textbf{F\#}&\textbf{C\#}&\textbf{C\%}\\
-    \midrule \multirow{2}{*}{\textbf{parent.frame}}
-             & \multicolumn{1}{l}{\emph{Core}} & \multicolumn{1}{r}{\ParentFrameCorePackCnt} & \multicolumn{1}{r}{\ParentFrameCoreFunCnt} & \multicolumn{1}{r}{\ParentFrameCoreCallCnt} & \multicolumn{1}{r}{\ParentFrameCoreCallPerc}\\
-             & \multicolumn{1}{l}{\emph{User}} & \multicolumn{1}{r}{\ParentFrameUserPackCnt} & \multicolumn{1}{r}{\ParentFrameUserFunCnt} & \multicolumn{1}{r}{\ParentFrameUserCallCnt} & \multicolumn{1}{r}{\ParentFrameUserCallPerc}\\ \bottomrule
-  \end{tabular}
-\end{table}
-
-
-\begin{table}[!h]  \small  \centering
-  \caption{Top \c{parent.frame} \emph{Core} Callers}\label{table:par_frm_top_core_callers}
-  \vspace{-3mm}
-  \begin{tabular}{lr}
-    \toprule \textbf{Function}&\textbf{Call \%}\\
-    \midrule
-    \ParentFrameCoreOneCallerName&\ParentFrameCoreOneCallPerc\\
-    \ParentFrameCoreTwoCallerName&\ParentFrameCoreTwoCallPerc\\
-    \ParentFrameCoreThreeCallerName&\ParentFrameCoreThreeCallPerc\\
-    \ParentFrameCoreFourCallerName&\ParentFrameCoreFourCallPerc\\
-    \ParentFrameCoreFiveCallerName&\ParentFrameCoreFiveCallPerc\\
-    \ParentFrameCoreSixCallerName&\ParentFrameCoreSixCallPerc\\
-    \ParentFrameCoreSevenCallerName&\ParentFrameCoreSevenCallPerc\\
-    \ParentFrameCoreEightCallerName&\ParentFrameCoreEightCallPerc\\
-    \ParentFrameCoreNineCallerName&\ParentFrameCoreNineCallPerc\\
-    \ParentFrameCoreTenCallerName&\ParentFrameCoreTenCallPerc\\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-\noindent
-The \c{delayedAssign} is the most frequent client, it uses \c{parent.} \c{frame}
-to create a promise from an unevaluated expression and bind it to a variable. By
-default, it uses caller's environment to evaluate the promise. \c{tryCatch}
-evaluates its argument in the caller's environment. Finally, \c{match.call}
-reflectively accesses the call expression with all arguments expanded.
-
-
-The argument \c{n} to \c{parent.frame} controls the number of frames to go back
-in the call stack. Passing \c{1} returns the environment of the caller. In our
-corpus, \c{parent.frame} was called \ParentFrameDepthOneCallPerc of the times
-with \c{n} as 1. It is invoked with the argument 2 \ParentFrameDepthTwoCallPerc
-of the time. Finally, \ParentFrameDepthThreeCallPerc of the calls receive the
-argument {3}.
+%% \section{Call Stack Reflection}
+%% 
+%% Table~\ref{table:call_stack_ref} gives the distribution of calls to
+%% \c{parent.frame}. As usual {Core} is the major user, contributing to
+%% \ParentFrameCoreCallPerc of calls. Though, {User} is only
+%% \ParentFrameUserCallPerc of calls, there are \ParentFrameUserFunCnt clients of
+%% \c{parent.frame} in \ParentFrameUserPackCnt packages.
+%% Table~\ref{table:par_frm_top_core_callers} gives the top ten {Core} callers.
+%% 
+%% \begin{table}[!h]  \small  \centering
+%%   \caption{Call Stack Reflection API}\label{table:call_stack_ref} \vspace{-3mm}
+%%   \begin{tabular}{llrrrr}
+%%     \toprule &&\textbf{P\#}&\textbf{F\#}&\textbf{C\#}&\textbf{C\%}\\
+%%     \midrule \multirow{2}{*}{\textbf{parent.frame}}
+%%              & \multicolumn{1}{l}{\emph{Core}} & \multicolumn{1}{r}{\ParentFrameCorePackCnt} & \multicolumn{1}{r}{\ParentFrameCoreFunCnt} & \multicolumn{1}{r}{\ParentFrameCoreCallCnt} & \multicolumn{1}{r}{\ParentFrameCoreCallPerc}\\
+%%              & \multicolumn{1}{l}{\emph{User}} & \multicolumn{1}{r}{\ParentFrameUserPackCnt} & \multicolumn{1}{r}{\ParentFrameUserFunCnt} & \multicolumn{1}{r}{\ParentFrameUserCallCnt} & \multicolumn{1}{r}{\ParentFrameUserCallPerc}\\ \bottomrule
+%%   \end{tabular}
+%% \end{table}
+%% 
+%% 
+%% \begin{table}[!h]  \small  \centering
+%%   \caption{Top \c{parent.frame} \emph{Core} Callers}\label{table:par_frm_top_core_callers}
+%%   \vspace{-3mm}
+%%   \begin{tabular}{lr}
+%%     \toprule \textbf{Function}&\textbf{Call \%}\\
+%%     \midrule
+%%     \ParentFrameCoreOneCallerName&\ParentFrameCoreOneCallPerc\\
+%%     \ParentFrameCoreTwoCallerName&\ParentFrameCoreTwoCallPerc\\
+%%     \ParentFrameCoreThreeCallerName&\ParentFrameCoreThreeCallPerc\\
+%%     \ParentFrameCoreFourCallerName&\ParentFrameCoreFourCallPerc\\
+%%     \ParentFrameCoreFiveCallerName&\ParentFrameCoreFiveCallPerc\\
+%%     \ParentFrameCoreSixCallerName&\ParentFrameCoreSixCallPerc\\
+%%     \ParentFrameCoreSevenCallerName&\ParentFrameCoreSevenCallPerc\\
+%%     \ParentFrameCoreEightCallerName&\ParentFrameCoreEightCallPerc\\
+%%     \ParentFrameCoreNineCallerName&\ParentFrameCoreNineCallPerc\\
+%%     \ParentFrameCoreTenCallerName&\ParentFrameCoreTenCallPerc\\
+%%     \bottomrule
+%%   \end{tabular}
+%% \end{table}
+%% 
+%% \noindent
+%% The \c{delayedAssign} is the most frequent client, it uses \c{parent.} \c{frame}
+%% to create a promise from an unevaluated expression and bind it to a variable. By
+%% default, it uses caller's environment to evaluate the promise. \c{tryCatch}
+%% evaluates its argument in the caller's environment. Finally, \c{match.call}
+%% reflectively accesses the call expression with all arguments expanded.
+%% 
+%% 
+%% The argument \c{n} to \c{parent.frame} controls the number of frames to go back
+%% in the call stack. Passing \c{1} returns the environment of the caller. In our
+%% corpus, \c{parent.frame} was called \ParentFrameDepthOneCallPerc of the times
+%% with \c{n} as 1. It is invoked with the argument 2 \ParentFrameDepthTwoCallPerc
+%% of the time. Finally, \ParentFrameDepthThreeCallPerc of the calls receive the
+%% argument {3}.
 
 
 \section{Conclusion}
@@ -1506,11 +1495,6 @@ While in the vast majority of cases environment access could be optimized and
 environment could be implemented in a straightforward manner, there are
 sufficient number of cases where environments escape and are used in a
 reflective manner that it is not clear such optimizations can be widely applied.
-
-%% We also expect the results of this study to further guide the development of
-%% CoqR\cite{bodin18}, a big-step operational semantics of R, written in the Coq
-%% proof assistant.
-%% --- no we don't
 
 \paragraph{Acknowledgments}
 This work has received funding from National Science Foundation awards 1759736,
