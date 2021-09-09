@@ -86,7 +86,7 @@
 \newcommand{\subDollar}{\c{$}}
 \newcommand{\subBracket}{\c{[[}}
 
-\newcommand{\exist}{\c{exist}}
+\newcommand{\exist}{\c{exists}}
 
 \newcommand{\get}{\c{get}}
 \newcommand{\getZero}{\c{get0}}
@@ -142,8 +142,8 @@
   afforded by reflective operations on first-class environments, come
   significant challenges for reasoning and optimizing user-defined code. This
   paper documents the reflective interface used to operate over first-class
-  environment. We explain the rationale behind its design and conduct a large
-  scale study of how the interface is used in popular libraries.
+  environment. We explain the rationale behind its design and conduct a
+  large-scale study of how the interface is used in popular libraries.
 \end{abstract}
 
 \begin{CCSXML}
@@ -187,22 +187,22 @@ from names to values, commonly referred to as an \emph{environment}. The
 semantics of environments have a profound impact on how languages can be
 implemented. At a first approximation, the more restricted the semantics, the
 easier it is to implement the language efficiently. Early languages did not
-support recursion, thus their compilers could generate code where each variable
-had its unique, pre-determined, location in the computer's memory. When a
+support recursion; thus their compilers could generate code where each variable
+had its unique, pre-determined location in the computer's memory. When a
 variable's value was determined to be constant, it did not even need a memory
-location, the variable was effectively an alias for that value. As languages
+location; the variable was effectively an alias for that value. As languages
 became more expressive, implementations had to store variables in data
-structures such as the stack, for traditional imperative languages, or in
-heap-allocated records, for functional languages. When the compiler could assume
-all variable accesses were known at compile time, the variables could be
-represented by offsets from a known location. On the the other hand, for
+structures such as the stack for traditional imperative languages or
+heap-allocated records for functional languages. When the compiler could assume
+all variable accesses were known at compile-time, the variables could be
+represented by offsets from a known location. On the other hand, for
 languages that allowed symbolic lookups, the mapping between names and locations
 had to be retained. Each of these choices comes with performance implications.
 
 The R programming language was created in 1993~\cite{r96} as a direct descendent
-to S whose origin dates to 1976~\cite{s88}. Both languages found inspiration in
+to S, whose origin dates to 1976~\cite{s88}. Both languages found inspiration in
 earlier work on Lisp~\cite{Lisp}, CLOS~\cite{CLOS}, and
-Scheme~\cite{SchemeR5RS}. Yet, they chose to depart from those previous
+Scheme~\cite{SchemeR5RS}. However, they chose to depart from those previous
 languages in small and large ways. R evolved to become a functional language,
 without type annotations, with delayed evaluation of function arguments, mutable
 state, and various mechanisms for supporting object-oriented programming.
@@ -216,15 +216,15 @@ environments.
 In R, an environment is an unordered mutable map from symbols to values.
 Environments are omnipresent -- they represent name spaces, or scopes, for
 variables within a function, but also the name spaces that are constructed when
-a package is loaded. As they are the only mutable data structure in the language
+a package is loaded. As they are the only mutable data structure in the language,
 they are also used as hashmaps and objects. They are created implicitly when a
-function is called, and explicitly with \c{new.env}. Operations are provided to
-read variables and update or delete them. It is even possible change the
+function is called and explicitly with \c{new.env}. Operations are provided to
+read variables and update or delete them. It is even possible to change the
 association between a closure and its environment. R's interface allows, for
 example, to acquires the environment of the caller of the currently executing
 function, check if it contains a variable \c{x}, and rename it to \c{y}.
 Needless to say that this flexibility causes headaches to implementers,
-\citet{dls19} gives an account of these challenges.
+\citet{dls19} give an account of these challenges.
 
 This paper documents the interface that R exposes to environments. This
 interface evolved through the years. It is rich and not always consistent, and
@@ -238,14 +238,14 @@ possibly, be a step towards a re-design or a warning for compiler writers.
 \section{Related Work}
 
 Imperative languages like C aim to have efficient implementations; variables are
-offsets from a stack pointer and symbolic references are only allowed when
-debugging of non-optimized code. Statically typed functional languages are more
+offsets from a stack pointer, and symbolic references are only allowed when
+debugging non-optimized code. Statically typed functional languages are more
 expressive with first-class functions. Their implementations allocate
 environments on the heap, but retain the variable-as-offset technique. Dynamic
 languages retain more information at run-time to support dynamic code generation
 through the \c{eval} function. Languages like Scheme or Python retain the
 mapping between symbols and locations. When languages allow to programmatically
-add and to remove variables, achieving performance is even harder. Consider the
+add and remove variables, achieving performance is even harder. Consider the
 design of Scheme and Python. While the Scheme Standard specifies that
 \c{eval} takes an environment-specifier which needs not be a first-class
 environment~\cite{SchemeR5RS}. MIT/GNU Scheme supports first-class environments
@@ -261,7 +261,7 @@ namespace which can be updated. The \c{globals} function returns a dictionary
 of the global namespace whose updates are also reflected in the namespace.
 \citet{Siskind07} proposed the \c{map-closure} construct to construct a new
 closure with a modified environment. By design, this hides the details of
-environments and unlike R this does not allow addition and removal of variables.
+environments, and unlike R this does not allow addition and removal of variables.
 
 \citet{ecoop12} discussed the design of R, including its scoping and evaluation
 mechanism. While the paper presents some data on environments, it does not
@@ -281,7 +281,7 @@ return values. Their type language includes a type for first-class environments.
 \section{The R language}
 
 A presentation of the language requires introducing some key concepts. We will
-be brief, interested readers should consult~\cite{AdvancedR}.
+be brief; interested readers should consult~\cite{AdvancedR}.
 
 \paragraph{Functions} Functions are first-class, anonymous, lexically-scoped values
 with optional parameters and default values. R is ``functional'' in the sense
@@ -291,7 +291,7 @@ a function are not reflected to the caller.
 \paragraph{Promises} R is a mostly lazy language. Arguments to functions are
 packaged into promises which bundle an expression and its environment. When the
 value of a promise is needed, the expression is evaluated in the adjoined
-environment and the result is cached in the promise.
+environment, and the result is cached in the promise.
 
 \paragraph{Vectors}  Most values in R are vectors, and most operations are
 vectorized. Vectors are homogeneous arrays of integer, double, character,
@@ -303,7 +303,7 @@ copy-on-write semantics.
 
 \paragraph{Attributes}
 Values can be tagged with user-defined attributes which are a map from string to
-value. Consider the following code which sets the attributes \c{dim} and
+value. Consider the following code, which sets the attributes \c{dim} and
 \c{class} of some vector \c{x}.
 
 \begin{lstlisting}
@@ -322,7 +322,7 @@ Expressions can be evaluated explicitly in an
 environment using \eval. Moreover, \substitute extracts the unevaluated argument
 text from the promise bound to an argument in the supplied environment. The
 following example demonstrates how \substitute constructs an AST by replacing
-parameters \c{x} and \c{y} with the argument expressions \c{a+b} and \c{c*d}
+parameters \c{x} and \c{y} with the argument expressions \c{a+b} and \c{c*d},
 respectively.
 
 
@@ -347,40 +347,40 @@ packaged some commonly needed functionality with the core of the language. Thus,
 the task of describing the ``interface'' of environments as seen by developers
 and end-users involves some sleuthing. As we prepared this paper, we kept
 discovering new functions that accessed environments from native code. This
-section is not meant to be an exhaustive, but it gives an overview of the most
+section is not meant to be exhaustive, but it gives an overview of the most
 commonly used functions.
 
 Environments are implemented either by an association list or a hashmap, as
-specified by construction parameter. Each environment also has a parent, forming
-an acyclic chain terminated by the empty environment. That environment is
-returned by \c{emptyenv()}. Unlike other values, environments are mutable.
+specified by a construction parameter. Each environment also has a parent,
+forming an acyclic chain terminated by the empty environment. That environment
+is returned by \c{emptyenv()}. Unlike other values, environments are mutable.
 
 \subsection{Environments as Packages}
 
-Packages are loaded by calls to the \c{library()} function, and are
-represented by environments; their names are added to a global search path.
-Package can be retrieved by position, the \emph{n}-th package is
+Packages are loaded by calls to the \c{library()} function and are represented
+by environments; their names are added to a global search path. A package can be
+retrieved by position, the \emph{n}-th package is accessed by
 \c{as.environment(n)} or by name. Every package has a corresponding namespace
-which contains its private bindings and implementation specific metadata. A
-namespace can be obtained by calling \c{getNamespace(p)}. \c{baseenv()}
-returns the base package environment that is pre-loaded witih R and binds
-\c{.BaseNamespaceEnv} to it.
+that contains its private bindings and implementation specific metadata. A
+namespace can be obtained by calling \c{getNamespace(p)}. \c{baseenv()} returns
+the base package environment that is pre-loaded with R. The base package
+environment is also bound to the global variable, \c{.BaseNamespaceEnv}.
 
 
 \subsection{Environments as Lexical Scopes}
 
-In R, each function has a lexical scope. Furthermore each nested function
+In R, each function has a lexical scope. Furthermore, each nested function
 introduces a nested scope. When a function begins executing, its scope is
 initialized with parameters, and, as it runs, new variables are introduced
-implicitly each time an undefined symbol is assigned to. R allows to obtain the
-current scope with a call to \c{environment()}. From there it is possible to
+implicitly each time an undefined symbol is assigned to. R allows obtaining the
+current scope with a call to \c{environment()}. From there, it is possible to
 read and update the environment through the reference returned by that function.
 
-R provides access to the call stack. Frames starts from 0 and increases by one
+R provides access to the call stack. Frames start from 0 and increase by one
 for each nested call. Function \c{sys.nframe} returns the current frame
 number, and \c{sys.parent(n)} returns the number of the \c{n}th parent.
 The function \c{sys.frame(n)} returns environment at that position (counting
-backwards if \c{n} is negative); \c{parent.frame(n)} optimises calls to
+backward if \c{n} is negative); \c{parent.frame(n)} optimises calls to
 \c{sys.frame(sys.parent(n))}. Lastly, \c{sys.frames()} returns a list of
 active environments.
 
@@ -392,13 +392,13 @@ active environments.
 \end{lstlisting}
 
 \noindent
-In the above code snippet, \c{f} accesses its own environment using the call to
-\c{environment()} and it's callee \c{g} accesses \c{f}'s environment by calling
+In the above code snippet, \c{f} accesses its environment using the call to
+\c{environment()}, and its callee \c{g} accesses \c{f}'s environment by calling
 \c{parent.frame(-1)}.
 
-The global environment , referred by the variable \c{.GlobalEnv} (at offset
-0), is returned by \c{globalenv()}. One can rebind the enclosing environment
-of a function with \c{environment(f)<-e}.
+The global environment, referred to by the variable \c{.GlobalEnv} (at offset
+0), is returned by \c{globalenv()}. One can rebind the enclosing environment of
+a function with \c{environment(f)<-e}.
 
 \begin{lstlisting}
  f <- function() print(environment())
@@ -473,7 +473,7 @@ enclosing scope of \c{f} using \c{environment(f)<-e}.
 
 \subsection{Environments as Data Structures}
 
-Environments can be created by calls toe \newEnv, it takes three optional
+Environments can be created by calls to \newEnv; it takes three optional
 arguments: a boolean to select how the environment is represented, the
 pre-allocation size, and an enclosing environment. \c{length} returns the number
 of bindings in an environment. \parentEnv yields the enclosing environment and
@@ -513,14 +513,14 @@ are generalizations of these operators with options to perform lookup
 recursively in parent environments (\c{inherits=TRUE}) and validate the type of
 value bound to the variable being read (\c{mode="integer"}). \mget is a
 vectorized version of \get; it reads multiples variables supplied as a vector
-and returns a vector of values. \dynGet performs recursive lookups in caller
+and returns a list of values. \dynGet performs recursive lookups in caller
 frames, i.e., dynamic scopes, unlike the other functions which perform lookups
 in lexical scopes. Writes are performed using \assign and \c{e$v<-x}, and
 \c{e[["v"]]<-x}. Bindings can be removed from an environment using the \rm and
 \remove function.
 Environments can be protected from addition or removal of bindings by calling
 \lockEnvironment. This does not prevent updates of existing variables, those
-needs to be explicitly locked using \lockBinding.
+need to be explicitly locked using \lockBinding.
 
 
 \section{Infrastructure and Corpus}
@@ -539,7 +539,7 @@ duration of each stage and the size of returned results.
 Our corpus is assembled from R packages hosted on CRAN \cite{ligges2017}, the
 official R package repository. We mirror CRAN on our server and install its
 packages. We downloaded and installed 17,133 CRAN packages.\footnote{Snapshot
-taken on 29 May 2021.} From these, we select the 100 CRAN packages with highest
+taken on 29 May 2021.} From these, we select the 100 CRAN packages with the highest
 number of clients. These 100 packages together have 11,786 clients (\ggplot has
 the highest number of clients, 2,320, and package \vctrs has the fewest, 108).
 These packages contain 481K lines of R code and 1M lines of native code. During
@@ -586,17 +586,17 @@ returns.
 \subsection{Post-processing Traces}
 
 The execution traces must be analyzed to gather insights. \envtracer gathers
-681GB of data, scale is thus the major challenge. We use a custom map-reduce
+681GB of data; scale is thus the major challenge. We use a custom map-reduce
 analysis that first processes individual traces in parallel to generate smaller
-tables per program. This is expensive but it substantially reduces data size.
-Then the tables are concatenated into a single table per analysis. Finally
-summaries are computed from the concatenated tables. The report phase generate
+tables per program. This is expensive, but it substantially reduces data size.
+Then the tables are concatenated into a single table per analysis. Finally,
+summaries are computed from the concatenated tables. The report phase generates
 graphs and tables from these summaries.
 
 \section{How Frequent are Environments?}
 
 The 286 corpus packages have 44K functions, of which 18K are exercised. From the
-un-exercised 25K functions, the majority belong to transitively included
+un-exercised 26K functions, the majority belong to transitively included
 packages for which we do not have tests, and, some 8K functions are from our
 initial target packages but were unused. Table~\ref{table:packsize} presents the
 distribution of exercised functions across these packages. We observe that 171
@@ -628,7 +628,7 @@ than 500 functions.
 
 \noindent
 We observed 42M calls to these functions. Figure~\ref{fig:calldist} shows the
-distribution of calls: 53\% functions are called more than ten times and 14\%
+distribution of calls: 53\% of functions are called more than ten times, and 14\% of
 functions are called only once.
 
 \begin{figure}[!h]
@@ -685,7 +685,7 @@ than integers, reals, and raw.
 \noindent
 Table~\ref{table:api_calls} gives the number of calls made to the various
 environment APIs. Each of these functions takes or returns an environment as
-argument. Overall they cover most of the non-traditional uses of environments.
+an argument. Overall, they cover most of the non-traditional uses of environments.
 
 \begin{table}[!h] \small
   \caption{API Calls} \label{table:api_calls} \centering
