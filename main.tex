@@ -1,4 +1,4 @@
-\documentclass[10pt,review,sigplan,authorversion=true]{acmart}
+\documentclass[10pt,sigplan,authorversion=true]{acmart}
 \settopmatter{printfolios=true,printccs=true,printacmref=true}
 
 \bibliographystyle{ACM-Reference-Format}
@@ -791,7 +791,7 @@ were used for \c{eval} and 145K for \c{substitute}. In the Core R class, 94\% of
 the environments come from the \c{base} package and 5\% from \c{methods}.
 
 
-\section{How are Environment Used?}
+\section{How are Environments Used?}
 
 We divide environments into three categories, presented in
 Table~\ref{table:env_category}: \textbf{Calls} are environments used for
@@ -812,15 +812,15 @@ purposes, and \textbf{Packages} are needed for package loading.
 
 Of 1.2B calls, only 20M environments are passed to the functions of
 Table~\ref{table:api_calls}. The remaining environments are used only as
-``traditional'' environments for creating, reading and updating variables. To
+``traditional'' environments for creating, reading, and updating variables. To
 understand how those 20M environments are used, we summarize manipulation
-of these environment with four groups of operations:
+of these environments with four groups of operations:
 
 \begin{itemize}
 \item \texttt{A}: variable reads, writes and removes.
 \item \texttt{V}: \eval.
-\item \texttt{S}:  \substitute.
-\item \texttt{X}:  \c{parent.frame}, \c{sys.frame} or \c{sys.frames}.
+\item \texttt{S}: \substitute.
+\item \texttt{X}: \c{parent.frame}, \c{sys.frame} or \c{sys.frames}.
 \end{itemize}
 
 \noindent
@@ -842,27 +842,67 @@ explain 98\% of non-trivial call environments.
 \end{table}
 
 \begin{itemize}
-\item[{\bf S}:] Most uses of \c{substitute} originates from \base package
-  functions such as \c{::}. For example, when users write \c{ns::sym}, this has
-  the effect of reading variable \c{sym} publicly exported from namespace
-  \c{ns}. Here \substitute is used to access the symbol and namespace names and
-  convert them to strings, then \c{get()} does the actual lookup.
+\item[{\bf S}:] Most uses of \c{substitute} originate from \base package
+  functions such as \c{::}. When users write \c{ns::sym}, this has the effect of
+  reading variable \c{sym} publicly exported from namespace \c{ns}. Here,
+  \substitute is used to access the symbol and namespace names, the names are
+  converted to strings, then \c{get} does the actual lookup.
+
+\begin{lstlisting}
+`::` <- function(pkg, name) {
+  pkg <- as.character(substitute(pkg))
+  name <- as.character(substitute(name))
+  getExportedValue(pkg, name)
+}
+\end{lstlisting}\medskip
 
 \item[{\bf X,A}:] These environments are obtained as values and then used for
-  accessing their bindings. For instance, \c{register\-S3\-methods::assignWrapped}
+  accessing their bindings. For instance, \c{register\-S3method::assignWrapped}
   uses \c{parent.frame} to get the caller environment and then evaluates a
   promise in that environment accessing its variables.
+
+\begin{lstlisting}
+assignWrapped <- function(x, method, home,
+                             envir) {
+  method <- method
+  home <- home
+  delayedAssign(x, get(method, envir = home),
+                  assign.env = envir)
+}
+home <- parent.frame()
+assignWrapped(home = home, ...)
+\end{lstlisting}\medskip
 
 \item[{\bf X,V,A}:] These environments are obtained for the purpose of
   evaluating code in them. The use of \c{glue::glue} by \c{waldo::path_attr} is
   an example where \c{glue} performs string interpolation by extracting the
   caller's environment and evaluating embedded code blocks.
 
-\item[{\bf X,S,V,A}:] Environments that are used in a combination of \eval and
+\begin{lstlisting}
+path_attr <- function(path, i) {
+  funs <- c("comment", "class", "dim")
+  ifelse(i %in% funs,
+          glue("{i}({path})"),
+          glue("attr({path}, '{i}')"))
+}
+\end{lstlisting}\medskip
+
+\item[{\bf X,S,V,A}:] These environments are used in a combination of \eval and
   \substitute use cases. This occurs in \c{match.arg} when the set of values
   against which the argument is to be matched are not provided, then
-  \c{match.arg} uses \c{substitute} to get argument names, reflectively access
-  default values from the parent environment.
+  \c{match.arg} uses \c{substitute} to get argument names and reflectively
+  access their default values from the caller environment.
+
+\begin{lstlisting}
+match.arg <- function(arg, choices,
+                      several.ok = FALSE) {
+  sysP <- sys.parent()
+  formal.args <- formals(sys.function(sysP))
+  argname <- as.character(substitute(arg))
+  choices <- eval(formal.args[[argname]], 
+                    envir = sys.frame(sysP))
+\end{lstlisting}\medskip
+
 \end{itemize}
 
 \noindent
@@ -872,22 +912,22 @@ carry them around as attributes. We observed 66K formulas constructed in call
 environments. The most common example is the \c{stats::formula} function.
 
 While one could hope an optimizing compiler would optimize most call
-environments, unfortunately there are sufficient number of reflective accesses
+environments, unfortunately, there are sufficient number of reflective accesses
 that it may be hard for the compiler to be able to determine that an environment
 can be elided.
 
 \subsection{Explicits}
 
-Explicit environment creation using \newEnv mostly come from core and 395K are
+Explicit environments created using \newEnv mostly come from core, and 395K are
 created in user code.
 
 \subsubsection{Core Explicits}
 
 Nine packages are responsible for all explicits in Core.
-Table~\ref{table:core_explicit_pack} shows these packages and the numbers of
+Table~\ref{table:core_explicit_pack} shows these packages and the number of
 environments created. The \c{base} and \c{methods} packages alone account for
 99\% of environments. Table~\ref{table:core_explicit_fun} shows the six
-functions that alone contribute to 98\% of all explicits.
+functions that alone contribute to 98\% of all explicit environments.
 
 \begin{table}[!h]
   \small
@@ -931,13 +971,14 @@ functions that alone contribute to 98\% of all explicits.
 
 \noindent
 We now turn our attention to how these environments are used.
-Table~\ref{table:core_explicit_env_seq} shows the top 5 of the total
-sets of operations performed on these environment; these include the
-following:
+Table~\ref{table:core_explicit_env_seq} shows the top 5 of the full sets of
+operations performed on these environment. These sets include the following new
+operations:
+
 \begin{itemize}
 \item \texttt{L}: locking environments or bindings.
 \item \texttt{Z}: modifying parent environment.
-\item \texttt{!} using environment as parent or lexical scope.
+\item \texttt{!}: using environment as parent or lexical scope.
 \end{itemize}
 
 \begin{table}[!h]
@@ -958,37 +999,47 @@ following:
 \end{table}
 
 \begin{itemize}
-\item[{\bf A}:] The most common case, environments that are only used to access
-  variables, as in the \c{methods::new} function that is used for creating S4
-  objects.
-\item[{\bf A,V}:] Environments used for evaluation by the \c{eval} and
-  \c{evalq}.
-\item[{\bf S}:] Environments used with \c{substitute}.
-\item[{\bf A,Z,!}:] The \c{methods::makeGeneric} function creates a new
-  environment, assigns the field \c{".Generic"} to the name of the generic
-  method, sets its parent as the lexical scope of the function, and finally,
-  sets the new environment as the lexical scope of the function.
-\item[{\bf A,L,!}:] This happens in S4 objects which lock the object's data
+\item[{\bf A}:] This is the most common case; environments that are only used to
+  access variables, as in the \c{methods::new} function that is used for
+  creating S4 objects.
+\item[{\bf A,V}:] These environments are used for evaluation by the \c{eval} and
+  \c{evalq} functions.
+\item[{\bf S}:] These environments are used with \c{substitute}.
+\item[{\bf A,Z,!}:] An example of this is the \c{methods::makeGeneric} function.
+  It creates a new environment, assigns the field \c{".Generic"} to the name of
+  the generic method, sets its parent as the lexical scope of the function, and
+  finally, sets the new environment as the lexical scope of the function.
+\begin{lstlisting}
+  ev <- new.env()
+  parent.env(ev) <- environment(fdef)
+  environment(fdef) <- ev
+  packageSlot(f) <- package
+  assign(".Generic", f, envir = ev)
+\end{lstlisting}\medskip
+
+\item[{\bf A,L,!}:] This happens in S4 objects, which lock the object's data
   store.
 \end{itemize}
 
 \noindent
-Overall, 168K environments are passed to eval and only 100 were used for formula
-construction. Explicits are used for evaluation, substitution, and in the S4
-object system. This category is integral to the language implementation.
+Overall, 168K environments are passed to eval, and only 100 were used for
+formula construction. Overall, explicit environments are used for evaluation,
+substitution, and in the S4 object system. This category is integral to the
+language implementation.
 
 \subsubsection{User Explicits}
 
 User explicits come from 55 packages. Table~\ref{table:user_explicit_pack} shows
-the distribution the top 8 packages which account for 96\% of creations. The
+the distribution of the top 8 packages, which account for 96\% of creations. The
 \c{vctrs} package allows for type-coercion and size-recycling of vectors. The
-\c{rlang} package provides utility functions for wokring with objects and a
-variant of \c{eval}. \c{R6} implements an object-oriented system. \c{codetools}
-implements code analysis. \c{ggplot2} is a popular plotting library.
-\c{testthat} is used for testing. \c{dplyr} implements a DSL for SQL-like
-queries on data frames. Lastly, \c{magrittr} implements the pipe operator for
-composing function. Table~\ref{table:user_explicit_fun} shows the top ten
-functions creating environment, they contribute to 65\% of all explicits.
+\c{rlang} package provides utility functions for working with objects and a
+variant of \c{eval}. The \c{R6} package implements an object-oriented system.
+The \c{codetools} package implements code analysis. The \c{ggplot2} package is a
+popular plotting library. The \c{testthat} package is used for testing. The
+\c{dplyr} package implements a DSL for SQL-like queries on data frames. Lastly,
+\c{magrittr} implements the pipe operator for composing function.
+Table~\ref{table:user_explicit_fun} shows the top ten functions creating
+environments; they contribute to 65\% of all explicits.
 
 
 \begin{table}[!h]
@@ -1057,34 +1108,98 @@ mixes which characterize 96\% of these environments. We observe a new operation,
 \end{table}
 
 \begin{itemize}
-  \item[{\bf A,V}:] These environments are created for custom evaluation
-    strategies, \ie for evaluating expressions with custom bindings. The
-    \c{testthat} library uses it for running tests.
+\item[{\bf A,V}:] These environments are created for custom evaluation
+  strategies, \ie for evaluating expressions with custom bindings. For example,
+  the \c{testthat} library uses them for running tests.
 
-\item[{\bf A}:] Environments used as hash tables and mutable state. The
-  \c{codetools::mkHash} function creates an environment to store intermediate
-  static analysis information.
+\begin{lstlisting}
+test_code <- function(code, env = test_env())  {
+  test_env <- new.env(parent = env)
+  eval(code, test_env)
+\end{lstlisting}\medskip
 
-\item[{\bf A,!}:] Environments used as parents of other environments or
-  functions. The \c{R6} package creates new environments and set them as lexical
-  scope of object methods.
+  \item[{\bf A}:] These environments are used as hash tables and mutable state.
+    For example, the \c{codetools::mkHash} function creates an environment to
+    store intermediate static analysis information.
 
-\item[{\bf A,@}:] Used to create custom objects which can be used for dispatch.
-  The \c{ggproto} objects are explicit environments with the \c{"ggproto"} class
-  attribute.
+\begin{lstlisting}
+findGlobals <- function(fun, merge = TRUE) {
+  funs <- mkHash()
+  enter <- function(v) assign(v, TRUE, funs)
+  collectUsage(fun, enterGlobal = enter)
+  fnames <- ls(funs, all.names = TRUE)
+\end{lstlisting}\medskip
 
-\item[{\bf A,L}:] The R6 package locks environments during object instantiation
-  to prevent any modification.
+  \item[{\bf A,!}:] These environments are used as parents of other environments
+    or functions. For example, the \c{R6} package creates new environments and
+    sets them as lexical scope of object methods.
 
-\item[{\bf A,L,@}:] The \c{later} package uses environments as handles for event
-  loop objects. These objects contain a unique loop identifier which is locked
-  to prevent modification. The environments are given the class attribute
-  \c{"event_loop"}.
+\begin{lstlisting}
+assign_func_envs <- function(objs, env) {
+  lapply(objs, function(x) {
+    if (is.function(x)) environment(x) <- env
+    x
+  })
+}
 
-\item[{\bf A,@,!}:] This shows up in the \c{plyr} package which creates
-  environments with attribute \c{"idf"} for immutable data frames. It also
-  assigns getter functions to these environments to access the columns of the
-  data frame, and sets their lexical scope to be the environment itself.
+new <- function(...) {
+  env <- new.env(parent=parent_env,hash=FALSE)
+  methods <- assign_func_envs(methods, env)
+\end{lstlisting}\medskip
+  
+  \item[{\bf A,@}:] These environments are used to create custom objects which
+    can be used for dispatch. For example, the \c{ggproto} objects are explicit
+    environments with the \c{"ggproto"} class attribute.
+
+\begin{lstlisting}
+ggproto <- function(`_class` = NULL, ...) {
+  e <- new.env(parent = emptyenv())
+  e$super <- find_super
+  class(e) <- c(`_class`, "ggproto", "gg")
+\end{lstlisting}\medskip
+
+  \item[{\bf A,L}:] This operation mix is seen in environments created by the R6
+    package which locks them during object instantiation to prevent any
+    modification.
+
+\begin{lstlisting}
+new <- function(...) {
+    pub_env <- new.env(parent=emptyenv())
+    lockEnvironment(pub_env)
+\end{lstlisting}\medskip
+
+  \item[{\bf A,L,@}:] These environments come from the \c{later} package which
+    uses them as handles for event loop objects. These objects contain a unique
+    loop identifier that is locked to prevent modification. The environments
+    are given the class attribute \c{"event_loop"}.
+
+\begin{lstlisting}
+create_loop <- function(...) {
+loop <- new.env(parent = emptyenv())
+class(loop) <- "event_loop"
+loop$id <- id
+lockBinding("id", loop)
+\end{lstlisting}\medskip
+  
+  \item[{\bf A,@,!}:] These environments shows up in the \c{plyr} package, which
+    creates environments with attribute \c{"idf"} for immutable data frames. It
+    also assigns getter functions to these environments to access the columns of
+    the data frame, and sets their lexical scope to be the environment itself.
+
+\begin{lstlisting}
+idata.frame <- function(df) {
+  self <- new.env()
+  self$`_data` <- df
+  self$`_getters` <- lapply(names(df), ...)
+  names(self$`_getters`) <- names(df)
+  for (name in names(df)) {
+    f <- self$`_getters`[[name]]
+    environment(f) <- self
+  }
+  structure(self, class = c("idf"))
+}
+\end{lstlisting}\medskip
+  
 \end{itemize}
 
 \noindent
@@ -1132,7 +1247,7 @@ these environments is unspecified.
 
 A closure's enclosing scope can be accessed using \c{env(fun)} and modified
 using \c{env(fun)<-e}. Table~\ref{table:encl_scope_api} lists calls to these
-unctions.
+functions.
 
 \begin{table}[!h]\small\centering
   \caption{Enclosing Scope API}\label{table:encl_scope_api}  \vspace{-3mm}
@@ -1148,23 +1263,43 @@ unctions.
 \end{table}
 
 First, we look at the \c{environment} function called \EnvironmentCoreCallPerc
-of the time from Core. The \c{registerS3methods} is responsible for
-\EnvironmentBaseRegisterMethodCallPerc calls to \c{environment}. This function
+of the time from Core. The \c{methods::registerS3methods} is responsible for
+\EnvironmentBaseRegisterMethodCallPerc of calls to \c{environment}. This function
 registers S3 methods for dispatch. It extracts the enclosing environment of the
-method and updates the method information in its \c{S3MethodsTable}. The
-\c{methods} package is responsible for \EnvironmentMethodsCallPerc of package
-environments. The \c{compiler::cmpfun} function, used for byte code compilation
+method and updates the method information in its \c{S3MethodsTable}.
+
+\begin{lstlisting}
+defenv <- environment(genfun)
+table <- new.env(hash = TRUE, parent = baseenv())
+defenv[[".__S3MethodsTable__."]] <- table
+\end{lstlisting}\medskip
+
+Overall, the \c{methods} package is responsible for \EnvironmentMethodsCallPerc
+of the calls.
+
+The \c{compiler::cmpfun} function, used for byte code compilation
 is another client. It extracts the body, formal parameter list, and the
 enclosing scope of the function to be compiled.
 
-Only, \EnvironmentUserCallPerc of package environments originate from {User}. We
-discuss some of the patterns of usage below. The \c{R.oo} package implements
-object with a \c{getStaticInstance.Class} function that calls
-\c{environment}.
+\begin{lstlisting}
+cmpfun <- function (f, options = NULL) {
+    cntxt <- make.toplevelContext(makeCenv(environment(f)), options)
+    ncntxt <- make.functionContext(cntxt, formals(f), body(f))
+\end{lstlisting}\medskip
+
+Only, \EnvironmentUserCallPerc of the calls to \c{environment} originate from
+{User}. The primary contributor to these calls is the \c{R.oo} package. This
+package implements objects with a \c{getStaticInstance.Class} function that
+calls the \c{environment} function.
+
+\begin{lstlisting}
+setMethodS3("getStaticInstance", "Class", function(this, ...) {
+    environment(static) <- environment(this)
+\end{lstlisting}\medskip
 
 We observe that \c{environment<-} is called almost equally by both Core and User
 packages. Table~\ref{table:env_asn_callers} gives the top five callers of
-\c{environment<-}, which account for \EnvAsnTopFiveCallPerc calls.
+\c{environment<-}, which account for \EnvAsnTopFiveCallPerc of calls.
 
 \begin{table}[!h]
   \small
@@ -1186,34 +1321,55 @@ packages. Table~\ref{table:env_asn_callers} gives the top five callers of
 On the {Core} side, \c{methods}, and \c{stats} are responsible for all calls to
 \c{environment<-}. Two functions in \c{methods}, \c{.makeDef\-aultBinding} and
 \c{installClassMethod}, are responsible for \EnvAsnMethodsCallPerc of all {Core}
-calls. The \c{stats::make.link} function returns a list of functions related to
+calls.
+
+\begin{lstlisting}
+.makeDefaultBinding <- function(...) {
+  f <- function(value) ...
+  environment(f) <- where
+\end{lstlisting}\medskip
+
+The \c{stats::make.link} function returns a list of functions related to
 a model. These functions are defined as its inner functions which don't use any
 of the parent scope bindings. Before returning, it modifies their definition
 environment to be the \c{stats} package namespace.
 
+\begin{lstlisting}
+make.link <- function (link)  {
+        linkfun <- function(mu) ...
+        linkinv <- function(eta) ...
+        mu.eta <- function(eta) ...
+        valideta <- function(eta) ... 
+
+    environment(linkfun) <- environment(linkinv) <-
+    environment(mu.eta) <- environment(valideta) <-
+    asNamespace("stats")
+\end{lstlisting}\medskip
+
 On the {User} side, \c{R6} dominates calls to \c{environment<-}.
 \EnvAsnOneCallerName is the most frequent caller, accounting for half of all
 calls. It uses \c{environment<-} to change the enclosing scope of object
-methods. A common pattern is modifying the environment of inner functions before
-returning them.
+methods.
 
 \begin{lstlisting}
-negative.binomial <- function(theta) {
-    env <- new.env(parent=.GlobalEnv);
-    assign(".Theta", theta, envir=env);
-    variance <- function(mu) mu + mu^2/.Theta
-    environment(variance) <- env
-    list(variance = variance, ...)
+assign_func_envs <- function(objs, target_env) {
+  lapply(objs, function(x) {
+    if (is.function(x)) environment(x) <- target_env
+    x
+  })
 }
+\end{lstlisting}\medskip
 
-\end{lstlisting}
 
+The \c{MASS::negative.binomial} function uses \c{environment<-} to modify the
+parent scope of its inner functions, similar to the \c{stats::make.link}
+function described above.
 
 \section{Locking}
 
 Calling \c{lockEnvironment} prevents the introduction of new bindings while
 \c{lockBinding} prevents their mutation. Bindings can be unlocked with
-\c{unlockEnvironment}, the use of this function triggers a warning from the
+\c{unlockEnvironment}; the use of this function triggers a warning from the
 automated package checker. Table~\ref{table:lock_unlock_dist} presents the
 distribution of calls to these functions.
 
@@ -1244,21 +1400,43 @@ first two initialize package and namespace environments. The third loads code
 from a database.
 
 On the {User} side, only packages \c{R6} and \c{rlang} lock environments. Most
-calls originate from \c{R6}. The \c{new} functions locks objects while \c{clone}
-locks the public and private method environments of object clones. The
-\c{methods} package is responsible for all calls to \c{lockBinding} and
+calls originate from \c{R6}. An example is the \c{R6::clone} method that locks
+the public and private method environments of object clones.
+
+\begin{lstlisting}
+clone <- function(deep = FALSE) {
+    lockEnvironment(new_1_binding)
+    lockEnvironment(new_1_private)
+\end{lstlisting}\medskip
+
+The \c{methods} package is responsible for all calls to \c{lockBinding} and
 \c{unlockBinding} on the {Core} side. On the {User} side, the use of these
 functions is varied. Most package functions call them in a matched pair. For
 insance, \c{gtools} locks bindings to circumvent a a bug in
 R.\footnote{\url{https://bugs.r-project.org/bugzilla/show_bug.cgi?id=15215}}
 Some functions in \c{gtools} cause the bytecode interpreter to run out of stack
-space. The package has a function, \c{unByteCodeAssign}, that updates the
-functions that trigger the bug to fan equivalent non-bytecode version.
+space. The package has a function, \c{unByteCodeAssign}, that calls
+\c{assignEdgewise} to update the functions that trigger the bug to an equivalent
+non-bytecode version.
 
-We conclude that \c{R6} is the biggest user of locking. Bindings are rarely
-unlocked, and they are never used to inject new bindings in other packages. We
-found one case where a binding is unlocked  to update base functions
-\c{cbind} and \c{rbind}  from the  \c{data.table} pakcage.
+\begin{lstlisting}
+assignEdgewise <- function(name, env, value) {
+  unlockBinding(name, env = env)
+  assign(name, envir = env, value = value)
+  lockBinding(name, env = env)
+  invisible(value)
+}
+
+unByteCodeAssign <- function(fun) {
+  FUN <- unByteCode(fun)
+  retval <- assignEdgewise(name=name, env=environment(FUN), value=FUN)
+}
+\end{lstlisting}\medskip
+
+Overall, \c{R6} is the biggest user of locking. Bindings are rarely unlocked,
+and they are never used to inject new bindings in other packages. We only found
+one package, \c{data.table}, which unlocked bindings to update base functions
+\c{cbind} and \c{rbind}.
 
 \section{Call Stack Reflection}
 
