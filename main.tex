@@ -115,16 +115,25 @@
 \newcommand{\ggplot}{\textit{ggplot2}\xspace}
 \newcommand{\vctrs}{\textit{vctrs}\xspace}
 
-%%% \setcopyright{rightsretained}
-%%% \acmPrice{}
-%%% \acmDOI{10.1145/3360579}
-%%% \acmYear{2019}
-%%% \copyrightyear{2019}
-%%% \acmJournal{PACMPL}
-%%% \acmVolume{3}
-%%% \acmNumber{OOPSLA}
-%% \acmArticle{153}
-%%% \acmMonth{10}
+%%% If you see 'ACMUNKNOWN' in the 'setcopyright' statement below,
+%%% please first submit your publishing-rights agreement with ACM (follow link on submission page).
+%%% Then please update our instructions page and copy-and-paste the NEW commands into your article.
+%%% Please contact us in case of questions; allow up to 10 min for the system to propagate the information.
+%%% 
+%%% The following is specific to DLS '21 and the paper
+%%% 'First-Class Environments in R'
+%%% by Aviral Goel and Jan Vitek.
+%%% 
+\setcopyright{rightsretained}
+\acmPrice{15.00}
+\acmDOI{10.1145/3486602.3486768}
+\acmYear{2021}
+\copyrightyear{2021}
+\acmSubmissionID{splashws21dlsmain-p39-p}
+\acmISBN{978-1-4503-9105-4/21/10}
+\acmConference[DLS '21]{Proceedings of the 17th ACM SIGPLAN International Symposium on Dynamic Languages}{October 19, 2021}{Chicago, IL, USA}
+\acmBooktitle{Proceedings of the 17th ACM SIGPLAN International Symposium on Dynamic Languages (DLS '21), October 19, 2021, Chicago, IL, USA}
+
 \begin{document}
 \title{First-Class Environments in R}
 \author{Aviral Goel}\affiliation{\institution{Northeastern University}\country{}}
@@ -307,10 +316,11 @@ value. Consider the following code, which sets the attributes \c{dim} and
 \c{class} of some vector \c{x}.
 
 \begin{lstlisting}
-  x <- c(1,2,3,4)
-  attr(x, dim) <- c(2,2)
-  class(x) <- c("cat")
+x <- c(1,2,3,4)
+attr(x, dim) <- c(2,2)
+class(x) <- c("cat")
 \end{lstlisting}
+
 \noindent
 Setting the \c{dim} attribute causes the vector to be subsequently treated as
 a 2$\times$2 matrix. Similarly, the class attribute is used for method dispatch
@@ -325,11 +335,10 @@ following example demonstrates how \substitute constructs an AST by replacing
 parameters \c{x} and \c{y} with the argument expressions \c{a+b} and \c{c*d},
 respectively.
 
-
 \begin{lstlisting}
-  f <- function(x, y) substitute((x) + y)
-  f(a + b, c * d)
-  # (a + b) + c * d
+f <- function(x, y) substitute((x) + y)
+f(a + b, c * d)
+# (a + b) + c * d
 \end{lstlisting}
 
 
@@ -385,10 +394,10 @@ backward if \c{n} is negative); \c{parent.frame(n)} optimises calls to
 active environments.
 
 \begin{lstlisting}
- f <- function() { print(environment()); g() }
- g <- function() { print(parent.frame(1)); }
- f()
- # <env: 0x7f2> <env: 0x7f2>
+f <- function() { print(environment()); g() }
+g <- function() { print(parent.frame(1)); }
+f()
+# <env: 0x7f2> <env: 0x7f2>
 \end{lstlisting}
 
 \noindent
@@ -401,15 +410,15 @@ The global environment, referred to by the variable \c{.GlobalEnv} (at offset
 a function with \c{environment(f)<-e}.
 
 \begin{lstlisting}
- f <- function() print(environment())
- environment(); environment(f); f()
- # <env: Global> <env: Global> <env: 0x7ff>
- e <- new.env()
- print(e)
- # <env: 0x7f1>
- environment(f) <- e
- environment(f)
- # <env: 0x7f1>
+f <- function() print(environment())
+environment(); environment(f); f()
+# <env: Global> <env: Global> <env: 0x7ff>
+e <- new.env()
+print(e)
+# <env: 0x7f1>
+environment(f) <- e
+environment(f)
+# <env: 0x7f1>
 \end{lstlisting}
 
 The code snippet above modifies the enclosing scope of \c{f}, defined at the
@@ -426,14 +435,14 @@ of bindings in an environment. \parentEnv yields the enclosing environment and
 code snippet below illustrates these functions.
 
 \begin{lstlisting}
-  e <- new.env(parent=emptyenv())
-  length(e)
-  # 0
-  parent.env(e)
-  # <environment: R_EmptyEnv>
-  parent.env(e) <- globalenv()
-  parent.env(e)
-  # <environment: R_GlobalEnv>
+e <- new.env(parent=emptyenv())
+length(e)
+# 0
+parent.env(e)
+# <environment: R_EmptyEnv>
+parent.env(e) <- globalenv()
+parent.env(e)
+# <environment: R_GlobalEnv>
 \end{lstlisting}
 
 \noindent
@@ -442,13 +451,13 @@ environment. The variables of an environment can be retrieved as a vector using
 the \ls and \objects functions as shown below.
 
 \begin{lstlisting}
-  l <- list(x=1, y=2); e <- list2env(l)
-  length(e)
-  # 2
-  as.list(e)
-  # list(y = 2, x = 1)
-  ls(e)
-  # [1] "x" "y"
+l <- list(x=1, y=2); e <- list2env(l)
+length(e)
+# 2
+as.list(e)
+# list(y = 2, x = 1)
+ls(e)
+# [1] "x" "y"
 \end{lstlisting}
 
 \noindent
@@ -542,7 +551,7 @@ Table~\ref{table:corpus} has details.
 
 \begin{table}[!h]   \small  \centering
   \caption{Corpus}\label{table:corpus}
-  \vspace{-3mm}
+  %\vspace{-3mm}
   \begin{tabular}{lrrr}    \toprule
     &\bf Tests&\bf Examples&\bf Vignettes\\    \midrule
     {Scripts}&1.5K&5.0K&187\\    \midrule
@@ -884,7 +893,7 @@ path_attr <- function(path, i) {
 
 \begin{lstlisting}
 match.arg <- function(arg, choices,
-                      several.ok = FALSE) {
+                        several.ok = FALSE) {
   sysP <- sys.parent()
   formal.args <- formals(sys.function(sysP))
   argname <- as.character(substitute(arg))
@@ -999,15 +1008,28 @@ operations:
   the generic method, sets its parent as the lexical scope of the function, and
   finally, sets the new environment as the lexical scope of the function.
 \begin{lstlisting}
-  ev <- new.env()
-  parent.env(ev) <- environment(fdef)
-  environment(fdef) <- ev
-  packageSlot(f) <- package
-  assign(".Generic", f, envir = ev)
+ev <- new.env()
+parent.env(ev) <- environment(fdef)
+environment(fdef) <- ev
+packageSlot(f) <- package
+assign(".Generic", f, envir = ev)
 \end{lstlisting}\medskip
 
-\item[{\bf A,L,!}:] This happens in S4 objects, which lock the object's data
-  store.
+\item[{\bf A,L,!}:] This happens in S4 objects. Their underlying data store
+  consists of an environment with a reference to the object. This binding is
+  locked to prevent modification.
+\begin{lstlisting}
+selfEnv <- new.env(TRUE, objectParent)
+for(field in fields) {
+    fp <- prototypes[[field]]
+    environment(fp) <- selfEnv
+    assign(field, fp, envir = selfEnv)
+}
+selfEnv$.self <- .Object
+lockBinding(".self", selfEnv)
+lockBinding(".refClassDef", selfEnv)
+\end{lstlisting}
+
 \end{itemize}
 
 \noindent
@@ -1239,7 +1261,7 @@ using \c{env(fun)<-e}. Table~\ref{table:encl_scope_api} lists calls to these
 functions.
 
 \begin{table}[!h]\small\centering
-  \caption{Enclosing Scope API}\label{table:encl_scope_api}  \vspace{-3mm}
+  \caption{Enclosing Scope API}\label{table:encl_scope_api}  %\vspace{-3mm}
   \begin{tabular}{llrrrr}
     \toprule &&\textbf{P\#}&\textbf{F\#}&\textbf{C\#}&\textbf{C\%}\\
     \midrule \multirow{2}{*}{\textbf{environment}}
@@ -1272,8 +1294,10 @@ enclosing scope of the function to be compiled.
 
 \begin{lstlisting}
 cmpfun <- function (f, options = NULL) {
-    cntxt <- make.toplevelContext(makeCenv(environment(f)), options)
-    ncntxt <- make.functionContext(cntxt, formals(f), body(f))
+    cntxt <- make.toplevelContext(
+        makeCenv(environment(f)), options)
+    ncntxt <- make.functionContext(cntxt, formals(f),
+                                       body(f))
 \end{lstlisting}\medskip
 
 Only, \EnvironmentUserCallPerc of the calls to \c{environment} originate from
@@ -1282,7 +1306,8 @@ package implements objects with a \c{getStaticInstance.Class} function that
 calls the \c{environment} function.
 
 \begin{lstlisting}
-setMethodS3("getStaticInstance", "Class", function(this, ...) {
+setMethodS3("getStaticInstance", "Class",
+  function(this, ...) {
     environment(static) <- environment(this)
 \end{lstlisting}\medskip
 
@@ -1294,7 +1319,7 @@ packages. Table~\ref{table:env_asn_callers} gives the top five callers of
   \small
   \centering
   \caption{Top \c{environment<-} Callers}\label{table:env_asn_callers}
-  \vspace{-3mm}
+  %\vspace{-3mm}
   \begin{tabular}{lr}
     \toprule \textbf{Function}&\textbf{Call \%}\\
     \midrule
@@ -1325,14 +1350,11 @@ environment to be the \c{stats} package namespace.
 
 \begin{lstlisting}
 make.link <- function (link)  {
-        linkfun <- function(mu) ...
-        linkinv <- function(eta) ...
-        mu.eta <- function(eta) ...
-        valideta <- function(eta) ... 
+ linkfun <- function(mu) ...
+ linkinv <- function(eta) ...
 
-    environment(linkfun) <- environment(linkinv) <-
-    environment(mu.eta) <- environment(valideta) <-
-    asNamespace("stats")
+ environment(linkfun) <- environment(linkinv) <-
+ asNamespace("stats")
 \end{lstlisting}\medskip
 
 On the {User} side, \c{R6} dominates calls to \c{environment<-}.
@@ -1366,7 +1388,7 @@ distribution of calls to these functions.
   \small
   \centering
   \caption{Locking and Unlocking API}\label{table:lock_unlock_dist}
-  \vspace{-3mm}
+  %\vspace{-3mm}
   \begin{tabular}{llrrrr}
     \toprule &&\textbf{P\#}&\textbf{F\#}&\textbf{C\#}&\textbf{C\%}\\
     \midrule \multirow{2}{*}{\textbf{lockEnvironment}}
@@ -1394,8 +1416,8 @@ the public and private method environments of object clones.
 
 \begin{lstlisting}
 clone <- function(deep = FALSE) {
-    lockEnvironment(new_1_binding)
-    lockEnvironment(new_1_private)
+  lockEnvironment(new_1_binding)
+  lockEnvironment(new_1_private)
 \end{lstlisting}\medskip
 
 The \c{methods} package is responsible for all calls to \c{lockBinding} and
@@ -1495,7 +1517,7 @@ While in the vast majority of cases environment access could be optimized and
 environment could be implemented in a straightforward manner, there are
 sufficient number of cases where environments escape and are used in a
 reflective manner that it is not clear such optimizations can be widely applied.
-
+\newpage
 \paragraph{Acknowledgments}
 This work has received funding from National Science Foundation awards 1759736,
 1925644 and 1618732, the Czech Ministry of Education, Youth and Sports from the
