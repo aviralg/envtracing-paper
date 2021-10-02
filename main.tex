@@ -1,5 +1,4 @@
-\documentclass[10pt,sigplan,authorversion=true]{acmart}
-\settopmatter{printfolios=true,printccs=true,printacmref=true}
+\documentclass[sigplan,screen]{acmart}
 
 \bibliographystyle{ACM-Reference-Format}
 \citestyle{acmauthoryear}   %% For author/year citations
@@ -47,7 +46,7 @@
   frame=single,
   framerule=0pt,
   framexleftmargin=1mm,
-  framexrightmargin=1mm,
+  framexrightmargin=-1mm,
   tabsize=2,
   belowskip=0pt,
   basicstyle=\small\ttfamily,
@@ -115,17 +114,12 @@
 \newcommand{\ggplot}{\textit{ggplot2}\xspace}
 \newcommand{\vctrs}{\textit{vctrs}\xspace}
 
-%%% If you see 'ACMUNKNOWN' in the 'setcopyright' statement below,
-%%% please first submit your publishing-rights agreement with ACM (follow link on submission page).
-%%% Then please update our instructions page and copy-and-paste the NEW commands into your article.
-%%% Please contact us in case of questions; allow up to 10 min for the system to propagate the information.
-%%% 
 %%% The following is specific to DLS '21 and the paper
 %%% 'First-Class Environments in R'
 %%% by Aviral Goel and Jan Vitek.
-%%% 
+%%%
 \setcopyright{rightsretained}
-\acmPrice{15.00}
+\acmPrice{}
 \acmDOI{10.1145/3486602.3486768}
 \acmYear{2021}
 \copyrightyear{2021}
@@ -136,11 +130,11 @@
 
 \begin{document}
 \title{First-Class Environments in R}
-\author{Aviral Goel}\affiliation{\institution{Northeastern University}\country{}}
-\author{Jan Vitek}\affiliation{\institution{Czech Technical University in Prague\\Northeastern University}\country{}}
-\authorsaddresses{}
-\renewcommand{\shortauthors}{Goel, Vitek}
-
+\author{Aviral Goel}\affiliation{\institution{Northeastern
+    University}\country{USA}}
+\author{Jan Vitek}\affiliation{\institution{Northeastern University}\country{USA}}
+\affiliation{\institution{Czech Technical University in Prague}\country{Czech
+    Republic}}
 
 \begin{abstract}
   The R programming language is widely used for statistical computing. To enable
@@ -155,6 +149,7 @@
   large-scale study of how the interface is used in popular libraries.
 \end{abstract}
 
+\keywords{first-class environments, dynamic languages}
 \begin{CCSXML}
 <ccs2012>
 <concept>
@@ -242,8 +237,6 @@ popular R libraries and their clients, we report on the practical usage of
 environments. This allows us to explain the need for this interface and could,
 possibly, be a step towards a re-design or a warning for compiler writers.
 
-\newpage
-
 \section{Related Work}
 
 Imperative languages like C aim to have efficient implementations; variables are
@@ -287,7 +280,7 @@ inferred type signatures for R functions by observing the type of argument and
 return values. Their type language includes a type for first-class environments.
 
 
-\section{The R language}
+\section{The R Language}
 
 A presentation of the language requires introducing some key concepts. We will
 be brief; interested readers should consult~\cite{AdvancedR}.
@@ -347,7 +340,6 @@ used by statistical functions. For example, the linear model \c{y~x-1}
 specifies a line through the origin. Each formula contains a reference to the
 environment in which it is defined.
 
-\newpage
 \section{Environments in R}
 
 The evolution of R has been gradual, rather a panoply of abstractions, the
@@ -393,6 +385,7 @@ backward if \c{n} is negative); \c{parent.frame(n)} optimises calls to
 \c{sys.frame(sys.parent(n))}. Lastly, \c{sys.frames()} returns a list of
 active environments.
 
+\vspace{1mm}
 \begin{lstlisting}
 f <- function() { print(environment()); g() }
 g <- function() { print(parent.frame(1)); }
@@ -405,7 +398,7 @@ In the above code snippet, \c{f} accesses its environment using the call to
 \c{environment()}, and its callee \c{g} accesses \c{f}'s environment by calling
 \c{parent.frame(-1)}.
 
-The global environment, referred to by the variable \c{.GlobalEnv} (at offset
+The global environment, referred to by the variable \c{.Glob\-alEnv} (at offset
 0), is returned by \c{globalenv()}. One can rebind the enclosing environment of
 a function with \c{environment(f)<-e}.
 
@@ -423,7 +416,7 @@ environment(f)
 
 The code snippet above modifies the enclosing scope of \c{f}, defined at the
 top-level. The environment \c{e}, created using \c{new.env}, is assigned the
-enclosing scope of \c{f} using \c{environment(f)<-e}.
+enclosing scope of \c{f} using \c{environ\-ment(f)<-e}.
 
 \subsection{Environments as Data Structures}
 
@@ -462,7 +455,7 @@ ls(e)
 
 \noindent
 A variable's existence can be queried using \exist. Its value can be retrieved
-using \subDollar and \subBracket operators. \get, \getZero, \mget, and \dynGet
+using \subDollar and \subBracket operators. Functions \get, \getZero, \mget, and \dynGet
 are generalizations of these operators with options to perform lookup
 recursively in parent environments (\c{inherits=TRUE}) and validate the type of
 value bound to the variable being read (\c{mode="integer"}). \mget is a
@@ -592,15 +585,12 @@ tables from these summaries.
 %% updates itself appropriately in response to longjump used by R for non-local
 %% returns.
 
-\section{How Frequent are Environments?}
+\section{How Frequent Are Environments?}
 
 The 286 corpus packages have 44K functions, of which 18K are exercised. From the
 un-exercised 26K functions, the majority belong to transitively included
 packages for which we do not have tests, and, some 8K functions are from our
-initial target packages but were unused. Table~\ref{table:packsize} presents the
-distribution of exercised functions across these packages. We observe that 171
-packages have 25 functions or less. There are few large packages; 8 with more
-than 500 functions.
+initial target packages but were unused.
 
 \begin{table}[!h]    \small
   \caption{Package Size} \label{table:packsize}  \centering
@@ -624,6 +614,11 @@ than 500 functions.
     701--800&3\\    \bottomrule
   \end{tabular}
 \end{table}
+
+Table~\ref{table:packsize} presents the
+distribution of exercised functions across these packages. We observe that 171
+packages have 25 functions or less. There are few large packages; 8 with more
+than 500 functions.
 
 \noindent
 We observed 42M calls to these functions. Figure~\ref{fig:calldist} shows the
@@ -754,7 +749,7 @@ an argument. Overall, they cover most of the non-traditional uses of environment
 \end{table}
 
 \newpage
-\section{Where do Environments come from?}
+\section{Where Do Environments Come From?}
 
 Table~\ref{table:env_source} presents the distribution of environments by
 origin. The \emph{Core} row is for environments created by R's implementation
@@ -789,7 +784,7 @@ were used for \c{eval} and 145K for \c{substitute}. In the Core R class, 94\% of
 the environments come from the \c{base} package and 5\% from \c{methods}.
 
 
-\section{How are Environments Used?}
+\section{How Are Environments Used?}
 
 We divide environments into three categories, presented in
 Table~\ref{table:env_category}: \textbf{Calls} are environments used for
@@ -855,7 +850,7 @@ explain 98\% of non-trivial call environments.
 \end{lstlisting}\medskip
 
 \item[{\bf X,A}:] These environments are obtained as values and then used for
-  accessing their bindings. For instance, \c{register\-S3method::assignWrapped}
+  accessing their bindings. For instance, \c{regist\-erS3method::assignWrapped}
   uses \c{parent.frame} to get the caller environment and then evaluates a
   promise in that environment accessing its variables.
 
@@ -1249,7 +1244,7 @@ environments.
 We observe 3.3M environments related to packages and namespaces. The package
 loading mechanism alone accounts for 2.9M of these. The remaining are used as
 package namespaces. 2.3M of these environments originate from
-\c{lazyLoadDB\-exec}, an internal function responsible for loading a package's
+\c{lazyLoad\-DBexec}, an internal function responsible for loading a package's
 code from a binary file. A few environments are created internally by the
 interpreter to store a package's native functions. The internal structure of
 these environments is unspecified.
@@ -1302,7 +1297,7 @@ cmpfun <- function (f, options = NULL) {
 
 Only, \EnvironmentUserCallPerc of the calls to \c{environment} originate from
 {User}. The primary contributor to these calls is the \c{R.oo} package. This
-package implements objects with a \c{getStaticInstance.Class} function that
+package implements objects with a \c{getStaticInstanc\-e.Class} function that
 calls the \c{environment} function.
 
 \begin{lstlisting}
@@ -1333,7 +1328,7 @@ packages. Table~\ref{table:env_asn_callers} gives the top five callers of
 \end{table}
 
 On the {Core} side, \c{methods}, and \c{stats} are responsible for all calls to
-\c{environment<-}. Two functions in \c{methods}, \c{.makeDef\-aultBinding} and
+\c{environment<-}. Two functions in \c{methods}, \c{.makeD\-efaultBinding} and
 \c{installClassMethod}, are responsible for \EnvAsnMethodsCallPerc of all {Core}
 calls.
 
@@ -1372,7 +1367,7 @@ assign_func_envs <- function(objs, target_env) {
 \end{lstlisting}\medskip
 
 
-The \c{MASS::negative.binomial} function uses \c{environment<-} to modify the
+The \c{MASS::negative.binomial} function uses \c{environmen\-t<-} to modify the
 parent scope of its inner functions, similar to the \c{stats::make.link}
 function described above.
 
@@ -1420,7 +1415,7 @@ clone <- function(deep = FALSE) {
   lockEnvironment(new_1_private)
 \end{lstlisting}\medskip
 
-The \c{methods} package is responsible for all calls to \c{lockBinding} and
+The \c{methods} package is responsible for all calls to \c{lock\-Binding} and
 \c{unlockBinding} on the {Core} side. On the {User} side, the use of these
 functions is varied. Most package functions call them in a matched pair. For
 insance, \c{gtools} locks bindings to circumvent a a bug in
@@ -1446,7 +1441,7 @@ unByteCodeAssign <- function(fun) {
 
 Overall, \c{R6} is the biggest user of locking. Bindings are rarely unlocked,
 and they are never used to inject new bindings in other packages. We only found
-one package, \c{data.table}, which unlocked bindings to update base functions
+one package, \c{data.ta\-ble}, which unlocked bindings to update base functions
 \c{cbind} and \c{rbind}.
 
 %% \section{Call Stack Reflection}
@@ -1518,7 +1513,7 @@ environment could be implemented in a straightforward manner, there are
 sufficient number of cases where environments escape and are used in a
 reflective manner that it is not clear such optimizations can be widely applied.
 \newpage
-\paragraph{Acknowledgments}
+\section*{Acknowledgments}
 This work has received funding from National Science Foundation awards 1759736,
 1925644 and 1618732, the Czech Ministry of Education, Youth and Sports from the
 Czech Operational Programme Research, Development, and Education, under grant
